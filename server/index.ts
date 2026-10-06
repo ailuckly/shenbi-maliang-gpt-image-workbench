@@ -465,7 +465,7 @@ api.put("/config/global-switches/:type", async (c) => {
   const enabled = Boolean((body as Record<string, unknown>).enabled);
   assertGlobalSwitchCanEnable(type, enabled);
   const setting = saveGlobalSwitch(type, enabled);
-  if (setting.type === "github_entry" || setting.type === "ai_client_install_entry") invalidatePublicBrandingCache();
+  invalidatePublicBrandingCache();
   if (setting.type === "asset_review") invalidateLibraryFacetCache("assets");
   if (setting.type === "case_review") invalidateLibraryFacetCache("cases");
   if (setting.type === "debug_runtime_logging") runtimeLogStore.setEnabled(setting.enabled);

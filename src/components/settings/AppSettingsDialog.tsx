@@ -261,10 +261,22 @@ export function AppSettingsDialog({
     staleTime: 30_000,
     refetchOnWindowFocus: "always"
   });
+  const branding = useQuery({
+    queryKey: ["branding"],
+    queryFn: api.branding,
+    enabled: open
+  });
+  const entertainmentEnabled = branding.data?.featureFlags?.entertainment_entry ?? false;
+  const visibleSections = settingsSections.filter(({ id }) =>
+    (id !== "plugins" || branding.data?.showAiClientInstallEntry === true)
+    && (id !== "sound" || branding.data?.featureFlags?.sound_management_entry === true));
+  useEffect(() => {
+    if (!visibleSections.some(({ id }) => id === activeSection)) setActiveSection("general");
+  }, [activeSection, branding.data]);
   const snakeProgress = useQuery({
     queryKey: ["snake-progress", user.id],
     queryFn: ({ signal }) => api.snakeProgress({ signal }),
-    enabled: open && activeSection === "general",
+    enabled: open && entertainmentEnabled && activeSection === "general",
     refetchOnWindowFocus: "always"
   });
   const resetSnakeProgress = useMutation({
@@ -279,11 +291,6 @@ export function AppSettingsDialog({
       showToast(t("settings.snake.resetSuccess"));
     },
     onError: () => showToast(t("settings.snake.resetFailed"), "error")
-  });
-  const branding = useQuery({
-    queryKey: ["branding"],
-    queryFn: api.branding,
-    enabled: open
   });
   const pluginConnections = useQuery({
     queryKey: ["external-mcp-connections"],
@@ -487,11 +494,11 @@ export function AppSettingsDialog({
     rootRef: settingsContentRef,
     rootMargin: "160px"
   });
-  const activeSectionIndex = Math.max(0, settingsSections.findIndex((item) => item.id === activeSection));
+  const activeSectionIndex = Math.max(0, visibleSections.findIndex((item) => item.id === activeSection));
   const settingsNavStyle = { "--settings-nav-active-offset": `${activeSectionIndex * 44}px` } as CSSProperties;
   const selectSection = (nextSection: SettingsSectionId) => {
     if (nextSection === activeSection) return;
-    const nextIndex = settingsSections.findIndex((item) => item.id === nextSection);
+    const nextIndex = visibleSections.findIndex((item) => item.id === nextSection);
     setSectionDirection(nextIndex > activeSectionIndex ? "forward" : "backward");
     setContentTransitioning(true);
     if (settingsContentRef.current) settingsContentRef.current.scrollTop = 0;
@@ -654,7 +661,7 @@ export function AppSettingsDialog({
             <X size={20} />
           </button>
           <nav className="settings-nav" style={settingsNavStyle}>
-            {settingsSections.map((item) => {
+            {visibleSections.map((item) => {
               const Icon = item.id === "about" && !showGithubEntry ? ScrollText : item.icon;
               return (
                 <button
@@ -807,6 +814,7 @@ export function AppSettingsDialog({
                   disabled={preferencesSaving}
                 />
               </div>
+              {entertainmentEnabled ? <>
               <h3 className="settings-group-title">{t("settings.snake.title")}</h3>
               <div className="settings-row settings-language-row">
                 <div>
@@ -843,6 +851,7 @@ export function AppSettingsDialog({
                   {t("settings.snake.reset")}
                 </button>
               </div>
+              </> : null}
             </div>
           ) : activeSection === "sound" ? (
             <div className="settings-list settings-sound-list">

@@ -135,6 +135,7 @@ export type PublicBranding = {
   faviconUrl: string;
   showGithubEntry: boolean;
   showAiClientInstallEntry: boolean;
+  featureFlags: Partial<Record<GlobalSwitchType, boolean>>;
   loginAssets: LoginAssets;
 };
 
@@ -280,6 +281,12 @@ export type GlobalSwitchType =
   | "cpa_sync"
   | "github_entry"
   | "ai_client_install_entry"
+  | "entertainment_entry"
+  | "inspiration_entry"
+  | "inspiration_barrage_entry"
+  | "image_provenance_entry"
+  | "chatgpt_web_entry"
+  | "sound_management_entry"
   | "debug_image_edit_mask"
   | "debug_runtime_logging";
 

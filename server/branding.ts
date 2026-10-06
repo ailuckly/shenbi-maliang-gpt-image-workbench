@@ -9,7 +9,7 @@ import { LOGIN_ASSET_EXTENSIONS } from "./constants";
 import { audit } from "./auditLog";
 import { requireConfig } from "./auth";
 import { configDb, getAll, getOne, run } from "./db";
-import { globalSwitchEnabled } from "./globalSwitches";
+import { globalSwitchEnabled, globalSwitches, type GlobalSwitchType } from "./globalSwitches";
 import {
   deleteImageDerivativesForSources,
   getOrCreateImageDerivative,
@@ -67,6 +67,7 @@ type PublicBrandingPayload = {
   faviconUrl: string;
   showGithubEntry: boolean;
   showAiClientInstallEntry: boolean;
+  featureFlags: Partial<Record<GlobalSwitchType, boolean>>;
   loginAssets: {
     backgrounds: {
       light: string[];
@@ -449,6 +450,7 @@ export async function publicBranding() {
     faviconUrl: favicon ? assetUrl(favicon, "thumb") : brandingFileUrl(DEFAULT_FAVICON_ASSET_ID, "thumb"),
     showGithubEntry: globalSwitchEnabled("github_entry"),
     showAiClientInstallEntry: globalSwitchEnabled("ai_client_install_entry"),
+    featureFlags: Object.fromEntries(globalSwitches().filter(({ type }) => type.endsWith("_entry")).map(({ type, enabled }) => [type, enabled])),
     loginAssets: {
       backgrounds: {
         light: loginBackgroundUrls(byId, config.settings.loginBackgroundLightAssetIds, "login_background_light"),

@@ -124,6 +124,7 @@ export function PromptStarter({
   dailyHeadlineIdeas: dailyHeadlineIdeaInput,
   headlineIdeasLoaded = false,
   headlinePromptPending = false,
+  showInspiration = true,
   onOpenAiClientInstall,
   onOpenIntro,
   onRefreshCases,
@@ -136,6 +137,7 @@ export function PromptStarter({
   dailyHeadlineIdeas?: string[];
   headlineIdeasLoaded?: boolean;
   headlinePromptPending?: boolean;
+  showInspiration?: boolean;
   onOpenAiClientInstall?: () => void;
   onOpenIntro?: () => void;
   onRefreshCases?: () => Promise<unknown> | void;
@@ -441,7 +443,7 @@ export function PromptStarter({
                     </button>
                   );
                 })}
-                <Link
+                {showInspiration ? <Link
                   className="starter-case-more"
                   to="/cases"
                   style={
@@ -452,7 +454,7 @@ export function PromptStarter({
                 >
                   <span>{t("starter.openInspiration")}</span>
                   <ArrowRight size={18} />
-                </Link>
+                </Link> : null}
               </div>
             </div>
             <button className="starter-case-scroll-hint" type="button" onClick={scrollStarterCasesNext} aria-label={t("starter.moreInspiration")}>

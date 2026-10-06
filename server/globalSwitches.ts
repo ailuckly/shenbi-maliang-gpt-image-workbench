@@ -13,6 +13,13 @@ export const GLOBAL_SWITCH_TYPES = [
   "cpa_sync",
   "github_entry",
   "ai_client_install_entry",
+  "entertainment_entry",
+  "inspiration_entry",
+  "inspiration_barrage_entry",
+  "image_provenance_entry",
+  "chatgpt_web_entry",
+  "sound_management_entry",
+
   "debug_image_edit_mask",
   "debug_runtime_logging"
 ] as const;
@@ -36,7 +43,14 @@ export const DEFAULT_GLOBAL_SWITCH_ENABLED: Record<GlobalSwitchType, boolean> = 
   proxy_service: false,
   cpa_sync: false,
   github_entry: true,
-  ai_client_install_entry: true,
+  ai_client_install_entry: false,
+  entertainment_entry: false,
+  inspiration_entry: false,
+  inspiration_barrage_entry: false,
+  image_provenance_entry: false,
+  chatgpt_web_entry: false,
+  sound_management_entry: false,
+
   debug_image_edit_mask: false,
   debug_runtime_logging: false
 };

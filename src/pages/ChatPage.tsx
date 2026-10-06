@@ -629,7 +629,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
 
   const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const branding = useQuery({ queryKey: ["branding"], queryFn: api.branding });
-  const aiClientInstallEnabled = branding.data?.showAiClientInstallEntry ?? true;
+  const aiClientInstallEnabled = branding.data?.showAiClientInstallEntry ?? false;
   const assetCategories = useQuery({ queryKey: ["asset-categories"], queryFn: api.assetCategories, enabled: Boolean(assetTarget) });
   const starterCases = useQuery({
     queryKey: ["cases", "starter"],
@@ -2524,6 +2524,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       <div className={cx("message-area", showStarter && "message-area-empty")}>
         {showStarter ? (
           <PromptStarter
+            showInspiration={branding.data?.featureFlags?.inspiration_entry === true}
             caseCategories={starterCaseCategories}
             caseCategoriesLoaded={starterCases.isFetched}
             dailyHeadlineIdeas={starterCopies.data?.copies}
@@ -2785,7 +2786,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       />
       <AiClientInstallDialog
         logoUrl={branding.data?.logoUrl}
-        open={showStarter && aiClientInstallOpen}
+        open={showStarter && aiClientInstallEnabled && aiClientInstallOpen}
         onClose={closeAiClientInstall}
       />
     </section>

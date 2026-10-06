@@ -953,6 +953,14 @@ export function BrandingSettingsPanel() {
         </div>
       </div>
       <div className="branding-entry-switches">
+        {([
+          ["entertainment_entry", "等待小游戏"],
+          ["inspiration_entry", "灵感空间"],
+          ["inspiration_barrage_entry", "灵感弹幕"],
+          ["image_provenance_entry", "图片来源验证"],
+          ["chatgpt_web_entry", "ChatGPT Web 账号池"],
+          ["sound_management_entry", "提示音管理"]
+        ] as const).map(([type, title]) => <GlobalSwitchRow key={type} type={type} title={title} desc="默认隐藏；开启后显示对应页面和菜单。" defaultEnabled={false} invalidateQueryKeys={["branding"]} />)}
         <GlobalSwitchRow
           type="github_entry"
           title="GitHub 入口"
@@ -963,8 +971,8 @@ export function BrandingSettingsPanel() {
         <GlobalSwitchRow
           type="ai_client_install_entry"
           title="AI 客户端安装入口"
-          desc="控制新对话空白页中的 AI 客户端推荐入口；关闭后不影响安装页直达地址。"
-          defaultEnabled
+          desc="控制新对话和用户设置中的插件入口；兼容分发 API 保留。"
+          defaultEnabled={false}
           invalidateQueryKeys={["branding"]}
         />
       </div>

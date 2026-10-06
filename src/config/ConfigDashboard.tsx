@@ -19,6 +19,7 @@ import {
   ConfigTabValue,
   CONFIG_NAV_CATEGORIES,
   configNavItemsForCategory,
+  configTabVisible,
   isConfigTabValue,
   storedConfigSideCollapsed,
   storedConfigTab,
@@ -47,6 +48,9 @@ export function ConfigDashboard() {
   const [activeTab, setActiveTab] = useState<ConfigTabValue>(storedConfigTab);
   const [sideCollapsed, setSideCollapsed] = useState(storedConfigSideCollapsed);
   const shellRef = useRef<HTMLDivElement>(null);
+  const switches = useQuery({ queryKey: ["config-global-switches"], queryFn: configApi.globalSwitches });
+  const features = Object.fromEntries((switches.data?.switches ?? []).map(({ type, enabled }) => [type, enabled]));
+  const displayedTab = configTabVisible(activeTab, features) ? activeTab : "statistics";
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   useSyncI18nPreference(me.data?.user?.preferences?.language, Boolean(me.data?.user));
   useConfigCopyScope(shellRef);
@@ -96,7 +100,7 @@ export function ConfigDashboard() {
   const sideToggleLabel = sideCollapsed ? t("config.sidebar.expand") : t("config.sidebar.collapse");
 
   return (
-    <Tabs.Root ref={shellRef} value={activeTab} onValueChange={changeActiveTab} className={cx("config-shell", sideCollapsed && "config-side-collapsed")}>
+    <Tabs.Root ref={shellRef} value={displayedTab} onValueChange={changeActiveTab} className={cx("config-shell", sideCollapsed && "config-side-collapsed")}>
       <aside className="config-side">
         <div className="config-side-head">
           <div className="brand-row config-side-brand">
@@ -112,7 +116,7 @@ export function ConfigDashboard() {
             <section className="config-nav-section" key={category.value}>
               <div className="config-nav-heading">{t(configCategoryLabelKey(category.value))}</div>
               <Tabs.List className="config-nav-section-list" aria-label={t("config.menu.sectionAria", { section: t(configCategoryLabelKey(category.value)) })}>
-                {configNavItemsForCategory(category.value).map(({ value, Icon }) => {
+                {configNavItemsForCategory(category.value).filter(({ value }) => configTabVisible(value, features)).map(({ value, Icon }) => {
                   const label = t(configNavLabelKey(value));
                   return (
                   <Tabs.Trigger value={value} key={value} title={sideCollapsed ? label : undefined}>

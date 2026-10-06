@@ -394,6 +394,8 @@ export function WorkbenchShell({ user }: { user: User }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
+  const branding = useQuery({ queryKey: ["branding"], queryFn: api.branding });
+  const features = branding.data?.featureFlags ?? {};
   const moreRouteActive = location.pathname === "/image-provenance"
     || location.pathname === "/prompt-templates"
     || location.pathname.startsWith("/prompt-templates/");
@@ -1809,7 +1811,7 @@ export function WorkbenchShell({ user }: { user: User }) {
             <nav
               className="main-nav"
             >
-              <NavLink
+              {features.inspiration_entry ? <NavLink
                 to="/cases"
                 className={({ isActive }) => cx("nav-item", isActive && "active")}
                 aria-label={t("sidebar.inspiration")}
@@ -1820,7 +1822,7 @@ export function WorkbenchShell({ user }: { user: User }) {
               >
                 <Lightbulb size={18} />
                 <span>{t("sidebar.inspiration")}</span>
-              </NavLink>
+              </NavLink> : null}
               <NavLink
                 to="/assets"
                 className={({ isActive }) => cx("nav-item", isActive && "active")}
@@ -1845,12 +1847,14 @@ export function WorkbenchShell({ user }: { user: User }) {
                 <Images size={18} />
                 <span>{t("sidebar.images")}</span>
               </NavLink>
-              <MoreToolsMenu
+              {features.image_provenance_entry ? <MoreToolsMenu
                 open={moreMenuOpen}
                 active={moreRouteActive}
                 onOpenChange={setMoreMenuOpen}
                 onSelect={handleMoreToolSelect}
-              />
+              /> : <NavLink to="/prompt-templates" className={({ isActive }) => cx("nav-item", isActive && "active")} onClick={() => setMobileMenuOpen(false)} aria-label={t("more.prompt.title")} data-sidebar-tip={t("more.prompt.title")} data-sidebar-selection-key="nav:/prompt-templates">
+                <Sparkles size={18} /><span>{t("more.prompt.title")}</span>
+              </NavLink>}
             </nav>
             <div className="collapsed-recent-wrap" ref={collapsedRecentRef}>
               <button
@@ -2234,17 +2238,17 @@ export function WorkbenchShell({ user }: { user: User }) {
             <Route path="/chat/:sessionId" element={<ChatPage user={user} sessionActions={chatPageSessionActions} />} />
             <Route
               path="/cases"
-              element={(
+              element={branding.isPending ? null : features.inspiration_entry ? (
                 <PageRouteTransition key="cases">
                   <CasesPage
                     imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
                     imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
                   />
                 </PageRouteTransition>
-              )}
+              ) : <Navigate to="/" replace />}
             />
-            <Route path="/cases/barrage" element={<PageRouteTransition key="cases-barrage"><InspirationBarragePage /></PageRouteTransition>} />
-            <Route path="/image-provenance" element={<PageRouteTransition key="image-provenance"><ImageProvenancePage /></PageRouteTransition>} />
+            <Route path="/cases/barrage" element={branding.isPending ? null : features.inspiration_barrage_entry ? <PageRouteTransition key="cases-barrage"><InspirationBarragePage /></PageRouteTransition> : <Navigate to="/" replace />} />
+            <Route path="/image-provenance" element={branding.isPending ? null : features.image_provenance_entry ? <PageRouteTransition key="image-provenance"><ImageProvenancePage /></PageRouteTransition> : <Navigate to="/" replace />} />
             <Route path="/prompt-templates" element={<PageRouteTransition key="prompt-templates"><PromptTemplatesPage /></PageRouteTransition>} />
             <Route path="/prompt-templates/:templateId/edit" element={<PageRouteTransition key="prompt-template-editor"><PromptTemplateEditorPage /></PageRouteTransition>} />
             <Route

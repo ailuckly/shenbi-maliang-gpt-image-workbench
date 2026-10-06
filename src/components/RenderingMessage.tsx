@@ -1,4 +1,6 @@
 import { ArrowLeft, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { cx } from "../lib/cx";
@@ -176,6 +178,8 @@ export const RenderingMessage = memo(function RenderingMessage({
   imageGroupLayout?: boolean;
 }) {
   const { t } = useI18n();
+  const branding = useQuery({ queryKey: ["branding"], queryFn: api.branding });
+  const entertainmentEnabled = branding.data?.featureFlags?.entertainment_entry ?? false;
   const titles = useMemo(
     () => (mode === "edit" ? EDIT_LOADING_TITLE_KEYS : GENERATION_LOADING_TITLE_KEYS).map((key) => t(key)),
     [mode, t]
@@ -183,6 +187,7 @@ export const RenderingMessage = memo(function RenderingMessage({
   const [titleIndex, setTitleIndex] = useState(0);
   const [titleSettled, setTitleSettled] = useState(true);
   const [snakeActive, setSnakeActive] = useState(false);
+  useEffect(() => { if (!entertainmentEnabled) setSnakeActive(false); }, [entertainmentEnabled]);
   const [snakeScore, setSnakeScore] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -429,12 +434,12 @@ export const RenderingMessage = memo(function RenderingMessage({
           <div className="rendering-dot-field" aria-hidden="true">
             <canvas ref={canvasRef} className="rendering-dot-canvas" />
           </div>
-          <button
+          {entertainmentEnabled ? <button
             type="button"
             className="rendering-game-start"
             aria-label={t("rendering.playSnake")}
             onClick={() => { setSnakeScore(null); setSnakeActive(true); }}
-          />
+          /> : null}
         </>
       )}
     </div>

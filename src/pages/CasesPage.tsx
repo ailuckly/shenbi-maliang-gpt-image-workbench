@@ -263,6 +263,7 @@ export function CasesPage({
   imagePreviewOpenMode: ImagePreviewOpenMode;
 }) {
   const navigate = useNavigate();
+  const branding = useQuery({ queryKey: ["branding"], queryFn: api.branding });
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const setDraftPrompt = useWorkbench((state) => state.setDraftPrompt);
@@ -830,7 +831,7 @@ export function CasesPage({
         actions={
           <div className="case-page-header-actions">
             <FilterModeToggle value={filterDisplayMode} onChange={setFilterDisplayMode} />
-            <button
+            {branding.data?.featureFlags?.inspiration_barrage_entry ? <button
               className="secondary-btn prompt-reference-entry inspiration-entry-btn"
               type="button"
               onClick={() => navigate("/cases/barrage")}
@@ -838,7 +839,7 @@ export function CasesPage({
             >
               <Balloon size={16} />
               <span className="inspiration-entry-label" aria-hidden="true">{t("pages.cases.barrage")}</span>
-            </button>
+            </button> : null}
             <button
               className="secondary-btn prompt-reference-entry inspiration-entry-btn"
               type="button"

@@ -122,6 +122,11 @@ export function configNavItemsForCategory(categoryValue: ConfigNavCategoryValue)
     .filter((item): item is ConfigNavItem => Boolean(item));
 }
 
+export function configTabVisible(tab: ConfigTabValue, features: Partial<Record<string, boolean>>) {
+  const switchType = { imageAccounts: "chatgpt_web_entry", cpa: "cpa_sync", sms: "sms_service", soundManagement: "sound_management_entry" }[tab as string];
+  return !switchType || features[switchType] === true;
+}
+
 export function storedConfigTab(): ConfigTabValue {
   try {
     const value = window.localStorage.getItem(CONFIG_TAB_STORAGE_KEY);
