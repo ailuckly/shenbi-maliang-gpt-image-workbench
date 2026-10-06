@@ -1,3 +1,4 @@
+import { DEFAULT_SOURCE_CODE_URL } from "../../lib/sourceCode";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, BellRing, Cable, Check, Copy, Database, Github, Info, KeyRound, Leaf, Link2, Monitor, Moon, Palette, Pencil, RefreshCw, ScrollText, Search, Settings, Smile, Sun, Sunset, Trash2, UserRound, Volume1, Volume2, VolumeOff, X } from "lucide-react";
@@ -47,7 +48,7 @@ type SettingsSectionId = "general" | "sound" | "personalization" | "account" | "
 type SettingsSectionDirection = "forward" | "backward";
 type PluginConnectionAction = { kind: "revoke" | "restore" | "remove"; connection: ExternalMcpConnection } | null;
 
-const PROJECT_REPOSITORY_URL = "https://github.com/Xiongdaxz/shenbi-maliang-gpt-image-workbench";
+
 const CHANGELOG_PAGE_SIZE = 5;
 
 const settingsSections: Array<{ id: SettingsSectionId; labelKey: string; icon: LucideIcon }> = [
@@ -1259,9 +1260,9 @@ export function AppSettingsDialog({
                   </div>
                   <div className="settings-about-version-actions">
                     {showGithubEntry ? (
-                      <a className="secondary-btn" href={PROJECT_REPOSITORY_URL} target="_blank" rel="noreferrer">
+                      <a className="secondary-btn" href={branding.data?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL} target="_blank" rel="noreferrer">
                         <Github size={15} />
-                        GitHub
+                        {t("common.sourceCode")}
                       </a>
                     ) : null}
                   </div>

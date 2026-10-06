@@ -2,12 +2,15 @@ import { useEffect } from "react";
 import type { PublicBranding } from "../types";
 import { DEFAULT_LOGIN_ASSETS, normalizeLoginAssets } from "./loginAssets";
 
+import { DEFAULT_SOURCE_CODE_URL } from "./sourceCode";
+
 export const DEFAULT_SITE_NAME = "ShenBi";
 export const DEFAULT_LOGO_URL = "/api/files/branding/builtin-logo?variant=thumb&v=shenbi-v1";
 export const DEFAULT_FAVICON_URL = "/api/files/branding/builtin-favicon?variant=thumb&v=shenbi-v1";
 
 export const DEFAULT_PUBLIC_BRANDING: PublicBranding = {
   siteName: DEFAULT_SITE_NAME,
+  sourceCodeUrl: DEFAULT_SOURCE_CODE_URL,
   logoUrl: DEFAULT_LOGO_URL,
   faviconUrl: DEFAULT_FAVICON_URL,
   showGithubEntry: true,
@@ -20,6 +23,7 @@ export function normalizePublicBranding(branding?: Partial<PublicBranding> | nul
   const siteName = branding?.siteName?.trim() || DEFAULT_SITE_NAME;
   return {
     siteName,
+    sourceCodeUrl: branding?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL,
     logoUrl: branding?.logoUrl || DEFAULT_LOGO_URL,
     faviconUrl: branding?.faviconUrl || DEFAULT_FAVICON_URL,
     showGithubEntry: branding?.showGithubEntry ?? true,

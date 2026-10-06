@@ -1,6 +1,7 @@
 import type { Messages } from "./types";
 
 const messages: Messages = {
+  "common.sourceCode": "源代码",
   "common.add": "新增",
   "common.all": "全部",
   "common.cancel": "取消",

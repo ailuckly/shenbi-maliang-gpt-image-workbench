@@ -400,9 +400,12 @@ export function SmsSettingsPanel() {
   );
 }
 
+import { DEFAULT_SOURCE_CODE_URL } from "../../lib/sourceCode";
+
 function emptyBrandingSettings(): BrandingSettings {
   return {
     siteName: DEFAULT_SITE_NAME,
+    sourceCodeUrl: DEFAULT_SOURCE_CODE_URL,
     activeLogoAssetId: "",
     activeFaviconAssetId: "",
     activeLoginTitleLightAssetId: "",
@@ -963,8 +966,8 @@ export function BrandingSettingsPanel() {
         ] as const).map(([type, title]) => <GlobalSwitchRow key={type} type={type} title={title} desc="默认隐藏；开启后显示对应页面和菜单。" defaultEnabled={false} invalidateQueryKeys={["branding"]} />)}
         <GlobalSwitchRow
           type="github_entry"
-          title="GitHub 入口"
-          desc="控制用户设置“关于”中的 GitHub 仓库入口；关闭后改用更新日志图标。"
+          title="源代码入口"
+          desc="控制登录页和工作台的源代码链接，默认开启。"
           defaultEnabled
           invalidateQueryKeys={["branding"]}
         />
@@ -1000,6 +1003,9 @@ export function BrandingSettingsPanel() {
             <label>
               站点名称
               <input value={form.siteName} maxLength={40} onChange={(event) => patch({ siteName: event.target.value })} />
+            </label>
+            <label>源代码地址
+              <input type="url" value={form.sourceCodeUrl} maxLength={2048} onChange={(event) => patch({ sourceCodeUrl: event.target.value })} />
             </label>
             <div className="row-actions">
               <button className="primary-btn" type="button" onClick={() => save.mutate()} disabled={save.isPending}>

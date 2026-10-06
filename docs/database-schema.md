@@ -809,6 +809,8 @@ AI 客户端改图时使用的一次性本地图片上传记录。上传链接�
 
 ### branding_settings
 
+`source_code_url` 为可配置公开源码链接；留空默认指向 ailuckly/shenbi-maliang-gpt-image-workbench。新增列使用幂等迁移，保持旧品牌资源选择。P0-6 新增入口标志仍存储于 global_switch_settings，均默认关闭并保留已有值。
+
 全站品牌展示配置。未配置时自动使用当前默认站点名、默认 Logo、默认登录标题图和 `public/login` 下的现有背景图。
 
 | 字段 | 说明 |

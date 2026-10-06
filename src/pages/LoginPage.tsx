@@ -4,6 +4,7 @@ import { Check, Eye, EyeOff, LockKeyhole, Mail, Moon, RefreshCw, ShieldCheck, Su
 import { api, type LoginAssets } from "../api";
 import { cx } from "../lib/cx";
 import { useI18n } from "../i18n";
+import { DEFAULT_SOURCE_CODE_URL } from "../lib/sourceCode";
 import { DEFAULT_SITE_NAME } from "../lib/branding";
 import { useToast } from "../ui";
 import {
@@ -696,6 +697,7 @@ export function LoginPage({
           ) : null}
           </div>
         </section>
+        {(branding.data?.showGithubEntry ?? true) ? <footer className="login-source-code"><a href={branding.data?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL} target="_blank" rel="noreferrer">{t("common.sourceCode")}</a></footer> : null}
       </div>
     </main>
   );

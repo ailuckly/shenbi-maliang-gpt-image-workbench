@@ -400,3 +400,7 @@ img {
   text-align: center;
 }
 
+
+.login-source-code { position: fixed; left: 0; right: 0; bottom: 18px; z-index: 5; margin: 0; text-align: center; font-size: 13px; color: var(--login-panel-text); }
+.login-source-code a { color: inherit; background: var(--login-background-color); padding: 8px 14px; border-radius: 6px; text-underline-offset: 3px; }
+.workbench-source-code { position: absolute; top: 18px; right: 22px; z-index: 5; font-size: 13px; color: var(--app-text-muted, #6b7280); text-underline-offset: 3px; }

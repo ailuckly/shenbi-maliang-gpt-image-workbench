@@ -77,6 +77,7 @@ export type BrandingAssetRow = {
 
 export type BrandingSettingsRow = {
   id: string;
+  source_code_url: string;
   site_name: string;
   active_logo_asset_id: string;
   active_favicon_asset_id: string;

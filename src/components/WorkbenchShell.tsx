@@ -5,6 +5,7 @@ import type { InfiniteData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { Camera, ChevronRight, CircleHelp, FolderOpen, Images, Lightbulb, LogOut, MessageCircle, MessageCirclePlus, PanelLeft, Pin, PinOff, RotateCcw, Search, Settings, ShieldCheck, Sparkles, X } from "lucide-react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { DEFAULT_SOURCE_CODE_URL } from "../lib/sourceCode";
 import { api } from "../api";
 import { languagePreferenceLabel, useI18n, type LocaleCode, type Translate } from "../i18n";
 import type { AppearanceMode } from "../lib/appearance";
@@ -2232,6 +2233,7 @@ export function WorkbenchShell({ user }: { user: User }) {
         onCancel={() => setDeleteAllConfirmOpen(false)}
       />
       <main className="content">
+        {(branding.data?.showGithubEntry ?? true) ? <a className="workbench-source-code" href={branding.data?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL} target="_blank" rel="noreferrer">{t("common.sourceCode")}</a> : null}
         <div className="page-route-stage" ref={routeTransitionStageRef}>
           <Routes>
             <Route path="/" element={<ChatPage user={user} />} />

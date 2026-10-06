@@ -1,6 +1,7 @@
 import type { Messages } from "./types";
 
 const messages: Messages = {
+  "common.sourceCode": "Source code",
   "common.add": "Add",
   "common.all": "All",
   "common.cancel": "Cancel",

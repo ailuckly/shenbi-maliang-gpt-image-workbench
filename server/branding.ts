@@ -25,6 +25,8 @@ import { deleteStoredFilesIfUnreferenced, readStoredFile, secureBrandingAssetPat
 import type { BrandingAssetRow, BrandingAssetType, BrandingSettingsRow } from "./types";
 import { makeId, normalizeIdList, now } from "./utils";
 
+import { DEFAULT_SOURCE_CODE_URL, normalizeSourceCodeUrl } from "../src/lib/sourceCode";
+
 const DEFAULT_SITE_NAME = "ShenBi";
 const DEFAULT_LOGO_ASSET_ID = "builtin-logo";
 const DEFAULT_FAVICON_ASSET_ID = "builtin-favicon";
@@ -58,11 +60,13 @@ type BrandingDefaults = {
 
 type BrandingSettings = BrandingDefaults & {
   siteName: string;
+  sourceCodeUrl: string;
   updatedAt: string;
 };
 
 type PublicBrandingPayload = {
   siteName: string;
+  sourceCodeUrl: string;
   logoUrl: string;
   faviconUrl: string;
   showGithubEntry: boolean;
@@ -284,6 +288,7 @@ function defaultBrandingSettings(rows: BrandingAssetRow[]): BrandingSettings {
   const timestamp = now();
   return {
     siteName: DEFAULT_SITE_NAME,
+    sourceCodeUrl: DEFAULT_SOURCE_CODE_URL,
     activeLogoAssetId: rows.some((row) => row.id === DEFAULT_LOGO_ASSET_ID) ? DEFAULT_LOGO_ASSET_ID : "",
     activeFaviconAssetId: rows.some((row) => row.id === DEFAULT_FAVICON_ASSET_ID) ? DEFAULT_FAVICON_ASSET_ID : "",
     activeLoginTitleLightAssetId: rows.some((row) => row.id === DEFAULT_LOGIN_TITLE_LIGHT_ASSET_ID) ? DEFAULT_LOGIN_TITLE_LIGHT_ASSET_ID : "",
@@ -336,6 +341,7 @@ function normalizeSettingsRow(row: BrandingSettingsRow | null, rows: BrandingAss
   const byId = assetsById(rows);
   return {
     siteName: cleanSiteName(row.site_name),
+    sourceCodeUrl: normalizeSourceCodeUrl(row.source_code_url),
     activeLogoAssetId: existingAssetId(byId, row.active_logo_asset_id, ["logo"], defaults.activeLogoAssetId),
     activeFaviconAssetId: existingAssetId(byId, row.active_favicon_asset_id, ["favicon"], defaults.activeFaviconAssetId),
     activeLoginTitleLightAssetId: existingAssetId(
@@ -370,12 +376,13 @@ function persistBrandingSettings(settings: BrandingSettings) {
   run(
     configDb,
     `insert into branding_settings (
-      id, site_name, active_logo_asset_id, active_favicon_asset_id,
+      id, site_name, source_code_url, active_logo_asset_id, active_favicon_asset_id,
       active_login_title_light_asset_id, active_login_title_dark_asset_id,
       login_background_light_ids_json, login_background_dark_ids_json, updated_at
-    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     on conflict(id) do update set
       site_name = excluded.site_name,
+      source_code_url = excluded.source_code_url,
       active_logo_asset_id = excluded.active_logo_asset_id,
       active_favicon_asset_id = excluded.active_favicon_asset_id,
       active_login_title_light_asset_id = excluded.active_login_title_light_asset_id,
@@ -385,6 +392,7 @@ function persistBrandingSettings(settings: BrandingSettings) {
       updated_at = excluded.updated_at`,
     BRANDING_SETTINGS_ID,
     settings.siteName,
+    settings.sourceCodeUrl,
     settings.activeLogoAssetId,
     settings.activeFaviconAssetId,
     settings.activeLoginTitleLightAssetId,
@@ -446,6 +454,7 @@ export async function publicBranding() {
   );
   const payload: PublicBrandingPayload = {
     siteName: config.settings.siteName,
+    sourceCodeUrl: config.settings.sourceCodeUrl,
     logoUrl: logo ? assetUrl(logo, "thumb") : brandingFileUrl(DEFAULT_LOGO_ASSET_ID, "thumb"),
     faviconUrl: favicon ? assetUrl(favicon, "thumb") : brandingFileUrl(DEFAULT_FAVICON_ASSET_ID, "thumb"),
     showGithubEntry: globalSwitchEnabled("github_entry"),
@@ -473,6 +482,7 @@ function normalizeIncomingSettings(raw: Record<string, unknown>, rows: BrandingA
   const timestamp = now();
   return {
     siteName: cleanSiteName(raw.siteName),
+    sourceCodeUrl: normalizeSourceCodeUrl(raw.sourceCodeUrl),
     activeLogoAssetId: existingAssetId(byId, String(raw.activeLogoAssetId ?? ""), ["logo"], defaults.activeLogoAssetId),
     activeFaviconAssetId: existingAssetId(byId, String(raw.activeFaviconAssetId ?? ""), ["favicon"], defaults.activeFaviconAssetId),
     activeLoginTitleLightAssetId: existingAssetId(
@@ -596,7 +606,9 @@ export function registerBrandingRoutes(api: Hono) {
     if (blocked) return blocked;
     await ensureBuiltinBrandingAssetsReady();
     const body = await c.req.json().catch(() => ({}));
-    const settings = normalizeIncomingSettings(body as Record<string, unknown>, brandingAssetRows());
+    let settings: BrandingSettings;
+    try { settings = normalizeIncomingSettings(body as Record<string, unknown>, brandingAssetRows()); }
+    catch { return c.json({ error: "源代码地址须为不含凭证的 HTTP(S) 链接" }, 400); }
     persistBrandingSettings(settings);
     invalidatePublicBrandingCache();
     audit("branding.save", { siteName: settings.siteName });

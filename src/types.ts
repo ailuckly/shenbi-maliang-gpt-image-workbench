@@ -101,6 +101,7 @@ export type BrandingAsset = {
 
 export type BrandingSettings = {
   siteName: string;
+  sourceCodeUrl: string;
   activeLogoAssetId: string;
   activeFaviconAssetId: string;
   activeLoginTitleLightAssetId: string;
@@ -110,7 +111,7 @@ export type BrandingSettings = {
   updatedAt: string;
 };
 
-export type BrandingDefaults = Omit<BrandingSettings, "siteName" | "updatedAt">;
+export type BrandingDefaults = Omit<BrandingSettings, "siteName" | "sourceCodeUrl" | "updatedAt">;
 
 export type SitePublicUrlSource =
   | "APP_PUBLIC_URL"
@@ -131,6 +132,7 @@ export type ExternalMcpSettings = {
 
 export type PublicBranding = {
   siteName: string;
+  sourceCodeUrl: string;
   logoUrl: string;
   faviconUrl: string;
   showGithubEntry: boolean;

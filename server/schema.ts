@@ -2079,6 +2079,10 @@ export function initConfigDb() {
     )
   `);
 
+  if (!tableColumnExists(configDb, "branding_settings", "source_code_url")) {
+    configDb.run("alter table branding_settings add column source_code_url text not null default ''");
+  }
+
   configDb.run(`
     create table if not exists site_settings (
       id text primary key,
