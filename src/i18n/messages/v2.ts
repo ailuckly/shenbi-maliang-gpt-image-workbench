@@ -2,6 +2,7 @@ import type { Messages } from "./types";
 
 export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
   "zh-CN": {
+    "v2.shell.new":"新建创作", "v2.shell.history":"历史会话", "v2.shell.searchHistory":"搜索会话", "v2.shell.navigation":"工作台导航", "v2.shell.stylePacks":"风格包", "v2.shell.theme":"主题", "v2.shell.userMenu":"用户菜单", "v2.shell.loadMore":"加载更多", "v2.shell.sessionActions":"会话操作：{title}", "v2.shell.share":"分享会话", "v2.shell.createShare":"创建分享链接", "v2.shell.shareScope":"分享此会话的全部消息和分支。获得链接的人可以查看分享内容。", "v2.shell.shareEmpty":"空会话暂时无法分享。",
     "v2.login.guide":"使用指南", "v2.login.workspace":"AI IMAGE WORKSPACE", "v2.login.headline":"从描述，到图像。",
     "v2.login.description":"优化提示词，生成图片，持续编辑。在你的工作空间中，完成整个创作流程。",
     "v2.login.title":"登录工作台", "v2.login.welcome":"欢迎来到 {name}。", "v2.login.registerEntry":"没有账号？注册", "v2.login.contactAdmin":"没有账号？联系管理员",
@@ -21,6 +22,7 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.gallery.menu":"菜单", "v2.gallery.dialog":"打开对话框", "v2.gallery.dialogDescription":"Tab 保持在对话框中；Escape 关闭并返回打开按钮。"
   },
   "en-US": {
+    "v2.shell.new":"New creation", "v2.shell.history":"Conversation history", "v2.shell.searchHistory":"Search conversations", "v2.shell.navigation":"Workspace navigation", "v2.shell.stylePacks":"Style packs", "v2.shell.theme":"Theme", "v2.shell.userMenu":"User menu", "v2.shell.loadMore":"Load more", "v2.shell.sessionActions":"Conversation actions: {title}", "v2.shell.share":"Share conversation", "v2.shell.createShare":"Create share link", "v2.shell.shareScope":"Share every message and branch in this conversation. Anyone with the link can view the shared content.", "v2.shell.shareEmpty":"An empty conversation cannot be shared yet.",
     "v2.login.guide":"User guide", "v2.login.workspace":"AI IMAGE WORKSPACE", "v2.login.headline":"From words to images.",
     "v2.login.description":"Refine prompts, generate images and keep editing. Complete your creative workflow in one workspace.",
     "v2.login.title":"Sign in to your workspace", "v2.login.welcome":"Welcome to {name}.", "v2.login.registerEntry":"Need an account? Register", "v2.login.contactAdmin":"Need an account? Contact your administrator",

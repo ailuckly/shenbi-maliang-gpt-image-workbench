@@ -1,4 +1,4 @@
-import { useId, type ComponentProps, type ReactElement, type ReactNode } from "react";
+import { useId, type ComponentProps, type ReactElement, type ReactNode, type RefObject } from "react";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as RadixTabs from "@radix-ui/react-tabs";
@@ -28,11 +28,11 @@ export function Select({label,error,id,...props}: ComponentProps<"select"> & Fie
 export function Checkbox({label,...props}: Omit<ComponentProps<"input">,"type"> & {label:string}) {
   return <label className="v2-checkbox"><input {...props} type="checkbox" /><span>{label}</span></label>;
 }
-export function Dialog({open,onOpenChange,title,description,children,trigger}: {open:boolean;onOpenChange:(open:boolean)=>void;title:string;description?:string;children:ReactNode;trigger?:ReactElement}) {
+export function Dialog({open,onOpenChange,title,description,children,trigger,returnFocus}: {open:boolean;onOpenChange:(open:boolean)=>void;title:string;description?:string;children:ReactNode;trigger?:ReactElement;returnFocus?:RefObject<HTMLElement|null>}) {
   const {t} = useI18n();
   const descriptionId = useId();
   return <RadixDialog.Root open={open} onOpenChange={onOpenChange}>{trigger ? <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger> : null}<RadixDialog.Portal>
-    <RadixDialog.Overlay className="v2-modal-backdrop" /><RadixDialog.Content className="v2-dialog" aria-describedby={description ? descriptionId : undefined}>
+    <RadixDialog.Overlay className="v2-modal-backdrop" /><RadixDialog.Content className="v2-dialog" aria-describedby={description ? descriptionId : undefined} onCloseAutoFocus={event => { const target=returnFocus?.current; if(target?.isConnected){event.preventDefault();target.focus();} }}>
       <RadixDialog.Title>{title}</RadixDialog.Title>{description ? <RadixDialog.Description id={descriptionId} className="v2-dialog-description">{description}</RadixDialog.Description> : null}
       {children}<RadixDialog.Close asChild><Button className="v2-dialog-close">{t("common.close")}</Button></RadixDialog.Close>
     </RadixDialog.Content></RadixDialog.Portal></RadixDialog.Root>;
