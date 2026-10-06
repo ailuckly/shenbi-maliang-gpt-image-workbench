@@ -537,7 +537,8 @@ export function migrateImageTaskSoundPreferences(db: Database) {
 }
 
 export function initAppDb() {
-  appDb.run("PRAGMA journal_mode = MEMORY");
+  appDb.run("PRAGMA journal_mode = WAL");
+  appDb.run("PRAGMA synchronous = NORMAL");
   appDb.run("PRAGMA foreign_keys = ON");
 
   appDb.run(`
@@ -1972,7 +1973,8 @@ export function initAppDb() {
 }
 
 export function initConfigDb() {
-  configDb.run("PRAGMA journal_mode = MEMORY");
+  configDb.run("PRAGMA journal_mode = WAL");
+  configDb.run("PRAGMA synchronous = NORMAL");
   configDb.run(`
     create table if not exists config_admin (
       id text primary key,
