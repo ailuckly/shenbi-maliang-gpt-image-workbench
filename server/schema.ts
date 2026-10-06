@@ -2124,7 +2124,7 @@ export function initConfigDb() {
       secure integer not null default 1,
       username text not null default '',
       password_secret text not null default '',
-      from_name text not null default 'ShenBi',
+      from_name text not null default '神笔马良',
       from_email text not null default '',
       test_recipient_email text not null default '',
       updated_at text not null

@@ -210,7 +210,7 @@ export function parseLatestManifest(value: unknown, expectedOrigin: string): Lat
     throw new Error("Update manifest targets a different plugin");
   }
   if (value.channel !== "stable" || value.archiveRoot !== "codex-marketplace") {
-    throw new Error("Update manifest is not the stable ShenBi archive");
+    throw new Error("Update manifest is not the stable Maliang archive");
   }
   const version = requireString(value.version, "version");
   parseSemVer(version);
@@ -404,14 +404,14 @@ async function getInstalledPlugin(runner: CommandRunner) {
   const version = requireString(plugin.version, "installed plugin version");
   parseSemVer(version);
   if (plugin.enabled !== true) throw new Error(`Installed plugin ${SELECTOR} is disabled`);
-  if (plugin.marketplaceSource?.sourceType !== "local") throw new Error("ShenBi Marketplace is not a local source");
+  if (plugin.marketplaceSource?.sourceType !== "local") throw new Error("Maliang Marketplace is not a local source");
   const marketplaceRoot = path.resolve(normalizeExtendedWindowsPath(requireString(
     plugin.marketplaceSource?.source,
     "marketplace source"
   )));
   const pluginSource = path.resolve(normalizeExtendedWindowsPath(requireString(plugin.source?.path, "plugin source")));
   if (path.parse(marketplaceRoot).root === marketplaceRoot || !isPathInside(marketplaceRoot, pluginSource)) {
-    throw new Error("Unsafe ShenBi Marketplace path");
+    throw new Error("Unsafe Maliang Marketplace path");
   }
   return { marketplaceRoot, pluginSource, version };
 }
@@ -451,7 +451,7 @@ export async function validateMarketplaceRoot(
     throw new Error("Archive Marketplace manifest is invalid");
   }
   if (marketplace.plugins.length !== 1) {
-    throw new Error("Automatic updates require a dedicated ShenBi Marketplace");
+    throw new Error("Automatic updates require a dedicated Maliang Marketplace");
   }
   const rootEntries = await readdir(marketplaceRoot, { withFileTypes: true });
   if (
@@ -500,14 +500,14 @@ export async function validateMarketplaceRoot(
     || !isObject(mcp.mcpServers.maliang)
     || !isObject(mcp.mcpServers.maliang_local)
   ) {
-    throw new Error("Archive ShenBi MCP config is invalid");
+    throw new Error("Archive Maliang MCP config is invalid");
   }
   if (
     mcp.mcpServers.maliang.url !== expectedMcpResource
     || mcp.mcpServers.maliang.oauth_resource !== expectedMcpResource
     || mcp.mcpServers.maliang.default_tools_approval_mode !== "approve"
   ) {
-    throw new Error("Archive ShenBi MCP endpoint mismatch");
+    throw new Error("Archive Maliang MCP endpoint mismatch");
   }
   const localMcp = mcp.mcpServers.maliang_local;
   if (
@@ -521,7 +521,7 @@ export async function validateMarketplaceRoot(
     || localMcp.default_tools_approval_mode !== "approve"
     || localMcp.required !== false
   ) {
-    throw new Error("Archive ShenBi local image MCP config is invalid");
+    throw new Error("Archive Maliang local image MCP config is invalid");
   }
   return { manifest, pluginRoot };
 }
@@ -825,7 +825,7 @@ export async function runAutoUpdate(options?: {
       state.lastError = message.slice(0, 1000);
       await writeState(pluginData, state);
       await logEvent(pluginData, `check-failed ${message}`);
-      printHookOutput(updateContext(`ShenBi自动更新检查失败，当前工具继续使用 ${current.version}：${message}`));
+      printHookOutput(updateContext(`神笔马良自动更新检查失败，当前工具继续使用 ${current.version}：${message}`));
       return;
     }
 
@@ -835,7 +835,7 @@ export async function runAutoUpdate(options?: {
     }
 
     if (latest.update.compatibility === "incompatible") {
-      const reason = `ShenBi ${latest.version} 是不兼容更新，未自动覆盖当前 ${current.version}。`;
+      const reason = `神笔马良 ${latest.version} 是不兼容更新，未自动覆盖当前 ${current.version}。`;
       await logEvent(pluginData, `incompatible ${current.version} -> ${latest.version}`);
       if (latest.update.critical && latest.update.blockOldVersion) {
         state.blockedReason = `${reason} 此版本已被标记为必须迁移，请先按 /plugin/install.json 完成人工更新。`;
@@ -850,14 +850,14 @@ export async function runAutoUpdate(options?: {
 
     if (mode === "notify") {
       await logEvent(pluginData, `available ${current.version} -> ${latest.version}`);
-      printHookOutput(updateContext(`ShenBi有可用更新 ${current.version} -> ${latest.version}；当前模式为 notify，未自动安装。`));
+      printHookOutput(updateContext(`神笔马良有可用更新 ${current.version} -> ${latest.version}；当前模式为 notify，未自动安装。`));
       return;
     }
 
     const installed = await getInstalledPlugin(runner);
     if (compareSemver(latest.version, installed.version) <= 0) {
       await logEvent(pluginData, `already-installed ${installed.version}; loaded ${current.version}`);
-      printHookOutput(updateContext(`ShenBi ${installed.version} 已安装；当前任务仍加载 ${current.version}，请新建任务或重启 Codex 后生效。`));
+      printHookOutput(updateContext(`神笔马良 ${installed.version} 已安装；当前任务仍加载 ${current.version}，请新建任务或重启 Codex 后生效。`));
       return;
     }
     if (installed.version !== current.version) {
@@ -881,7 +881,7 @@ export async function runAutoUpdate(options?: {
     await writeState(pluginData, state);
     await logEvent(pluginData, `installed ${current.version} -> ${latest.version}; backup ${result.backupPath}`);
     printHookOutput(updateContext(
-      `ShenBi已自动更新 ${current.version} -> ${latest.version}。当前工具调用继续使用已加载版本；新版本将在下个任务或重启 Codex 后生效。OAuth 凭据未被清除。`
+      `神笔马良已自动更新 ${current.version} -> ${latest.version}。当前工具调用继续使用已加载版本；新版本将在下个任务或重启 Codex 后生效。OAuth 凭据未被清除。`
     ));
   } finally {
     await releaseLock();
@@ -903,7 +903,7 @@ export async function main() {
       state.lastError = message.slice(0, 1000);
       await writeState(pluginData, state).catch(() => undefined);
     }
-    printHookOutput(updateContext(`ShenBi自动更新失败，已保留当前版本并继续本次工具调用：${message}`));
+    printHookOutput(updateContext(`神笔马良自动更新失败，已保留当前版本并继续本次工具调用：${message}`));
   }
 }
 

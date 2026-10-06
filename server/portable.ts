@@ -76,7 +76,7 @@ if (isCompiledExecutable()) {
 const url = localUrl();
 
 if (await isWorkbenchRunning(url)) {
-  console.log(`ShenBi is already running at ${url}. Opening the existing app window.`);
+  console.log(`Shenbi Maliang is already running at ${url}. Opening the existing app window.`);
   if (Bun.env.SHENBI_OPEN_BROWSER !== "0") {
     openBrowser(url);
   }
@@ -102,7 +102,7 @@ try {
   await import("./index");
 } catch (error) {
   if (isAddressInUse(error)) {
-    console.log(`ShenBi is already running at ${url}. Opening the existing app window.`);
+    console.log(`Shenbi Maliang is already running at ${url}. Opening the existing app window.`);
     if (Bun.env.SHENBI_OPEN_BROWSER !== "0") {
       openBrowser(url);
     }

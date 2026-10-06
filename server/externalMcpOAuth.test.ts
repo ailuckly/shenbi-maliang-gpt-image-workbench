@@ -200,8 +200,8 @@ describe("external MCP authorization page", () => {
     expect(html).toContain("button.disabled = true");
     expect(html).toContain("正在完成授权，请勿重复点击、刷新或返回");
     expect(html).toContain('script nonce="nonce_test"');
-    expect(html).toContain('src="/brand/shenbi-icon.webp"');
-    expect(html).toContain('<link rel="icon" type="image/webp" href="/brand/shenbi-icon.webp" />');
+    expect(html).toContain('src="/image/logo-small.webp"');
+    expect(html).toContain('<link rel="icon" type="image/webp" href="/image/logo-small.webp" />');
     expect(html).toContain("读取账号信息");
     expect(html).toContain("使用图片生成与编辑");
     expect(html).toContain('class="permission-icon"');
@@ -296,8 +296,8 @@ describe("external MCP authorization page", () => {
 
     expect(html).toContain("正在完成授权");
     expect(html).toContain("授权成功");
-    expect(html).toContain('src="/brand/shenbi-icon.webp"');
-    expect(html).toContain('<link rel="icon" type="image/webp" href="/brand/shenbi-icon.webp" />');
+    expect(html).toContain('src="/image/logo-small.webp"');
+    expect(html).toContain('<link rel="icon" type="image/webp" href="/image/logo-small.webp" />');
     expect(html).toContain('data-success-card');
     expect(html).toContain('data-callback-url="http://127.0.0.1:57553/callback/test?code=code_test&amp;state=state_test"');
     expect(html).toContain('data-status-url="/oauth/authorize/status?request_id=oauthreq_test"');
@@ -309,18 +309,18 @@ describe("external MCP authorization page", () => {
     expect(html).not.toContain(".then(complete");
     expect(html).not.toContain("Codex &lt;test&gt;");
     expect(html).not.toContain("连接已安全建立");
-    expect(html).toContain('href="/" data-success-action hidden>返回ShenBi</a>');
+    expect(html).toContain('href="/" data-success-action hidden>返回神笔马良</a>');
     expect(html).toContain("action.hidden = false");
     expect(html).not.toContain("连接完成");
     expect(html).not.toContain("Authorization successful");
     expect(html).not.toContain("请返回 Codex");
   });
 
-  test("uses the ShenBi logo and favicon on authorization error pages", () => {
+  test("uses the Maliang logo and favicon on authorization error pages", () => {
     const html = externalMcpAuthorizationErrorPage("请求 <test> 已失效");
 
-    expect(html).toContain('<link rel="icon" type="image/webp" href="/brand/shenbi-icon.webp">');
-    expect(html).toContain('<img src="/brand/shenbi-icon.webp" alt="">');
+    expect(html).toContain('<link rel="icon" type="image/webp" href="/image/logo-small.webp">');
+    expect(html).toContain('<img src="/image/logo-small.webp" alt="">');
     expect(html).toContain("请求 &lt;test&gt; 已失效");
     expect(html).toContain('href="/mcp">返回安装说明</a>');
   });

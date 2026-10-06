@@ -34,7 +34,7 @@ afterEach(() => {
   restoreEnvironment("MALIANG_PUBLIC_BASE_URL", originalMaliangPublicBaseUrl);
 });
 
-describe("ShenBi public URL resolution", () => {
+describe("Maliang public URL resolution", () => {
   test("uses the current request origin by default", () => {
     expect(resolveMaliangPublicBaseUrl({ requestUrl: "https://image.example.com/mcp" }))
       .toBe("https://image.example.com");
@@ -111,7 +111,7 @@ describe("ShenBi public URL resolution", () => {
   });
 });
 
-describe("ShenBi Codex plugin distribution", () => {
+describe("Maliang Codex plugin distribution", () => {
   test("streams automatic-update responses through a hard size limit", async () => {
     const response = new Response(new ReadableStream({
       start(controller) {
@@ -183,7 +183,7 @@ describe("ShenBi Codex plugin distribution", () => {
       "distribution/codex-marketplace/plugins/maliang-image-generator/skills/maliang-image-generator/SKILL.md",
       "utf8"
     );
-    expect(skill).toContain("![ShenBi生成结果](/C:/absolute/path/image.png)");
+    expect(skill).toContain("![神笔马良生成结果](/C:/absolute/path/image.png)");
     expect(skill).toContain("Never put a native backslash path directly inside the Markdown image target");
     expect(skill).toContain("mcp__maliang_local__upload_local_image");
     expect(skill).toContain("mcp__maliang_local__save_image_result");
@@ -574,7 +574,7 @@ if ($actual -cne '${expected}') { throw "Unexpected SHA-256: $actual" }
       pluginVersion: "0.5.1",
       install: {
         href: "https://maliang.example.com/install",
-        instruction: "访问 https://maliang.example.com/install，安装ShenBi。"
+        instruction: "访问 https://maliang.example.com/install，安装神笔马良。"
       }
     });
   });
@@ -628,7 +628,7 @@ if ($actual -cne '${expected}') { throw "Unexpected SHA-256: $actual" }
     expect(manifest.choices.codexMcpOnly.install).toBe("remote-mcp");
     expect(manifest.choices.otherClients.install).toBe("remote-mcp");
     expect(manifest.choices.otherClients.clientSpecificPluginAvailable).toBe(false);
-    expect(manifest.choices.otherClients.futurePluginRule).toContain("专用ShenBi插件包");
+    expect(manifest.choices.otherClients.futurePluginRule).toContain("专用神笔马良插件包");
     expect(manifest.choices.otherClients.forbidden).toContain("不得把 Codex 插件包安装到其他客户端");
     expect(manifest.manualRemoteMcp.supported).toBe(true);
     expect(manifest.manualRemoteMcp.format).toBe("mcpServers-json");
@@ -655,7 +655,7 @@ if ($actual -cne '${expected}') { throw "Unexpected SHA-256: $actual" }
     const html = await response.text();
     expect(html).not.toContain('<nav class="nav">');
     expect(html).not.toContain('<span class="eyebrow">');
-    expect(html).toContain('<div class="title-row"><img class="title-logo" src="/brand/shenbi-icon.webp" alt=""><h1>安装ShenBi插件</h1>');
+    expect(html).toContain('<div class="title-row"><img class="title-logo" src="/image/logo-small.webp" alt=""><h1>安装神笔马良插件</h1>');
     expect(html).toContain('<span class="version-badge">v0.5.1</span>');
     expect(html).toContain('<img class="hero-art" src="/image/install/maliang-plugin-install-hero.webp"');
     expect(html).not.toContain('/image/help/maliang-help-hero-v2.webp');
@@ -948,7 +948,7 @@ if ($actual -cne '${expected}') { throw "Unexpected SHA-256: $actual" }
     expect(pluginManifest.updatePolicy.apply.join("\n")).toContain("sha256");
     expect(pluginManifest.updatePolicy.apply.join("\n")).toContain("拒绝符号链接");
     expect(pluginManifest.updatePolicy.rollback.join("\n")).toContain("恢复旧目录");
-    expect(pluginManifest.updatePolicy.rollback.join("\n")).toContain("继续本次ShenBi工具调用");
+    expect(pluginManifest.updatePolicy.rollback.join("\n")).toContain("继续本次马良工具调用");
     expect(pluginManifest.prerequisites.join("\n")).toContain("Node 20+");
     expect(pluginManifest.prerequisites.join("\n")).toContain("Remote MCP 核心能力仍可安装");
     expect(pluginManifest.durableInstallDirectory.macos).toBe("~/Library/Application Support/ShenbiMaliang/codex-marketplace");

@@ -1,8 +1,8 @@
 <div align="center">
 
 <h1>
-  <img src="../../public/brand/shenbi-icon.webp" alt="ShenBi Logo" width="48" align="texttop" />
-  ShenBi AI Image Studio
+  <img src="../../public/image/logo-small.webp" alt="Shenbi Maliang Logo" width="48" align="texttop" />
+  Shenbi Maliang GPT Image Workbench
 </h1>
 
 [简体中文](../../README.md) | [English](../../README.en.md) | 日本語 | [한국어](README.ko.md) | [Русский](README.ru.md) | [فارسی](README.fa-IR.md)
@@ -11,7 +11,9 @@
 
 </div>
 
-ShenBi AI Image Studio は、チーム内でのプライベート運用を想定した AI 画像生成・画像編集ワークベンチです。ChatGPT サブスクリプションアカウント、OpenAI 互換 API、CPA プロキシ、プライベート画像エンドポイントなどを利用できます。
+> ShenBi fork: AGPL-3.0-only. See [LICENSE](../../LICENSE) and [NOTICE.md](../../NOTICE.md); the translated description below is retained from upstream.
+
+Shenbi Maliang GPT Image Workbench は、チーム内でのプライベート運用を想定した AI 画像生成・画像編集ワークベンチです。ChatGPT サブスクリプションアカウント、OpenAI 互換 API、CPA プロキシ、プライベート画像エンドポイントなどを利用できます。
 
 ## ✨ 概要
 

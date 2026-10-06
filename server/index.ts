@@ -3581,7 +3581,7 @@ const port = Number(Bun.env.PORT ?? 8787);
 const hostname = String(Bun.env.HOST ?? "0.0.0.0").trim() || "0.0.0.0";
 const displayHost = hostname === "0.0.0.0" ? "127.0.0.1" : hostname;
 const trustProxy = ["1", "true", "on"].includes(String(Bun.env.APP_TRUST_PROXY ?? "").trim().toLowerCase());
-console.log(`ShenBi listening on http://${displayHost}:${port}`);
+console.log(`GPT Image Workbench listening on http://${displayHost}:${port}`);
 if (hostname === "0.0.0.0") {
   console.log(`LAN access enabled. Use this Windows machine's LAN IP with port ${port}.`);
 }
@@ -3614,7 +3614,7 @@ runtimeLog({
   level: "info",
   source: "server",
   event: "server.started",
-  message: `ShenBi 已启动，监听 ${displayHost}:${port}`,
+  message: `GPT Image Workbench 已启动，监听 ${displayHost}:${port}`,
   details: { hostname, port, trustProxy }
 });
 
