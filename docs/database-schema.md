@@ -342,10 +342,12 @@ AI 客户端改图时使用的一次性本地图片上传记录。上传链接�
 | `role` | 消息角色：`user`、`assistant` |
 | `content` | 文本内容 |
 | `image_id` | 关联图片 |
-| `metadata` | JSON 元数据 |
+| `metadata` | JSON 元数据；新优化链路可含 originalRequest、optimizeMode、stylePackSnapshot、selectedCandidateIndex、finalPrompt、negativePrompt、templateId、promptCandidates、previousPrompt、followUp；旧消息结构不变 |
 | `created_at` | 创建时间 |
 
 相关索引：`messages_session_user_time_idx` 支撑会话消息按创建时间读取；`messages_session_user_role_idx` 支撑用户消息元数据读取。
+
+风格包与候选采用提交时的 JSON 快照，不关联可变包内容，不增加表列或逐候选数据表。后来改名、改指令或删除风格包不修改历史快照。新链路的消息正文包含提交正向与旧约定负面词分隔；最终正向/负面另存用于回看和再次编辑。已有遮罩、数量及每图规划仍可能加入执行约束，实际各图使用提示词继续由图片/任务记录保存。
 
 ### session_share_links
 

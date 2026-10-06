@@ -4,7 +4,11 @@ import type { Context, Hono } from "hono";
 import { logModelRequest } from "./auditLog";
 import { appDb, configDb, getAll, getOne, run } from "./db";
 import { requireUser } from "./auth";
-import { NEGATIVE_PROMPT_SEPARATOR, splitPlainPrompt } from "./promptEngine/schema";
+import { NEGATIVE_PROMPT_SEPARATOR, parseStructuredPrompt, splitPlainPrompt, type StructuredPrompt } from "./promptEngine/schema";
+import { renderPromptTemplate, selectPromptTemplate } from "./promptEngine/registry";
+import { composePrompt } from "./promptEngine/compose";
+import { publicStylePack, visibleStylePack } from "./stylePacks";
+import { z } from "zod";
 import {
   orderedPromptTemplatePresets as promptTemplatePresets,
   type PromptTemplatePreset
@@ -1270,12 +1274,14 @@ async function requestPromptModelText({
   messages,
   onContent,
   temperature,
+  signal,
   logContext
 }: {
   provider: PromptOptimizerProviderRow;
   messages: PromptModelMessage[];
   onContent?: (delta: string, content: string) => void;
   temperature?: number;
+  signal?: AbortSignal;
   logContext: ModelRequestLogContext;
 }) {
   const envKey = String(provider.api_key_env ?? "").trim();
@@ -1310,7 +1316,8 @@ async function requestPromptModelText({
         ...promptOptimizerHeaders(provider, streamEnabled ? "text/event-stream" : "application/json"),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      ...(signal ? { signal } : {})
     }, {
       onAttempt: (attemptNo) => {
         attemptCount = attemptNo;
@@ -2910,6 +2917,93 @@ async function promptTemplateExportHtmlResponse(c: Context, options: PromptTempl
   return exportHtmlResponse(html, `${template.name || "prompt-template"}.html`);
 }
 
+const promptEngineInputSchema = z.object({
+  mode: z.enum(["t2i", "i2i", "multi", "iterate"]).default("t2i"),
+  language: z.enum(["zh", "en"]).optional(), stylePackId: z.string().min(1).max(128).optional(),
+  candidates: z.number().int().min(1).max(3).default(1), previousPrompt: z.string().max(30000).optional(),
+  followUp: z.string().max(10000).optional(), templateId: z.string().max(128).optional(),
+  referenceCount: z.number().int().min(0).max(20).default(0), referenceSummary: z.string().max(3000).optional()
+}).passthrough();
+
+async function promptEngineOptimizeResponse(c: Context, record: Record<string, unknown>, prompt: string, userId: string, provider: PromptOptimizerProviderRow) {
+  const parsed = promptEngineInputSchema.safeParse(record);
+  if (!parsed.success || prompt.length > 30000) return c.json({ error: "提示词优化参数无效" }, 400);
+  const input = parsed.data;
+  if (input.mode === "iterate" && (!input.previousPrompt?.trim() || !input.followUp?.trim())) {
+    return c.json({ error: "迭代需要上一版提示词和追加要求" }, 400);
+  }
+  const language = input.language || promptLanguageFromText(prompt);
+  let template: ReturnType<typeof selectPromptTemplate>;
+  try { template = selectPromptTemplate(input.mode, language, input.templateId); }
+  catch { return c.json({ error: "模板不适合当前模式或语言" }, 400); }
+  const row = input.stylePackId ? visibleStylePack(appDb, userId, input.stylePackId) : null;
+  if (input.stylePackId && (!row || !row.enabled)) return c.json({ error: "风格包不存在、已停用或无权使用" }, 404);
+  const stylePackSnapshot = row ? publicStylePack(row) : null;
+  const preferences = userPreferences(userId);
+  const customInstruction = [...new Set([
+    preferences.promptOptimizeCustomInstruction,
+    normalizePromptOptimizeCustomInstruction(record.customInstruction ?? record.optimizeDirection)
+  ].filter(Boolean))].join("\n");
+  const rendered = renderPromptTemplate(template, { originalRequest: prompt, previousPrompt: input.previousPrompt,
+    followUp: input.followUp, referenceCount: input.referenceCount, referenceSummary: input.referenceSummary });
+  const controller = new AbortController();
+  const signal = AbortSignal.any([c.req.raw.signal, controller.signal, AbortSignal.timeout(90000)]);
+  const run = async (emit?: (event: string, data: unknown) => void) => {
+    const candidates: { index: number; structured: StructuredPrompt; finalPrompt: string; negative: string }[] = [];
+    const errors: { index: number; error: string }[] = [];
+    for (let index = 0; index < input.candidates; index++) {
+      if (signal.aborted) { errors.push({ index, error: "提示词优化已取消或超时" }); break; }
+      try {
+        const preview = { text: "" };
+        const content = await requestPromptModelText({
+          provider, signal, messages: [
+            { role: "system", content: rendered.system },
+            { role: "user", content: rendered.user + "\n" + JSON.stringify({
+              styleInstruction: stylePackSnapshot?.optimizeInstruction || "", customInstruction,
+              priority: "Explicit request and follow-up constraints take priority over style additions.",
+              imageCount: normalizePromptOptimizeImageCount(record.imageCount ?? record.n)
+            }) + "\nCandidate: " + (index + 1) }
+          ],
+          onContent: (_delta, content) => emitPromptStreamDelta(
+            delta => emit?.("delta", { index, ...delta }), preview, language, "optimize", streamingPromptPreview(content, language)
+          ),
+          logContext: { purpose: "prompt.optimize", userId, source: "prompt-engine:" + template.id }
+        });
+        const structured = parseStructuredPrompt(content);
+        if (!structured.finalPrompt.trim()) structured.finalPrompt = prompt;
+        const composed = composePrompt({ prompt: structured.finalPrompt, negativePrompt: structured.negative, stylePack: stylePackSnapshot });
+        const candidate = { index, structured, finalPrompt: composed.finalPrompt, negative: composed.negative };
+        candidates.push(candidate); emit?.("candidate", candidate);
+      } catch (error) {
+        const failure = { index, error: signal.aborted ? "提示词优化已取消或超时" : error instanceof Error ? error.message : "候选优化失败" };
+        errors.push(failure); emit?.("candidate-error", failure);
+        if (signal.aborted) break;
+      }
+    }
+    if (!candidates.length) throw new Error(errors[0]?.error || "模型没有返回可用候选");
+    return { candidates, errors, templateId: template.id, stylePackSnapshot, providerName: provider.name, model: provider.model };
+  };
+  if (!provider.stream_enabled) {
+    try { return c.json(await run()); }
+    catch (error) { return c.json({ error: error instanceof Error ? error.message : "提示词优化失败" }, 502); }
+  }
+  const encoder = new TextEncoder();
+  let canceled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    async start(output) {
+      const emit = (event: string, data: unknown) => { if (!canceled) output.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)); };
+      try { emit("done", await run(emit)); }
+      catch (error) { emit("error", { error: error instanceof Error ? error.message : "提示词优化失败" }); }
+      finally { if (!canceled) output.close(); }
+    },
+    cancel() { canceled = true; controller.abort(); }
+  });
+  return new Response(stream, { headers: {
+    "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform",
+    "Connection": "keep-alive", "X-Accel-Buffering": "no"
+  } });
+}
+
 export function registerPromptTemplateRoutes(api: Hono) {
   api.get("/prompt-templates", async (c) => {
     const user = await requireUser(c);
@@ -3040,11 +3134,15 @@ export function registerPromptTemplateRoutes(api: Hono) {
     const user = await requireUser(c);
     if (!user) return c.json({ error: "未登录" }, 401);
     const body = await c.req.json().catch(() => ({}));
+    if (!body || typeof body !== "object" || Array.isArray(body)) return c.json({ error: "请求参数无效" }, 400);
     const record = body as Record<string, unknown>;
     const prompt = String(record.prompt ?? record.text ?? "").trim();
     if (!prompt) return c.json({ error: "输入内容为空，请先输入提示词" }, 400);
     const provider = resolveLanguageModelProvider("prompt.optimize");
     if (!provider) return c.json({ error: "请先在配置页启用提示词优化模型" }, 400);
+    if (["mode", "language", "stylePackId", "candidates", "previousPrompt", "followUp", "templateId", "referenceCount", "referenceSummary"].some(key => record[key] !== undefined)) {
+      return promptEngineOptimizeResponse(c, record, prompt, user.id, provider);
+    }
     const styleGroups = userPreferences(user.id).promptOptimizeStyleGroups;
     const optimizeStyle = normalizePromptOptimizeStyle(record.optimizeStyle, styleGroups);
     const customInstruction = normalizePromptOptimizeCustomInstruction(record.customInstruction ?? record.optimizeDirection);

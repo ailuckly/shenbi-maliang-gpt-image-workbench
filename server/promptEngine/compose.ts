@@ -6,7 +6,7 @@ export type ComposableStylePack = {
 function uniqueParts(parts: string[]) {
   const seen = new Set<string>();
   return parts.map(part => part.replace(/[\t ]+/g, " ").trim()).filter(part => {
-    const key = part.toLocaleLowerCase();
+    const key = part.toLowerCase();
     if (!part || seen.has(key)) return false;
     seen.add(key);
     return true;

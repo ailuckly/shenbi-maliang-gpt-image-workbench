@@ -4,17 +4,8 @@ import { requireConfig, requireUser } from "./auth";
 import { audit } from "./auditLog";
 import { appDb } from "./db";
 import { makeId, now } from "./utils";
-import { publicStylePack, stylePackParamsSchema, visibleStylePack, visibleStylePacks, type StylePackRow } from "./stylePacks";
+import { publicStylePack, stylePackInputSchema, stylePackParamsSchema, visibleStylePack, visibleStylePacks, type StylePackRow } from "./stylePacks";
 import { composePrompt } from "./promptEngine/compose";
-
-const instruction = z.string().max(2000);
-const stylePackInputSchema = z.object({
-  groupKey: z.string().trim().min(1).max(96), name: z.string().trim().min(1).max(40),
-  description: z.string().max(200).optional(), optimizeInstruction: instruction.optional(),
-  promptPrefix: instruction.optional(), promptSuffix: instruction.optional(), negativePrompt: instruction.optional(),
-  recommendedParams: stylePackParamsSchema.optional(), sourceNote: z.string().max(500).optional(),
-  enabled: z.boolean().optional(), sortOrder: z.number().int().min(-100000).max(100000).optional()
-}).strict();
 
 export function registerStylePackRoutes(api: Hono) {
   for (const admin of [false, true]) {

@@ -1,4 +1,5 @@
 import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
+import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
 import type { Hono } from "hono";
 import { applyAssetFieldSuggestionsToImages, ensureAssetFieldSuggestionsForImage } from "./assetSuggestions";
 import { caseMaterialReferenceFromSource, caseMaterialSourcesByIds } from "./caseMaterialSources";
@@ -2326,7 +2327,12 @@ api.delete("/images/:imageId", async (c) => {
 api.post("/images/generate", async (c) => {
   const user = await requireImageRouteUser(c);
   if (!user) return c.json({ error: "未登录" }, 401);
-  const body = await c.req.json().catch(() => ({}));
+  let body = await c.req.json().catch(() => ({}));
+  if (!body || typeof body !== "object" || Array.isArray(body)) return c.json({ error: "请求参数无效" }, 400);
+  const prepared = preparePromptGeneration(body, user.id, appDb);
+  if (prepared.error) return c.json({ error: prepared.error }, 400);
+  body = prepared.body;
+  const promptEngineMetadata = prepared.metadata;
   const clientRequestId = requestClientRequestId(body);
   cleanupExpiredImageJobCancelIntents();
   const prompt = String(body.prompt ?? "").trim();
@@ -2359,6 +2365,9 @@ api.post("/images/generate", async (c) => {
     return c.json({ error: errorMessage(error, "渠道配置不可用") }, 400);
   }
   const provider = providers[0];
+  const recommendations = applyPromptRecommendations(body, provider);
+  if (recommendations.error) return c.json({ error: recommendations.error }, 400);
+  body = recommendations.body;
   const modelSelection = requestedImageModel(body, providers);
   if (modelSelection.error) return c.json({ error: modelSelection.error }, 400);
   const model = modelSelection.model;
@@ -2404,6 +2413,7 @@ api.post("/images/generate", async (c) => {
     n: imageCount,
     providerId: selectedProviderId,
     ...(caseItemId ? { caseItemId } : {}),
+    ...promptEngineMetadata,
     ...revisionMetadata,
     ...branchMetadata
   });
@@ -2608,7 +2618,12 @@ api.post("/images/generate", async (c) => {
 api.post("/images/edit", async (c) => {
   const user = await requireImageRouteUser(c);
   if (!user) return c.json({ error: "未登录" }, 401);
-  const body = await c.req.json().catch(() => ({}));
+  let body = await c.req.json().catch(() => ({}));
+  if (!body || typeof body !== "object" || Array.isArray(body)) return c.json({ error: "请求参数无效" }, 400);
+  const prepared = preparePromptGeneration(body, user.id, appDb);
+  if (prepared.error) return c.json({ error: prepared.error }, 400);
+  body = prepared.body;
+  const promptEngineMetadata = prepared.metadata;
   const clientRequestId = requestClientRequestId(body);
   cleanupExpiredImageJobCancelIntents();
   const caseItemId = String(body.caseItemId ?? "").trim();
@@ -2667,6 +2682,9 @@ api.post("/images/edit", async (c) => {
     return c.json({ error: errorMessage(error, "渠道配置不可用") }, 400);
   }
   const provider = providers[0];
+  const recommendations = applyPromptRecommendations(body, provider);
+  if (recommendations.error) return c.json({ error: recommendations.error }, 400);
+  body = recommendations.body;
   const modelSelection = requestedImageModel(body, providers);
   if (modelSelection.error) return c.json({ error: modelSelection.error }, 400);
   const model = modelSelection.model;
@@ -2881,6 +2899,7 @@ api.post("/images/edit", async (c) => {
       n: imageCount,
       providerId: selectedProviderId,
       ...(caseItemId ? { caseItemId } : {}),
+      ...promptEngineMetadata,
       ...revisionMetadata,
       ...branchMetadata
     }
@@ -2927,6 +2946,7 @@ api.post("/images/edit", async (c) => {
       n: imageCount,
       providerId: selectedProviderId,
       ...(caseItemId ? { caseItemId } : {}),
+      ...promptEngineMetadata,
       ...revisionMetadata,
       ...branchMetadata
     };

@@ -120,3 +120,13 @@ export function publicStylePack(row: StylePackRow) {
     enabled: Boolean(row.enabled), sortOrder: row.sort_order, createdAt: row.created_at, updatedAt: row.updated_at
   };
 }
+
+const instruction = z.string().max(2000);
+export const stylePackInputSchema = z.object({
+  groupKey: z.string().trim().min(1).max(96), name: z.string().trim().min(1).max(40),
+  description: z.string().max(200).optional(), optimizeInstruction: instruction.optional(),
+  promptPrefix: instruction.optional(), promptSuffix: instruction.optional(), negativePrompt: instruction.optional(),
+  recommendedParams: stylePackParamsSchema.optional(), sourceNote: z.string().max(500).optional(),
+  enabled: z.boolean().optional(), sortOrder: z.number().int().min(-100000).max(100000).optional()
+}).strict();
+
