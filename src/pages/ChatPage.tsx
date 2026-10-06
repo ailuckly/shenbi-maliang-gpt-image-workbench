@@ -8,6 +8,7 @@ import { AddAssetFromImageModal } from "../components/AddAssetFromImageModal";
 import { AiClientInstallDialog } from "../components/AiClientInstallDialog";
 import { CaseMaterialPickerModal } from "../components/CaseMaterialPickerModal";
 import { ChatBranchSwitch } from "../components/chat/ChatBranchSwitch";
+import { Results, imageVersionIndex } from "../v2/conversation/Results";
 import { Composer } from "../v2/composer/Composer";
 import type { PromptDraft, PromptGenerationFields } from "../v2/api";
 import { ConversationView } from "../components/chat/ConversationView";
@@ -712,6 +713,10 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
   const [readyComposerInstance, setReadyComposerInstance] = useState("");
   const currentComposerDraft = composerDrafts[composerScopeKey] ?? null;
   const promptEngineDraft = composerDrafts[composerScopeKey]?.promptEngine ?? {};
+  const imageVersions = useMemo(()=>imageVersionIndex(messages.data?.messages || []),[messages.data]);
+  const continuationMessage = promptEngineDraft.continuationImageId ? messages.data?.messages.find(message=>message.role==="assistant" && message.imageId===promptEngineDraft.continuationImageId) : undefined;
+  const continuationImage = continuationMessage ? workImageFromMessage(continuationMessage,sessionId || null) : null;
+  const composerSourceImage = editImage || continuationImage;
   const handlePromptEngineDraftChange = (promptEngine: PromptDraft) => upsertComposerDraft(composerScopeKey, { promptEngine });
   const currentPromptTemplateDraft = composerDrafts[composerScopeKey]?.promptTemplate ?? null;
   const promptColorSchemeList = promptColorSchemes.data?.schemes ?? EMPTY_PROMPT_COLOR_SCHEMES;
@@ -1480,8 +1485,8 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     const latestAssistantImage = [...visibleBranchMessages]
       .reverse()
       .find((message) => message.role === "assistant" && message.imageUrl && message.imageId);
-    const continuityImage = latestAssistantImage ? workImageFromMessage(latestAssistantImage, sessionId ?? null) : null;
-    const sourceImage = promptEngine?.optimizeMode === "t2i" ? null : editImage;
+    const continuityImage = promptEngineDraft.continuationImageId ? continuationImage : latestAssistantImage ? workImageFromMessage(latestAssistantImage, sessionId ?? null) : null;
+    const sourceImage = promptEngine?.optimizeMode === "t2i" ? null : composerSourceImage;
     const referenceAssets = promptEngine?.optimizeMode === "t2i" ? [] : selectedAssets;
     const referenceCases = promptEngine?.optimizeMode === "t2i" ? [] : selectedCaseMaterials;
     const selectedCaseReferences = referenceCases.map(sourceReferenceFromCaseMaterial);
@@ -2369,15 +2374,15 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     }, submittedSnapshot);
   };
   const composerPreviews = [
-    ...(editImage
+    ...(composerSourceImage
       ? [
           {
-            id: `edit-${editImage.id}`,
-            url: editImage.thumbnailUrl || editImage.previewUrl || editImage.url,
-            previewUrl: editImage.previewUrl || editImage.originalUrl || editImage.url,
-            name: t("chat.editor.pendingImage"),
-            title: editImage.prompt,
-            onRemove: () => setEditImage(null)
+            id: `edit-${composerSourceImage.id}`,
+            url: composerSourceImage.thumbnailUrl || composerSourceImage.previewUrl || composerSourceImage.url,
+            previewUrl: composerSourceImage.previewUrl || composerSourceImage.originalUrl || composerSourceImage.url,
+            name: imageVersions.get(composerSourceImage.id) ? t("v2.result.basedOn",{number:imageVersions.get(composerSourceImage.id)!}) : t("chat.editor.pendingImage"),
+            title: composerSourceImage.prompt,
+            onRemove: () => {setEditImage(null);handlePromptEngineDraftChange({...promptEngineDraft,continuationImageId:undefined,mode:"t2i"});}
           }
         ]
       : []),
@@ -2475,6 +2480,23 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     createShareLink.isPending && createShareLink.variables?.sessionId === sessionId
   );
 
+  const renderLegacyJobStatus = () => (visibleLoadingMode && !multiImageLoading ? (
+          <div ref={loadingMessageRef} className="message-enter-row loading-message-anchor" style={messageRevealStyle(renderItems.length)}>
+            <RenderingMessage mode={visibleLoadingMode} />
+          </div>
+        ) : latestVisibleFailedJob ? (
+          <div className="message-enter-row" style={messageRevealStyle(renderItems.length)}>
+            <RenderingErrorMessage
+              mode={latestVisibleFailedJob.type}
+              message={latestVisibleFailedJob.error ?? t("chat.failedJob")}
+              canRetry={true}
+              retrying={retryImageJob.isPending}
+              onRetry={() => {
+                triggerRetryImageJob(latestVisibleFailedJob.id);
+              }}
+            />
+          </div>
+        ) : null);
   return (
     <section
       className={cx(
@@ -2538,6 +2560,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         {showStarter ? <div className="v2-creation-heading"><h1>{t("v2.composer.heading")}</h1><p>{t("v2.composer.description")}</p></div> : null}
         {showMessageSkeleton ? <ChatMessageSkeleton /> : null}
         <ConversationView
+          renderResults={revision=><Results revision={revision} job={imageJobs.find(job=>job.id===revision.user.metadata.jobId)} versions={imageVersions} sessionId={sessionId} isSubmitting={currentScopeBusy} retryingJobId={retryingJobId} onRetry={triggerRetryImageJob} onOpenEditor={openImageEditor} onAddAsset={openAssetModal} onContinue={image=>{setEditImage(null);setSelectedAssets([]);setSelectedCaseMaterials([]);setDraftPrompt("");handlePromptEngineDraftChange({mode:"i2i",continuationImageId:image.id,stylePackSnapshot:promptEngineDraft.stylePackSnapshot || null});window.requestAnimationFrame(()=>{textareaRef.current?.focus();textareaRef.current?.scrollIntoView({block:"center",behavior:"auto"});});}}/>}
           items={renderItems}
           sessionId={sessionId}
           downloadBaseName={sessionActions?.title}
@@ -2558,23 +2581,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
             })
           }
         />
-        {visibleLoadingMode && !multiImageLoading ? (
-          <div ref={loadingMessageRef} className="message-enter-row loading-message-anchor" style={messageRevealStyle(renderItems.length)}>
-            <RenderingMessage mode={visibleLoadingMode} />
-          </div>
-        ) : latestVisibleFailedJob ? (
-          <div className="message-enter-row" style={messageRevealStyle(renderItems.length)}>
-            <RenderingErrorMessage
-              mode={latestVisibleFailedJob.type}
-              message={latestVisibleFailedJob.error ?? t("chat.failedJob")}
-              canRetry={true}
-              retrying={retryImageJob.isPending}
-              onRetry={() => {
-                triggerRetryImageJob(latestVisibleFailedJob.id);
-              }}
-            />
-          </div>
-        ) : null}
         <div ref={messageEndRef} className="message-scroll-anchor" aria-hidden="true" />
       </div>
       {imageEditor ? (
@@ -2691,7 +2697,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       />
       {readyComposerInstance === composerInstanceKey && (!sessionId || !messages.isLoading) ? <Composer key={composerInstanceKey} draftPrompt={draftPrompt} onDraftPromptChange={setDraftPrompt}
         draft={promptEngineDraft} onDraftChange={handlePromptEngineDraftChange} previews={composerPreviews}
-        continuityPreview={!composerPreviews.length && latestEditSuggestionImage ? {id:latestEditSuggestionImage.id,url:latestEditSuggestionImage.thumbnailUrl || latestEditSuggestionImage.url,previewUrl:latestEditSuggestionImage.originalUrl || latestEditSuggestionImage.url,name:t("v2.composer.lastImage"),title:latestEditSuggestionImage.prompt,onRemove:()=>handlePromptEngineDraftChange({...promptEngineDraft,mode:"t2i"})} : undefined}
+        continuityPreview={!composerPreviews.length && !promptEngineDraft.continuationImageId && promptEngineDraft.mode!=="t2i" && latestEditSuggestionImage ? {id:latestEditSuggestionImage.id,url:latestEditSuggestionImage.thumbnailUrl || latestEditSuggestionImage.url,previewUrl:latestEditSuggestionImage.originalUrl || latestEditSuggestionImage.url,name:imageVersions.get(latestEditSuggestionImage.id) ? t("v2.result.basedOn",{number:imageVersions.get(latestEditSuggestionImage.id)!}) : t("v2.composer.lastImage"),title:latestEditSuggestionImage.prompt,onRemove:()=>handlePromptEngineDraftChange({...promptEngineDraft,mode:"t2i"})} : undefined}
         busy={currentScopeBusy || cancelPending} cancelPending={cancelPending} onCancel={currentCancelTarget ? cancelCurrentSubmit : undefined}
         error={latestVisibleFailedJob ? "" : error} onSubmit={submitDraft} imageModel={imageModel} imageModels={modelCatalog.data?.models || []} onImageModelChange={selectImageModel}
         size={size} sizeOptions={modelCatalog.data?.configured && currentProvider?.sizes.length ? sizeOptions : []} onSizeChange={setSize} quality={quality} qualityOptions={modelCatalog.data?.configured ? qualityOptions : []} onQualityChange={value=>setQuality(normalizeImageQuality(imageModel,value))}

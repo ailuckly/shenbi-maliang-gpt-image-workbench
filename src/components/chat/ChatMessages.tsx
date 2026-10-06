@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Copy, MoreHorizontal, RefreshCw } from "lucide-react";
 import { AddCaseModal } from "../AddCaseModal";
@@ -433,6 +433,7 @@ export function ChatMessageThread({
   retryingJobId,
   onRetryJob,
   onSubmitEdit,
+  renderResults,
   mode = "workspace",
   capabilities: capabilityOverrides,
   sharedToken,
@@ -452,6 +453,7 @@ export function ChatMessageThread({
   retryingJobId?: string;
   onRetryJob?: (jobId: string) => void;
   onSubmitEdit?: (payload: { rootId: string; userMessage: Message; assistantMessage: Message | null; prompt: string }) => void;
+  renderResults?: (revision: MessageRevision) => ReactNode;
   mode?: ChatMessageMode;
   capabilities?: Partial<ChatMessageCapabilities>;
   sharedToken?: string;
@@ -636,7 +638,7 @@ export function ChatMessageThread({
           </div>
         ) : null}
       </div>
-      {shouldRenderImageGroup ? (
+      {renderResults ? renderResults(revision) : shouldRenderImageGroup ? (
         <>
           <AssistantImageGroup
             sessionId={sessionId}

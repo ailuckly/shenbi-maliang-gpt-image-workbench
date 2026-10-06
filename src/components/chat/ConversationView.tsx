@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useI18n } from "../../i18n";
 import { messageThreadRenderKey, type ChatRenderItem, type MessageRevision } from "../../lib/chatRender";
 import { formatImageAnnotationMessageDisplayText } from "../../lib/imageAnnotations";
@@ -29,6 +29,7 @@ type ConversationViewProps = {
   onRetryJob?: (jobId: string) => void;
   onSelectVersion?: (revision: MessageRevision) => void;
   onSubmitEdit?: (context: { branchId: string; rootId: string }, payload: MessageEditPayload) => void;
+  renderResults?: (revision: MessageRevision) => ReactNode;
 };
 
 const ignoreImage = (_image: WorkImage) => undefined;
@@ -105,7 +106,8 @@ export function ConversationView({
   onAddAsset,
   onRetryJob,
   onSelectVersion,
-  onSubmitEdit
+  onSubmitEdit,
+  renderResults
 }: ConversationViewProps) {
   const { t } = useI18n();
   const turnElementsRef = useRef(new Map<string, HTMLDivElement>());
@@ -323,6 +325,7 @@ export function ConversationView({
               sharedResultMessages={sharedResultMessages}
               rootId={item.rootId}
               versions={item.versions}
+              renderResults={renderResults}
               activeVersionIndex={item.activeVersionIndex}
               isSubmitting={isSubmitting}
               onOpenEditor={onOpenEditor ?? ignoreImage}
