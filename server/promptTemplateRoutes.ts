@@ -1,3 +1,4 @@
+import { redactProviderJson, redactProviderSecrets } from "./secretRedaction";
 import { promptOptimizeStyleConfigs, promptOptimizeSubStyleConfigs } from "./promptEngine/legacyStyleConfigs";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Context, Hono } from "hono";
@@ -1981,7 +1982,7 @@ function streamPromptTemplateOptimizeResponse({
   let canceled = false;
   const sendFrame = (controller: ReadableStreamDefaultController<Uint8Array>, event: string, data: unknown) => {
     if (canceled) return;
-    controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+    controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(redactProviderJson(data))}\n\n`));
   };
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -2012,7 +2013,7 @@ function streamPromptTemplateOptimizeResponse({
         });
         sendFrame(controller, "done", { result });
       } catch (error) {
-        sendFrame(controller, "error", { error: error instanceof Error ? error.message : "提示词优化失败" });
+        sendFrame(controller, "error", { error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" });
       } finally {
         if (!canceled) controller.close();
       }
@@ -2054,7 +2055,7 @@ function streamPlainPromptOptimizeResponse({
   let canceled = false;
   const sendFrame = (controller: ReadableStreamDefaultController<Uint8Array>, event: string, data: unknown) => {
     if (canceled) return;
-    controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+    controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(redactProviderJson(data))}\n\n`));
   };
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -2071,7 +2072,7 @@ function streamPlainPromptOptimizeResponse({
         });
         sendFrame(controller, "done", optimized);
       } catch (error) {
-        sendFrame(controller, "error", { error: error instanceof Error ? error.message : "提示词优化失败" });
+        sendFrame(controller, "error", { error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" });
       } finally {
         if (!canceled) controller.close();
       }
@@ -2111,7 +2112,7 @@ function streamPromptTemplateTranslationResponse({
   let canceled = false;
   const sendFrame = (controller: ReadableStreamDefaultController<Uint8Array>, event: string, data: unknown) => {
     if (canceled) return;
-    controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+    controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(redactProviderJson(data))}\n\n`));
   };
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -2166,7 +2167,7 @@ function streamPromptTemplateTranslationResponse({
           translation
         });
       } catch (error) {
-        sendFrame(controller, "error", { error: error instanceof Error ? error.message : "提示词翻译失败" });
+        sendFrame(controller, "error", { error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词翻译失败" });
       } finally {
         if (!canceled) controller.close();
       }
@@ -2975,7 +2976,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
         const candidate = { index, structured, finalPrompt: composed.finalPrompt, negative: composed.negative };
         candidates.push(candidate); emit?.("candidate", candidate);
       } catch (error) {
-        const failure = { index, error: signal.aborted ? "提示词优化已取消或超时" : error instanceof Error ? error.message : "候选优化失败" };
+        const failure = { index, error: signal.aborted ? "提示词优化已取消或超时" : error instanceof Error ? redactProviderSecrets(error.message) : "候选优化失败" };
         errors.push(failure); emit?.("candidate-error", failure);
         if (signal.aborted) break;
       }
@@ -2985,16 +2986,16 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   };
   if (!provider.stream_enabled) {
     try { return c.json(await run()); }
-    catch (error) { return c.json({ error: error instanceof Error ? error.message : "提示词优化失败" }, 502); }
+    catch (error) { return c.json({ error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }, 502); }
   }
   const encoder = new TextEncoder();
   let canceled = false;
   const stream = new ReadableStream<Uint8Array>({
     async start(output) {
-      const emit = (event: string, data: unknown) => { if (!canceled) output.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)); };
+      const emit = (event: string, data: unknown) => { if (!canceled) output.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(redactProviderJson(data))}\n\n`)); };
       emit("meta", { templateId: template.id, stylePackSnapshot });
       try { emit("done", await run(emit)); }
-      catch (error) { emit("error", { error: error instanceof Error ? error.message : "提示词优化失败" }); }
+      catch (error) { emit("error", { error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }); }
       finally { if (!canceled) output.close(); }
     },
     cancel() { canceled = true; controller.abort(); }
@@ -3163,7 +3164,7 @@ export function registerPromptTemplateRoutes(api: Hono) {
       });
       return c.json(optimized);
     } catch (error) {
-      return c.json({ error: error instanceof Error ? error.message : "提示词优化失败" }, 502);
+      return c.json({ error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }, 502);
     }
   });
 
@@ -3496,7 +3497,7 @@ export function registerPromptTemplateRoutes(api: Hono) {
         logContext: { userId: access.userId, jobId: row.id, source: "prompt-template-export" }
       });
     } catch (error) {
-      return exportJsonResponse({ error: error instanceof Error ? error.message : "提示词优化失败" }, 502);
+      return exportJsonResponse({ error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }, 502);
     }
     const result = savePromptTemplateOptimizeResult({
       row,
@@ -3598,7 +3599,7 @@ export function registerPromptTemplateRoutes(api: Hono) {
         logContext: { userId: user.id, jobId: row.id, source: "prompt-template" }
       });
     } catch (error) {
-      return c.json({ error: error instanceof Error ? error.message : "提示词优化失败" }, 502);
+      return c.json({ error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }, 502);
     }
     const result = savePromptTemplateOptimizeResult({
       row,

@@ -1,3 +1,4 @@
+import { redactProviderSecrets } from "./secretRedaction";
 import type { Hono } from "hono";
 import { audit, logModelRequest } from "./auditLog";
 import { configDb, getAll, getOne, run } from "./db";
@@ -340,6 +341,7 @@ async function fetchPromptOptimizerModels(provider: PromptOptimizerProviderRow, 
       defaultModel: preferredDefaultModel(models, provider.model, data)
     };
   } catch (error) {
+    const failure = new Error(redactProviderSecrets(error instanceof Error ? error.message : String(error), [promptOptimizerApiKey(provider)]));
     logModelRequest({
       purpose,
       providerId: provider.id,
@@ -353,10 +355,10 @@ async function fetchPromptOptimizerModels(provider: PromptOptimizerProviderRow, 
       statusCode,
       durationMs: Date.now() - startedAt,
       success: false,
-      error,
+      error: failure,
       source: "config"
     });
-    throw error;
+    throw failure;
   } finally {
     clearTimeout(timeoutId);
   }

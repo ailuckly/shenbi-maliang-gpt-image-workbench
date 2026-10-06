@@ -1,3 +1,4 @@
+import { redactProviderSecrets } from "./secretRedaction";
 import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
 import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
 import type { Hono } from "hono";
@@ -562,19 +563,19 @@ function providerSelectionId(value: unknown) {
 }
 
 function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message.trim()) return error.message;
+  if (error instanceof Error && error.message.trim()) return redactProviderSecrets(error.message);
   if (error && typeof error === "object") {
     const record = error as Record<string, unknown>;
-    if (typeof record.message === "string" && record.message.trim()) return record.message;
+    if (typeof record.message === "string" && record.message.trim()) return redactProviderSecrets(record.message);
     const nested = record.error;
-    if (typeof nested === "string" && nested.trim()) return nested;
+    if (typeof nested === "string" && nested.trim()) return redactProviderSecrets(nested);
     if (nested && typeof nested === "object") {
       const nestedMessage = (nested as Record<string, unknown>).message;
-      if (typeof nestedMessage === "string" && nestedMessage.trim()) return nestedMessage;
+      if (typeof nestedMessage === "string" && nestedMessage.trim()) return redactProviderSecrets(nestedMessage);
     }
   }
   const text = String(error ?? "").trim();
-  return text || fallback;
+  return redactProviderSecrets(text || fallback);
 }
 
 function requestClientRequestId(body: Record<string, unknown>) {
@@ -2559,7 +2560,7 @@ api.post("/images/generate", async (c) => {
       return savedImageIds;
     } catch (error) {
       if (error instanceof ImageJobExecutionSupersededError || providerRequestWasCancelled(error, executionController.signal)) return [];
-      const detail = error instanceof Error ? error.message : "生成失败";
+      const detail = errorMessage(error, "生成失败");
       const message = incompleteImageCountMessage(imageCount, storedImageJobImagesById(jobId, user.id), detail);
       const failedAutoRetryCount = autoRetryCountFromError(error, maxAutoRetries);
       const failed = run(
@@ -3140,7 +3141,7 @@ api.post("/images/edit", async (c) => {
       return;
     } catch (error) {
       if (error instanceof ImageJobExecutionSupersededError || providerRequestWasCancelled(error, executionController.signal)) return;
-      const detail = error instanceof Error ? error.message : "编辑失败";
+      const detail = errorMessage(error, "编辑失败");
       const message = incompleteImageCountMessage(imageCount, storedImageJobImagesById(jobId, user.id), detail);
       const responseJsonText = responseJson === null ? null : providerResponseSnapshot(responseJson);
       const failedAutoRetryCount = autoRetryCountFromError(error, maxAutoRetries);

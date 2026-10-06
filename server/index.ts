@@ -1,4 +1,5 @@
 import { shouldUseSecureCookie } from "./cookieSecurity";
+import { redactProviderJson } from "./secretRedaction";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -313,6 +314,18 @@ function assertGlobalSwitchCanEnable(type: GlobalSwitchType, enabled: boolean) {
   }
   if (type === "debug_runtime_logging") runtimeLogStore.prepare();
 }
+
+// Last boundary for legacy JSON errors/logs; binary backups remain private admin downloads.
+api.use("*", async (c, next) => {
+  await next();
+  if (!c.res.headers.get("content-type")?.includes("application/json")) return;
+  const value = await c.res.clone().json();
+  const redacted = JSON.stringify(redactProviderJson(value));
+  if (redacted === JSON.stringify(value)) return;
+  const headers = new Headers(c.res.headers);
+  headers.delete("content-length");
+  c.res = new Response(redacted, { status: c.res.status, headers });
+});
 
 api.onError((error, c) => {
   runtimeLogErrorWithConsole({
@@ -1428,7 +1441,7 @@ api.get("/config/image-accounts/:id", (c) => {
   const accountId = c.req.param("id");
   const existing = getOne<ImageAccountRow>(configDb, "select * from image_accounts where id = ?", accountId);
   if (!existing) return c.json({ error: "图片账号不存在" }, 404);
-  return c.json({ account: toImageAccount(existing, true) });
+  return c.json({ account: toImageAccount(existing, false) });
 });
 
 type ImageAccountImportSource = {
@@ -2085,8 +2098,8 @@ api.get("/config/providers/:id/api-key", (c) => {
   if (!provider) return c.json({ error: "渠道不存在" }, 404);
   c.header("Cache-Control", "no-store");
   c.header("Pragma", "no-cache");
-  audit("provider.api_key.view", { id: provider.id, channel: provider.channel });
-  return c.json({ apiKeyValue: provider.api_key_value ?? "" });
+  audit("provider.api_key.view.denied", { id: provider.id, channel: provider.channel });
+  return c.json({ error: "凭证仅供服务端使用，请在后台替换或清空" }, 410);
 });
 
 function normalizeProviderConfigPath(channel: string, value: unknown, kind: "generation" | "edit" | "responses") {

@@ -158,10 +158,7 @@ export function safeJson<T>(value: string | null | undefined, fallback: T): T {
 }
 
 export function maskSecret(value: string | null | undefined) {
-  if (!value) return "";
-  if (value.includes("****")) return value;
-  if (value.length <= 6) return "******";
-  return `${value.slice(0, 3)}****${value.slice(-3)}`;
+  return value ? "******" : "";
 }
 
 export function escapeToml(value: string | null | undefined) {

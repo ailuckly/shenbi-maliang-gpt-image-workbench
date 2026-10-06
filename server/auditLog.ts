@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { appDb, configDb, getOne, run } from "./db";
 import type { RuntimeProviderRow } from "./types";
 import { inferChannelFromType, makeId, normalizeProviderChannel, now } from "./utils";
+import { redactProviderJson, redactProviderSecrets } from "./secretRedaction";
 
 export function audit(action: string, detail: unknown = {}) {
   run(
@@ -9,7 +10,7 @@ export function audit(action: string, detail: unknown = {}) {
     "insert into config_audit_logs (id, action, detail, created_at) values (?, ?, ?, ?)",
     makeId("audit"),
     action,
-    JSON.stringify(detail),
+    JSON.stringify(redactProviderJson(detail)),
     now()
   );
 }
@@ -63,7 +64,7 @@ export function logProviderRequest(input: {
     Math.max(0, Math.round(input.durationMs)),
     input.success ? 1 : 0,
     cancelled ? 1 : 0,
-    input.error ?? null,
+    input.error ? redactProviderSecrets(input.error, [input.provider.api_key_value ?? ""]) : null,
     now()
   );
 }
@@ -93,19 +94,19 @@ export function markProviderRequestPostProcessFailure(input: {
     )
     .get(jobId, input.provider.id, input.operation, attemptNo) as { id: string } | null;
   if (!row) return;
-  const message = input.error.trim() || "图片请求后处理失败";
+  const message = redactProviderSecrets(input.error, [input.provider.api_key_value ?? ""]).trim() || "图片请求后处理失败";
   run(
     configDb,
     "update provider_request_logs set success = 0, error = ?, response_snapshot = ? where id = ?",
     `HTTP 成功，但图片后处理失败：${message}`,
-    input.responseSnapshot ?? "",
+    redactProviderSecrets(input.responseSnapshot ?? ""),
     row.id
   );
 }
 
 function modelRequestError(value: unknown) {
   const message = value instanceof Error ? value.message : String(value ?? "");
-  const normalized = message.replace(/\s+/g, " ").trim();
+  const normalized = redactProviderSecrets(message).replace(/\s+/g, " ").trim();
   return normalized ? normalized.slice(0, 800) : null;
 }
 
