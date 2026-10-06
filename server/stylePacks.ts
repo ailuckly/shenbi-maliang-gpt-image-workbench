@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import {
@@ -98,4 +99,24 @@ export function migrateStylePacks(db: Database, timestamp = now()) {
     }
     db.query("insert into app_migrations (id, created_at) values (?, ?)").run(migration, timestamp);
   })();
+}
+
+export const stylePackParamsSchema = z.object({
+  aspectRatio: z.string().regex(/^(auto|[1-9]\d{0,2}:[1-9]\d{0,2})$/).optional(),
+  quality: z.string().trim().min(1).max(64).optional(),
+  n: z.number().int().min(1).max(10).optional()
+}).strict();
+
+export function publicStylePack(row: StylePackRow) {
+  let recommendedParams = {};
+  try {
+    const parsed = stylePackParamsSchema.safeParse(JSON.parse(row.recommended_params_json));
+    if (parsed.success) recommendedParams = parsed.data;
+  } catch { /* Invalid legacy recommendation does not hide the package. */ }
+  return {
+    id: row.id, scope: row.scope, groupKey: row.group_key, name: row.name, description: row.description,
+    optimizeInstruction: row.optimize_instruction, promptPrefix: row.prompt_prefix, promptSuffix: row.prompt_suffix,
+    negativePrompt: row.negative_prompt, recommendedParams, sourceNote: row.source_note,
+    enabled: Boolean(row.enabled), sortOrder: row.sort_order, createdAt: row.created_at, updatedAt: row.updated_at
+  };
 }

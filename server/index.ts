@@ -106,6 +106,7 @@ import { providerSecretInput } from "./providerConfigInput";
 import { registerPromptColorSchemeRoutes } from "./promptColorSchemeRoutes";
 import { registerPromptReferenceLinkRoutes } from "./promptReferenceLinkRoutes";
 import { registerPromptTemplateRoutes } from "./promptTemplateRoutes";
+import { registerStylePackRoutes } from "./stylePackRoutes";
 import { registerSearchHistoryRoutes } from "./searchHistoryRoutes";
 import { registerSearchRoutes } from "./searchRoutes";
 import {
@@ -351,6 +352,7 @@ registerPromptReferenceLinkRoutes(api);
 registerPromptColorSchemeRoutes(api);
 
 registerPromptTemplateRoutes(api);
+registerStylePackRoutes(api);
 
 registerImageRoutes(api);
 
