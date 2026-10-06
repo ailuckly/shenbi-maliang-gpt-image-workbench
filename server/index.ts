@@ -1,3 +1,4 @@
+import { shouldUseSecureCookie } from "./cookieSecurity";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -419,6 +420,7 @@ api.post("/config/auth/login", async (c) => {
   );
   setCookie(c, CONFIG_COOKIE, sessionId, {
     httpOnly: true,
+    secure: shouldUseSecureCookie(c),
     sameSite: "Lax",
     path: "/",
     maxAge: SESSION_MAX_AGE
@@ -430,7 +432,7 @@ api.post("/config/auth/login", async (c) => {
 api.post("/config/auth/logout", (c) => {
   const sessionId = getCookie(c, CONFIG_COOKIE);
   if (sessionId) run(configDb, "delete from config_auth_sessions where id = ?", sessionId);
-  deleteCookie(c, CONFIG_COOKIE, { path: "/" });
+  deleteCookie(c, CONFIG_COOKIE, { path: "/", secure: shouldUseSecureCookie(c) });
   return c.json({ ok: true });
 });
 

@@ -1,3 +1,4 @@
+import { shouldUseSecureCookie } from "./cookieSecurity";
 import type { Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { normalizeAppearanceMode } from "./appearanceMode";
@@ -312,6 +313,7 @@ function createUserSession(c: Context, user: UserRow) {
   );
   setCookie(c, APP_COOKIE, sessionId, {
     httpOnly: true,
+    secure: shouldUseSecureCookie(c),
     sameSite: "Lax",
     path: "/",
     maxAge: SESSION_MAX_AGE
@@ -556,7 +558,7 @@ api.post("/auth/login", async (c) => {
 api.post("/auth/logout", (c) => {
   const sessionId = getCookie(c, APP_COOKIE);
   if (sessionId) run(appDb, "delete from user_auth_sessions where id = ?", sessionId);
-  deleteCookie(c, APP_COOKIE, { path: "/" });
+  deleteCookie(c, APP_COOKIE, { path: "/", secure: shouldUseSecureCookie(c) });
   return c.json({ ok: true });
 });
 
@@ -569,7 +571,7 @@ api.delete("/auth/account", async (c) => {
   if (confirmationText !== expected) return c.json({ error: `请输入“${expected}”后再删除账户` }, 400);
   const deleted = await deleteUserAccount(user.id);
   if (!deleted) return c.json({ error: "账号不存在" }, 404);
-  deleteCookie(c, APP_COOKIE, { path: "/" });
+  deleteCookie(c, APP_COOKIE, { path: "/", secure: shouldUseSecureCookie(c) });
   return c.json({ ok: true });
 });
 
@@ -598,7 +600,7 @@ api.post("/auth/change-password", async (c) => {
   );
   const sessionId = getCookie(c, APP_COOKIE);
   if (sessionId) run(appDb, "delete from user_auth_sessions where id = ?", sessionId);
-  deleteCookie(c, APP_COOKIE, { path: "/" });
+  deleteCookie(c, APP_COOKIE, { path: "/", secure: shouldUseSecureCookie(c) });
   return c.json({ ok: true });
 });
 
@@ -790,6 +792,7 @@ api.post("/auth/config-access", async (c) => {
   );
   setCookie(c, CONFIG_COOKIE, sessionId, {
     httpOnly: true,
+    secure: shouldUseSecureCookie(c),
     sameSite: "Lax",
     path: "/",
     maxAge: SESSION_MAX_AGE
