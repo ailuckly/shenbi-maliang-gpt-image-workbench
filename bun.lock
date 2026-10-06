@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "gpt-image-workbench",
+      "name": "shenbi",
       "dependencies": {
         "@hono/node-server": "^2.0.12",
         "@modelcontextprotocol/sdk": "^1.30.0",

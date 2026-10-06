@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import type { PublicBranding } from "../types";
 import { DEFAULT_LOGIN_ASSETS, normalizeLoginAssets } from "./loginAssets";
 
-export const DEFAULT_SITE_NAME = "神笔马良";
-export const DEFAULT_LOGO_URL = "/api/files/branding/builtin-logo?variant=thumb";
-export const DEFAULT_FAVICON_URL = "/api/files/branding/builtin-favicon?variant=thumb&v=default-logo";
+export const DEFAULT_SITE_NAME = "ShenBi";
+export const DEFAULT_LOGO_URL = "/api/files/branding/builtin-logo?variant=thumb&v=shenbi-v1";
+export const DEFAULT_FAVICON_URL = "/api/files/branding/builtin-favicon?variant=thumb&v=shenbi-v1";
 
 export const DEFAULT_PUBLIC_BRANDING: PublicBranding = {
   siteName: DEFAULT_SITE_NAME,

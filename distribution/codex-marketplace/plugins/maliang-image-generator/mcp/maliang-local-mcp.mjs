@@ -17,8 +17,8 @@ const SAVE_TOOL_NAME = "save_image_result";
 
 const UPLOAD_TOOL = {
   name: UPLOAD_TOOL_NAME,
-  title: "上传本地图片到马良",
-  description: "读取 Codex 当前消息中已提供绝对路径的 PNG、JPG 或 WebP 附件，通过一次性上传地址安全提交到神笔马良；成功后返回可用于改图的 uploadId，不打开浏览器。",
+  title: "上传本地图片到ShenBi",
+  description: "读取 Codex 当前消息中已提供绝对路径的 PNG、JPG 或 WebP 附件，通过一次性上传地址安全提交到ShenBi；成功后返回可用于改图的 uploadId，不打开浏览器。",
   inputSchema: {
     type: "object",
     properties: {
@@ -61,8 +61,8 @@ const UPLOAD_TOOL = {
 
 const SAVE_TOOL = {
   name: SAVE_TOOL_NAME,
-  title: "保存马良生成图片",
-  description: "把已成功生成的马良原图安全保存到 Codex generated_images 目录并返回绝对本地路径。此工具不会打开浏览器。",
+  title: "保存ShenBi生成图片",
+  description: "把已成功生成的ShenBi原图安全保存到 Codex generated_images 目录并返回绝对本地路径。此工具不会打开浏览器。",
   inputSchema: {
     type: "object",
     properties: {
@@ -111,7 +111,7 @@ function jsonRpcError(id, code, message) {
 }
 
 function safeToolError(error) {
-  const message = error instanceof Error ? error.message : "马良本地图片操作失败";
+  const message = error instanceof Error ? error.message : "ShenBi本地图片操作失败";
   return message.replace(/https?:\/\/\S+/giu, "[redacted-url]").slice(0, 500);
 }
 
@@ -160,7 +160,7 @@ export async function handleMaliangLocalMcpRequest(request, runtime = {}) {
       capabilities: { tools: { listChanged: false } },
       serverInfo: {
         name: SERVER_NAME,
-        title: "神笔马良本地图片工具",
+        title: "ShenBi本地图片工具",
         version: await pluginVersion
       },
       instructions: "本地改图附件使用 upload_local_image 安全上传，再由 maliang_get_image_upload 确认状态；maliang_get_image_job 返回 succeeded 后使用 save_image_result 保存原图。两个工具都不会打开浏览器。"

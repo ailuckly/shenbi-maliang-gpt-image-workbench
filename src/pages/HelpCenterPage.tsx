@@ -32,7 +32,7 @@ const CATEGORY_ICONS: Record<HelpCategory["icon"], LucideIcon> = {
   "life-buoy": LifeBuoy
 };
 
-const HELP_BRAND_LOGO = publicAssetPath("/image/logo-small.webp");
+const HELP_BRAND_LOGO = publicAssetPath("/brand/shenbi-icon.webp");
 const HELP_MALIANG_AVATAR = publicAssetPath("/image/leaderboard/heading-maliang.webp?v=1");
 const HELP_MALIANG_HERO = publicAssetPath("/image/help/maliang-help-hero-v2.webp");
 const HELP_CENTER_TRADITIONAL_MESSAGES = Object.fromEntries(

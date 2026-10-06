@@ -1,8 +1,8 @@
 <div align="center">
 
 <h1>
-  <img src="public/image/logo-small.webp" alt="Shenbi Maliang Logo" width="48" align="texttop" />
-  Shenbi Maliang GPT Image Workbench
+  <img src="public/brand/shenbi-icon.webp" alt="ShenBi Logo" width="48" align="texttop" />
+  ShenBi AI Image Studio
 </h1>
 
 [简体中文](README.md) | English | [日本語](docs/readme/README.ja.md) | [한국어](docs/readme/README.ko.md) | [Русский](docs/readme/README.ru.md) | [فارسی](docs/readme/README.fa-IR.md)
@@ -11,7 +11,9 @@
 
 </div>
 
-Shenbi Maliang GPT Image Workbench is an AI image generation and image editing workbench designed for private team deployments. It supports ChatGPT subscription accounts, OpenAI-compatible APIs, CPA proxies, and other channels, and can route work across ChatGPT Web quota, Codex quota, and other image-generation paths.
+ShenBi AI Image Studio is an AI image generation and image editing workbench designed for private team deployments. It supports ChatGPT subscription accounts, OpenAI-compatible APIs, CPA proxies, and other channels, and can route work across ChatGPT Web quota, Codex quota, and other image-generation paths.
+
+Fork development baseline: [Project knowledge base](docs/project/README.md) · [Goal and roadmap](docs/project/GOAL-ROADMAP.md) · [Design asset archive](docs/assets-library/README.md) (Chinese).
 
 ## ✨ Highlights
 
@@ -196,7 +198,7 @@ This project references the following open-source projects for ChatGPT Web image
 - [chatgpt2api](https://github.com/basketikun/chatgpt2api)
 - [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
 
-The repository and release packages do not include image-task notification sounds. Administrators can open Mixkit or another asset site from Sound Management and upload audio locally. Runtime-uploaded third-party audio is outside this project's MIT license, and operators are responsible for confirming the applicable asset license.
+The repository and release packages do not include image-task notification sounds. Administrators can open Mixkit or another asset site from Sound Management and upload audio locally. Runtime-uploaded third-party audio is outside this project's license, and operators are responsible for confirming the applicable asset license.
 
 ## ⚠️ Disclaimer
 
@@ -213,7 +215,7 @@ This project is intended for learning, research, technical exchange, internal te
 
 ## 📄 License
 
-MIT. See [LICENSE](LICENSE).
+AGPL-3.0-only. See [LICENSE](LICENSE); the upstream MIT notice and third-party attribution are in [NOTICE.md](NOTICE.md). If you offer a modified version to users over a network, you must provide them its corresponding source.
 
 ## 🤝 Community Support
 

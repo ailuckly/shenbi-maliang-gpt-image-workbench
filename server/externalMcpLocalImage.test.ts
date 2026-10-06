@@ -16,7 +16,7 @@ const localMcpPath = path.resolve(
 );
 const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
 
-describe("Maliang local MCP protocol negotiation", () => {
+describe("ShenBi local MCP protocol negotiation", () => {
   test("keeps supported requests and falls back from unknown client versions", async () => {
     const supported = await handleMaliangLocalMcpRequest({
       jsonrpc: "2.0",
@@ -66,7 +66,7 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { force: true, recursive: true })));
 });
 
-describe("Maliang local image persistence", () => {
+describe("ShenBi local image persistence", () => {
   const trustedRuntime = { trustedOrigin: "https://maliang.example" };
   const resultUrl = "https://maliang.example/mcp/image-result/v2.payload.signature";
 
@@ -128,7 +128,7 @@ describe("Maliang local image persistence", () => {
   });
 });
 
-describe("Maliang automatic local attachment upload", () => {
+describe("ShenBi automatic local attachment upload", () => {
   const trustedRuntime = { trustedOrigin: "https://maliang.example" };
   const uploadUrl = "https://maliang.example/mcp/upload/private-token-1234567890";
 
@@ -239,7 +239,7 @@ describe("Maliang automatic local attachment upload", () => {
   });
 });
 
-describe("Maliang portable helper CLI", () => {
+describe("ShenBi portable helper CLI", () => {
   test("runs the same .mjs with Bun and with Node 20+ when available", async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), "maliang-helper-cli-"));
     temporaryDirectories.push(directory);
@@ -311,7 +311,7 @@ describe("Maliang portable helper CLI", () => {
   });
 });
 
-describe("Maliang Codex-managed local MCP", () => {
+describe("ShenBi Codex-managed local MCP", () => {
   test("uploads an attachment and saves the original image through managed stdio", async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), "maliang-local-mcp-"));
     temporaryDirectories.push(directory);

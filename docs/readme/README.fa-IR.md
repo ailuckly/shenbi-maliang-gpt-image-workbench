@@ -1,8 +1,8 @@
 <div align="center">
 
 <h1>
-  <img src="../../public/image/logo-small.webp" alt="Shenbi Maliang Logo" width="48" align="texttop" />
-  Shenbi Maliang GPT Image Workbench
+  <img src="../../public/brand/shenbi-icon.webp" alt="ShenBi Logo" width="48" align="texttop" />
+  ShenBi AI Image Studio
 </h1>
 
 [简体中文](../../README.md) | [English](../../README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Русский](README.ru.md) | فارسی
@@ -11,7 +11,7 @@
 
 </div>
 
-Shenbi Maliang GPT Image Workbench محیطی برای تولید و ویرایش تصویر با هوش مصنوعی است که برای استقرار خصوصی در تیم‌ها طراحی شده است. این پروژه از حساب‌های اشتراک ChatGPT، APIهای سازگار با OpenAI، پراکسی‌های CPA و endpointهای خصوصی تصویر پشتیبانی می‌کند.
+ShenBi AI Image Studio محیطی برای تولید و ویرایش تصویر با هوش مصنوعی است که برای استقرار خصوصی در تیم‌ها طراحی شده است. این پروژه از حساب‌های اشتراک ChatGPT، APIهای سازگار با OpenAI، پراکسی‌های CPA و endpointهای خصوصی تصویر پشتیبانی می‌کند.
 
 ## ✨ نمای کلی
 

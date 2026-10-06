@@ -67,7 +67,7 @@ try {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       application_type: "native",
-      client_name: "Maliang smoke agent",
+      client_name: "ShenBi smoke agent",
       redirect_uris: ["http://127.0.0.1:43123/callback"],
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
@@ -210,7 +210,7 @@ try {
   if (!reportData?.reported || reportData.deviceName !== deviceName) throw new Error("Device reporting did not persist the real hostname");
   if (!accountData?.authenticated || accountData.user?.username !== "smoke-user") throw new Error("Account status did not resolve the OAuth principal");
   if (registration.application_type !== "native") throw new Error("DCR application_type was not returned");
-  if (installManifest.userInstruction !== `访问 ${metadata.issuer}/install，安装神笔马良。`) throw new Error("User installation instruction changed unexpectedly");
+  if (installManifest.userInstruction !== `访问 ${metadata.issuer}/install，安装ShenBi。`) throw new Error("User installation instruction changed unexpectedly");
   if (installManifest.execution?.mode !== "execute-installation") throw new Error("Agent execution policy is missing");
   if (pluginManifest.version !== expectedPluginVersion) throw new Error("Plugin manifest version does not match plugin.json");
   if (serverVersion?.version !== pluginManifest.version) throw new Error("MCP server version did not match the plugin version source");

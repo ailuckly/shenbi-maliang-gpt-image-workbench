@@ -73,8 +73,8 @@ function loginTitleCandidates(files: string[], preferredStems: string[], predica
 export function buildLoginAssets(files: string[]) {
   const lightBackgrounds = files.filter(isLoginLightBackground).map(loginAssetUrl);
   const darkBackgrounds = files.filter(isLoginDarkBackground).map(loginAssetUrl);
-  const lightTitleFiles = loginTitleCandidates(files, ["login_title", "login_title2", "login_title1", "logon_title"], isLoginLightTitle);
-  const darkTitleFiles = loginTitleCandidates(files, ["login_dark_title"], isLoginDarkTitle);
+  const lightTitleFiles = loginTitleCandidates(files, ["login_title_shenbi", "login_title", "login_title2", "login_title1", "logon_title"], isLoginLightTitle);
+  const darkTitleFiles = loginTitleCandidates(files, ["login_dark_title_shenbi", "login_dark_title"], isLoginDarkTitle);
   const lightTitle = lightTitleFiles[0] ?? "";
   const darkTitle = darkTitleFiles[0] ?? lightTitle;
 

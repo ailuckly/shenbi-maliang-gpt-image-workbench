@@ -1,8 +1,8 @@
 <div align="center">
 
 <h1>
-  <img src="../../public/image/logo-small.webp" alt="Shenbi Maliang Logo" width="48" align="texttop" />
-  Shenbi Maliang GPT Image Workbench
+  <img src="../../public/brand/shenbi-icon.webp" alt="ShenBi Logo" width="48" align="texttop" />
+  ShenBi AI Image Studio
 </h1>
 
 [简体中文](../../README.md) | [English](../../README.en.md) | [日本語](README.ja.md) | 한국어 | [Русский](README.ru.md) | [فارسی](README.fa-IR.md)
@@ -11,7 +11,7 @@
 
 </div>
 
-Shenbi Maliang GPT Image Workbench는 팀 내부 프라이빗 배포를 위해 설계된 AI 이미지 생성 및 이미지 편집 워크벤치입니다. ChatGPT 구독 계정, OpenAI 호환 API, CPA 프록시, 프라이빗 이미지 엔드포인트 등을 연결할 수 있습니다.
+ShenBi AI Image Studio는 팀 내부 프라이빗 배포를 위해 설계된 AI 이미지 생성 및 이미지 편집 워크벤치입니다. ChatGPT 구독 계정, OpenAI 호환 API, CPA 프록시, 프라이빗 이미지 엔드포인트 등을 연결할 수 있습니다.
 
 ## ✨ 한눈에 보기
 

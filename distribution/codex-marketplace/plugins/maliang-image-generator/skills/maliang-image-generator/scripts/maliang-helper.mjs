@@ -57,7 +57,7 @@ function privateOrLoopbackHostname(hostname) {
 
 function trustedMaliangOrigin(runtime = {}) {
   const configured = runtime.trustedOrigin ?? PACKAGED_MALIANG_BASE_URL;
-  if (!configured || configured.includes("__MALIANG_")) throw new Error("马良帮助器尚未绑定可信服务地址");
+  if (!configured || configured.includes("__MALIANG_")) throw new Error("ShenBi帮助器尚未绑定可信服务地址");
   const url = safeHttpUrl(configured, "可信服务地址");
   const allowInsecureLocal = runtime.allowInsecureLocal ?? PACKAGED_ALLOW_INSECURE_LOCAL;
   if (url.protocol !== "https:") {
@@ -73,11 +73,11 @@ function trustedMaliangOrigin(runtime = {}) {
 function safeMaliangEndpoint(value, label, endpoint, runtime) {
   const url = safeHttpUrl(value, label);
   const trusted = trustedMaliangOrigin(runtime);
-  if (url.origin !== trusted.origin || url.search || url.hash) throw new Error(`${label}不属于已配置的神笔马良服务`);
+  if (url.origin !== trusted.origin || url.search || url.hash) throw new Error(`${label}不属于已配置的ShenBi服务`);
   const pattern = endpoint === "upload"
     ? /^\/mcp\/upload\/[A-Za-z0-9_-]{20,512}$/
     : /^\/mcp\/image-result\/v\d+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
-  if (!pattern.test(url.pathname)) throw new Error(`${label}路径不符合神笔马良安全接口`);
+  if (!pattern.test(url.pathname)) throw new Error(`${label}路径不符合ShenBi安全接口`);
   return url;
 }
 
@@ -306,7 +306,7 @@ if (isMainModule) {
   try {
     console.log(JSON.stringify(await main()));
   } catch (error) {
-    console.error(error instanceof Error ? error.message : "马良本地帮助器执行失败");
+    console.error(error instanceof Error ? error.message : "ShenBi本地帮助器执行失败");
     process.exitCode = 1;
   }
 }

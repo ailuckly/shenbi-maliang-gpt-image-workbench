@@ -110,7 +110,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$packageRoot/distribution" | Out-Null
           Copy-Item -Path "distribution/codex-marketplace" -Destination "$packageRoot/distribution" -Recurse -Force
           Copy-Item -Path "scripts" -Destination $packageRoot -Recurse -Force
-          Copy-Item -Path "package.json", "bun.lock", "README.md", "README.en.md", "LICENSE" -Destination $packageRoot -Force
+          Copy-Item -Path "package.json", "bun.lock", "README.md", "README.en.md", "LICENSE", "NOTICE.md" -Destination $packageRoot -Force
+          Copy-Item -Path "LICENSES" -Destination $packageRoot -Recurse -Force
           New-Item -ItemType Directory -Force -Path "$packageRoot/docs" | Out-Null
           Copy-Item -Path "docs/changelog.md" -Destination "$packageRoot/docs/changelog.md" -Force
 
@@ -174,7 +175,7 @@ jobs:
           $packageRoot = "release/shenbi-maliang-source"
           New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 
-          $directories = @("server", "src", "public", "scripts", "docs", "distribution")
+          $directories = @("server", "src", "public", "scripts", "docs", "distribution", "LICENSES")
           foreach ($directory in $directories) {
             if (Test-Path $directory) {
               Copy-Item -Path $directory -Destination $packageRoot -Recurse -Force
@@ -191,6 +192,7 @@ jobs:
             "README.md",
             "README.en.md",
             "LICENSE",
+            "NOTICE.md",
             "SECURITY.md",
             "CONTRIBUTING.md",
             "start-update.bat",

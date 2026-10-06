@@ -29,15 +29,13 @@ const DEFAULT_LOGIN_BACKGROUNDS: Record<LoginTheme, string[]> = {
 };
 
 const DEFAULT_LOGIN_TITLE_ART: Record<LoginTheme, string> = {
-  light: publicAssetPath("/login/login_title.png"),
-  dark: publicAssetPath("/login/login_dark_title.png")
+  light: publicAssetPath("/login/login_title_shenbi.png"),
+  dark: publicAssetPath("/login/login_dark_title_shenbi.png")
 };
 
 const DEFAULT_LOGIN_TITLE_FALLBACKS = [
-  publicAssetPath("/login/login_title.png"),
-  publicAssetPath("/login/login_title2.png"),
-  publicAssetPath("/login/login_title1.png"),
-  publicAssetPath("/login/logon_title.png")
+  publicAssetPath("/login/login_title_shenbi.png"),
+  publicAssetPath("/login/login_dark_title_shenbi.png")
 ];
 
 export const DEFAULT_LOGIN_ASSETS: LoginAssets = {

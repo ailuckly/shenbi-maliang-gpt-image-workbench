@@ -1,8 +1,8 @@
 <div align="center">
 
 <h1>
-  <img src="public/image/logo-small.webp" alt="神笔马良 Logo" width="48" align="texttop" />
-  神笔马良 GPT Image Workbench
+  <img src="public/brand/shenbi-icon.webp" alt="ShenBi Logo" width="48" align="texttop" />
+  ShenBi AI Image Studio
 </h1>
 
 简体中文 | [English](README.en.md) | [日本語](docs/readme/README.ja.md) | [한국어](docs/readme/README.ko.md) | [Русский](docs/readme/README.ru.md) | [فارسی](docs/readme/README.fa-IR.md)
@@ -11,7 +11,11 @@
 
 </div>
 
-神笔马良 GPT Image Workbench 是一个面向团队内部私有部署的 AI 图片生成与图片编辑工作台，支持 ChatGPT 订阅账号、OpenAI 兼容接口和 CPA 代理等渠道，并可在官网额度、Codex 额度等多链路间调度。
+ShenBi AI Image Studio 是一个面向团队内部私有部署的 AI 图片生成与图片编辑工作台，支持 ChatGPT 订阅账号、OpenAI 兼容接口和 CPA 代理等渠道，并可在官网额度、Codex 额度等多链路间调度。
+
+本项目基于 [Xiongdaxz/shenbi-maliang-gpt-image-workbench](https://github.com/Xiongdaxz/shenbi-maliang-gpt-image-workbench) 二次开发，以 AGPL-3.0-only 发布；上游 MIT 许可证与版权声明保留在 [LICENSES/MIT-upstream.txt](LICENSES/MIT-upstream.txt)，归属说明见 [NOTICE.md](NOTICE.md)。
+
+当前 Fork 的开发基线与规划：[项目知识库](docs/project/README.md) · [完整目标与路线](docs/project/GOAL-ROADMAP.md) · [备用设计素材](docs/assets-library/README.md)。
 
 ## ✨ 亮点功能
 
@@ -173,7 +177,7 @@ data/     本地运行数据目录，启动后自动生成
 
 - `README.md`
 - `README.en.md`
-- `LICENSE`
+- `LICENSE`、`NOTICE.md`、`LICENSES/`
 - `RUNNING.md`
 - `package.json`
 - `bun.lock`
@@ -196,7 +200,7 @@ data/     本地运行数据目录，启动后自动生成
 - [chatgpt2api](https://github.com/basketikun/chatgpt2api)
 - [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
 
-项目仓库和发行包不包含图片任务提示音。管理员可在后台“提示音管理”中前往 Mixkit 等素材网站手动下载并上传到本地；运行时上传的第三方音频不属于本项目 MIT 许可证的授权范围，使用者应自行确认素材许可。
+项目仓库和发行包不包含图片任务提示音。管理员可在后台“提示音管理”中前往 Mixkit 等素材网站手动下载并上传到本地；运行时上传的第三方音频不属于本项目许可证的授权范围，使用者应自行确认素材许可。
 
 ## ⚠️ 免责声明
 
@@ -213,7 +217,7 @@ data/     本地运行数据目录，启动后自动生成
 
 ## 📄 许可证
 
-MIT。详见 [LICENSE](LICENSE)。
+AGPL-3.0-only。详见 [LICENSE](LICENSE)；上游 MIT 声明与第三方归属见 [NOTICE.md](NOTICE.md)。通过网络向他人提供修改版服务时，须向用户提供对应源代码。
 
 ## 🤝 社区支持
 

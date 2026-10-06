@@ -25,7 +25,7 @@ import { deleteStoredFilesIfUnreferenced, readStoredFile, secureBrandingAssetPat
 import type { BrandingAssetRow, BrandingAssetType, BrandingSettingsRow } from "./types";
 import { makeId, normalizeIdList, now } from "./utils";
 
-const DEFAULT_SITE_NAME = "神笔马良";
+const DEFAULT_SITE_NAME = "ShenBi";
 const DEFAULT_LOGO_ASSET_ID = "builtin-logo";
 const DEFAULT_FAVICON_ASSET_ID = "builtin-favicon";
 const DEFAULT_LOGIN_TITLE_LIGHT_ASSET_ID = "builtin-login-title-light";
@@ -40,10 +40,10 @@ const BRANDING_ASSET_TYPES: BrandingAssetType[] = [
   "login_background_light",
   "login_background_dark"
 ];
-const DEFAULT_LOGO_URL = "/image/logo.png";
-const DEFAULT_LOGO_THUMB_URL = "/image/logo-small.webp";
+const DEFAULT_LOGO_URL = "/brand/shenbi-icon.png";
+const DEFAULT_LOGO_THUMB_URL = "/brand/shenbi-icon.webp";
 const DEFAULT_FAVICON_URL = DEFAULT_LOGO_URL;
-const DEFAULT_FAVICON_CACHE_VERSION = "default-logo";
+const DEFAULT_BRANDING_CACHE_VERSION = "shenbi-v1";
 const PUBLIC_BRANDING_CACHE_MS = 30 * 1000;
 type BrandingAssetUrlVariant = "original" | "thumb" | "preview";
 
@@ -108,7 +108,9 @@ function brandingFileUrl(id: string, variant: BrandingAssetUrlVariant = "origina
   const baseUrl = `/api/files/branding/${encodeURIComponent(id)}`;
   const params = new URLSearchParams();
   if (variant !== "original") params.set("variant", variant);
-  if (id === DEFAULT_FAVICON_ASSET_ID) params.set("v", DEFAULT_FAVICON_CACHE_VERSION);
+  if ([DEFAULT_LOGO_ASSET_ID, DEFAULT_FAVICON_ASSET_ID, DEFAULT_LOGIN_TITLE_LIGHT_ASSET_ID, DEFAULT_LOGIN_TITLE_DARK_ASSET_ID].includes(id)) {
+    params.set("v", DEFAULT_BRANDING_CACHE_VERSION);
+  }
   const query = params.toString();
   return query ? `${baseUrl}?${query}` : baseUrl;
 }
