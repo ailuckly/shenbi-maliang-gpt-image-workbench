@@ -6,11 +6,14 @@ import { PageLoading } from "../components/PageLoading";
 import { useI18n } from "../i18n";
 import { useDocumentBranding } from "../lib/branding";
 import { ToastProvider } from "../ui";
+import { useAppearanceMode } from "../hooks/useAppearanceMode";
 import { ConfigDashboard } from "./ConfigDashboard";
 
 export default function ConfigApp() {
   const { t } = useI18n();
   const status = useQuery({ queryKey: ["config-status"], queryFn: configApi.status });
+  const me=useQuery({queryKey:["me"],queryFn:api.me,enabled:status.data?.authenticated===true});
+  useAppearanceMode({preferredMode:me.data?.user?.appearanceMode});
   const branding = useQuery({ queryKey: ["branding"], queryFn: api.branding });
 
   useDocumentBranding(branding.data);

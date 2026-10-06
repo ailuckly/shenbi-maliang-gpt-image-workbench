@@ -70,7 +70,7 @@ import {
   safeJson
 } from "./utils";
 import { initAppDb, initConfigDb, seedCases, seedPromptReferenceLinks, seedPromptTemplates, seedProvider } from "./schema";
-import { pullCpaImageAccounts, refreshImageAccountUsages } from "./providerRuntime";
+import { pullCpaImageAccounts, refreshImageAccountUsages, enabledProvidersForCurrentMode, defaultProviderSelectionId } from "./providerRuntime";
 import {
   futureDate,
   isConfigAuthed,
@@ -101,7 +101,7 @@ import { invalidateLibraryFacetCache, registerLibraryRoutes } from "./libraryRou
 import { registerLanguageModelAssignmentRoutes } from "./languageModelAssignments";
 import { registerPromptOptimizerRoutes } from "./promptOptimizerRoutes";
 import { fetchProviderModelCatalog } from "./providerModels";
-import { readProviderModelCatalogCache, writeProviderModelCatalogCache } from "./providerModelCache";
+import { readProviderModelCatalogCache, writeProviderModelCatalogCache, readProviderModelProbe, providerModelCatalogConnectionSignature } from "./providerModelCache";
 import { providerSecretInput } from "./providerConfigInput";
 import { registerPromptColorSchemeRoutes } from "./promptColorSchemeRoutes";
 import { registerPromptReferenceLinkRoutes } from "./promptReferenceLinkRoutes";
@@ -130,6 +130,7 @@ import { registerRuntimeLogRoutes } from "./runtimeLogRoutes";
 import { resolveDebugSettingsUpdate } from "./debugSettings";
 import {
   initializeRuntimeLogging,
+  sanitizeRuntimeLogString,
   runtimeLog,
   runtimeLogErrorWithConsole,
   runtimeLogStore,
@@ -2070,7 +2071,10 @@ api.get("/config/providers", (c) => {
     configDb,
     "select * from provider_configs order by created_at asc"
   );
-  return c.json({ providers: rows.map((row) => toProvider(row, false)) });
+  return c.json({ providers: rows.map((row) => toProvider(row, false)),
+    probes:Object.fromEntries(rows.map(row=>[row.id,readProviderModelProbe(configDb,row)])),
+    defaultProviderId:defaultProviderSelectionId(imageGenerationSettings().mode,enabledProvidersForCurrentMode())
+  });
 });
 
 api.get("/config/providers/:id/api-key", (c) => {
@@ -2183,11 +2187,14 @@ api.post("/config/providers/models", async (c) => {
   const blocked = requireConfig(c);
   if (blocked) return blocked;
   const raw = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  const startedAt=Date.now();
+  let testedProvider:ProviderRow|null=null;
   try {
-    const provider = providerForModelDiscovery(raw);
+    const provider = providerForModelDiscovery(raw); testedProvider=provider;
     const result = await fetchProviderModelCatalog(provider);
     const cachedResult = writeProviderModelCatalogCache(configDb, provider, result);
     audit("provider.models", {
+      ok:true, signature:providerModelCatalogConnectionSignature(provider),
       id: provider.id,
       name: provider.name,
       channel: provider.channel,
@@ -2199,7 +2206,11 @@ api.post("/config/providers/models", async (c) => {
     });
     return c.json(cachedResult);
   } catch (error) {
-    return c.json({ error: apiErrorMessage(error, "模型列表获取失败") }, 400);
+    let message=apiErrorMessage(error,"模型列表获取失败");
+    if(testedProvider)for(const secret of [testedProvider.api_key_value,testedProvider.api_key_env ? Bun.env[testedProvider.api_key_env] : "",testedProvider.web_cookies])if(secret)message=message.split(secret).join("[redacted]");
+    message=sanitizeRuntimeLogString(message);
+    if(testedProvider)audit("provider.models",{id:testedProvider.id,signature:providerModelCatalogConnectionSignature(testedProvider),ok:false,error:message,durationMs:Date.now()-startedAt});
+    return c.json({ error:message }, 400);
   }
 });
 

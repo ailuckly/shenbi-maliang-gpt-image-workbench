@@ -1253,7 +1253,7 @@ function normalizeWebAccountModeValue(value: unknown): ProviderConfig["webAccoun
   return "priority";
 }
 
-function normalizeProviderForm(provider: ProviderConfig): ProviderConfig {
+export function normalizeProviderForm(provider: ProviderConfig): ProviderConfig {
   const merged = { ...emptyProvider(), ...provider };
   return {
     ...merged,
@@ -2210,7 +2210,7 @@ export function ProvidersPanel() {
   );
 }
 
-function emptyPromptOptimizerProvider(existingIds: string[] = []): PromptOptimizerProvider {
+export function emptyPromptOptimizerProvider(existingIds: string[] = []): PromptOptimizerProvider {
   const used = new Set(existingIds);
   let id = `PROMPTOPT-${providerIdTimestamp(new Date())}`;
   let date = new Date();
@@ -2248,7 +2248,7 @@ function normalizePromptOptimizerTemperature(value: unknown) {
   return Number.isFinite(temperature) ? Math.max(0, Math.min(2, temperature)) : null;
 }
 
-function normalizePromptOptimizerProvider(provider: PromptOptimizerProvider): PromptOptimizerProvider {
+export function normalizePromptOptimizerProvider(provider: PromptOptimizerProvider): PromptOptimizerProvider {
   const availabilityStatus = provider.availabilityStatus === "normal" || provider.availabilityStatus === "abnormal"
     ? provider.availabilityStatus
     : "unknown";
@@ -2588,7 +2588,7 @@ const LANGUAGE_MODEL_ASSIGNMENT_GROUPS: Array<{
   }
 ];
 
-function LanguageModelAssignmentsPanel({ providers }: { providers: PromptOptimizerProvider[] }) {
+export function LanguageModelAssignmentsPanel({ providers }: { providers: PromptOptimizerProvider[] }) {
   const queryClient = useQueryClient();
   const copy = useConfigCopy();
   const { showToast } = useToast();

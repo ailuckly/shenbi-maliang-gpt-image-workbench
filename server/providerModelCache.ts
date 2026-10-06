@@ -88,3 +88,13 @@ export function writeProviderModelCatalogCache(
   );
   return { ...catalog, cachedAt: timestamp };
 }
+
+export function readProviderModelProbe(db: Database, provider: ProviderRow) {
+  const row = db.query<{detail:string;created_at:string},[string,string]>(
+    "select detail,created_at from config_audit_logs where action='provider.models' and json_extract(detail,'$.id')=? and json_extract(detail,'$.signature')=? order by rowid desc limit 1"
+  ).get(provider.id,providerModelCatalogConnectionSignature(provider));
+  if (!row) return null;
+  const detail=safeJson<Record<string,unknown>>(row.detail,{});
+  if(typeof detail.ok!=="boolean")return null;
+  return {ok:detail.ok,error:String(detail.error||""),count:Number(detail.count||0),durationMs:Number(detail.durationMs||0),checkedAt:row.created_at};
+}

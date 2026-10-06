@@ -144,3 +144,20 @@ html[data-appearance="dark"] {
 .page-loading-mark, .page-loading-logo { animation: none; }
 @media (max-width: 767px) { .v2-page { padding: 16px; }.v2-page:has(.v2-gallery) { padding-top: 64px; }.v2-gallery-fields { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { :root { --sb-motion: 0ms; }.v2-page *, .v2-dialog *, .v2-menu * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* Existing admin layouts adopt the same theme; their structure stays intact. */
+html .config-shell {background:var(--sb-bg);color:var(--sb-text);transition:none}
+html .config-side,html .config-card {background:var(--sb-surface);color:var(--sb-text);border-color:var(--sb-border)}
+html .config-side {transition:none}
+html .config-nav-heading,html .config-side p {color:var(--sb-muted)}
+html .config-nav-heading::after {background:var(--sb-border)}
+html .config-nav button,html .config-side-toggle,html .config-side .config-logout-btn {color:var(--sb-text);background:transparent;border-color:transparent;border-radius:6px;backdrop-filter:none;transform:none;transition:color var(--sb-motion),background-color var(--sb-motion)}
+html .config-nav button:hover,html .config-side-toggle:hover {background:var(--sb-soft);color:var(--sb-text);transform:none}
+html .config-nav button[data-state="active"] {background:var(--sb-soft);color:var(--sb-accent);border-color:var(--sb-border)}
+html .config-language-select .custom-select-trigger {background:var(--sb-surface);color:var(--sb-text);border-color:var(--sb-control-border);border-radius:6px}
+html .config-language-icon {color:var(--sb-muted)}
+html .config-card h2,html .config-card h3,html .config-card label,html .config-card strong {color:var(--sb-text)}
+html .config-card p,html .config-card small {color:var(--sb-muted)}
+@media(max-width:980px){html .config-shell.config-side-collapsed{grid-template-columns:1fr}html .config-shell.config-side-collapsed .config-nav{display:none}}
+html .config-shell .config-side-toggle {color:var(--sb-text);background:var(--sb-soft);border-radius:6px}
+html .config-shell.config-side-collapsed .config-language-select .custom-select-trigger,html .config-shell.config-side-collapsed .config-logout-btn {background:var(--sb-surface);color:var(--sb-text);border-radius:6px;border-color:var(--sb-control-border)}
+html .config-shell button:focus-visible {outline:2px solid var(--sb-accent);outline-offset:2px}

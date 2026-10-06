@@ -89,3 +89,25 @@ test("style pack APIs isolate owners and preview unsaved edits with generation c
     const [stdout,stderr,code]=await Promise.all([new Response(child.stdout).text(),new Response(child.stderr).text(),child.exited]);expect(stderr).toBe("");expect(code).toBe(0);expect(stdout.trim().split("\n").at(-1)).toBe("style-api-ok");
   } finally {await rm(directory,{recursive:true,force:true});}
 },15000);
+
+test("system previews and transactional group moves require config authorization",async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),"shenbi-admin-style-"));
+  try{
+    const url=(name:string)=>JSON.stringify(new URL(name,import.meta.url).href);
+    const program=`
+      import assert from 'node:assert/strict';import {Hono} from 'hono';
+      import {appDb,configDb} from ${url("./db.ts")};import {initAppDb,initConfigDb} from ${url("./schema.ts")};import {registerStylePackRoutes} from ${url("./stylePackRoutes.ts")};import {composePrompt} from ${url("./promptEngine/compose.ts")};
+      initAppDb();initConfigDb();const stamp=new Date().toISOString(),expiry=new Date(Date.now()+60000).toISOString();configDb.query('insert into config_auth_sessions values(?,?,?)').run('test-admin',expiry,stamp);
+      const app=new Hono();registerStylePackRoutes(app);const request=(route,body,admin=true)=>app.request(route,{method:'POST',headers:{'content-type':'application/json',...(admin?{cookie:'config_session=test-admin'}:{})},body:JSON.stringify(body)});
+      assert.equal((await request('/config/style-packs/preview',{prompt:'test'},false)).status,401);assert.equal((await request('/config/style-packs/unknown/move',{direction:'up'},false)).status,401);
+      const packs=[];for(const name of ['A','B','C']){const response=await request('/config/style-packs',{name,groupKey:'test-group',sortOrder:0,promptPrefix:'studio',enabled:false});assert.equal(response.status,201);packs.push((await response.json()).stylePack);}
+      const preview=await request('/config/style-packs/preview',{prompt:'cup',stylePackId:packs[1].id});assert.equal(preview.status,200);assert.deepEqual(await preview.json(),composePrompt({prompt:'cup',stylePack:packs[1]}));
+      assert.equal((await request('/config/style-packs/'+packs[1].id+'/move',{direction:'up'})).status,200);
+      const order=()=>appDb.query("select name from style_packs where group_key='test-group' order by sort_order,name,id").all().map(p=>p.name);
+      assert.deepEqual(order(),['B','A','C']);assert.equal((await request('/config/style-packs/'+packs[1].id+'/move',{direction:'up'})).status,200);assert.deepEqual(order(),['B','A','C']);
+      assert.equal((await request('/config/style-packs/'+packs[1].id+'/move',{direction:'down'})).status,200);assert.deepEqual(order(),['A','B','C']);assert.equal((await request('/config/style-packs/'+packs[0].id+'/move',{direction:'other'})).status,400);
+      assert.equal(configDb.query("select count(*) as count from config_audit_logs where action='style_pack.move'").get().count,3);appDb.close();configDb.close();console.log('admin-style-ok');
+    `;
+    const child=Bun.spawn([process.execPath,"--eval",program],{env:{...Bun.env,GPT_IMAGE_DATA_DIR:directory,GPT_IMAGE_APP_DB_PATH:path.join(directory,"app.db"),GPT_IMAGE_CONFIG_DB_PATH:path.join(directory,"config.db")},stdout:"pipe",stderr:"pipe"});const [stdout,stderr,code]=await Promise.all([new Response(child.stdout).text(),new Response(child.stderr).text(),child.exited]);expect(stderr).toBe("");expect(code).toBe(0);expect(stdout.trim().split("\n").at(-1)).toBe("admin-style-ok");
+  }finally{await rm(directory,{recursive:true,force:true});}
+},15000);

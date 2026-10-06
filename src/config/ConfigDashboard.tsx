@@ -27,7 +27,9 @@ import {
   CONFIG_TAB_STORAGE_KEY
 } from "./configNav";
 import { AssetReviewPanel, CaseReviewPanel, ContentCategoryManagementPanel, StarterCopySettingsPanel } from "./panels/content";
-import { CpaPanel, ImageAccountPoolPanel, ImageModePanel, PromptOptimizerPanel, ProvidersPanel, SafetyReviewPanel } from "./panels/generation";
+import { CpaPanel, ImageAccountPoolPanel, ImageModePanel, SafetyReviewPanel } from "./panels/generation";
+import { ProvidersPanel, PromptOptimizerPanel } from "../v2/config/ProvidersPanel";
+import { StylePacksPage } from "../v2/pages/StylePacksPage";
 import { AccountSearchPanel, TeamAccountPanel } from "./panels/members";
 import { ChangelogPanel, StatisticsPanel } from "./panels/overview";
 import { ImageTaskSoundManagementPanel } from "./panels/sounds";
@@ -107,7 +109,7 @@ export function ConfigDashboard() {
             <ProjectLogo className="config-side-logo" />
             <span>{t("config.center")}</span>
           </div>
-          <button className="config-side-toggle" type="button" onClick={toggleConfigSide} aria-label={sideToggleLabel} title={sideToggleLabel}>
+          <button className="config-side-toggle" type="button" onClick={toggleConfigSide} aria-expanded={!sideCollapsed} aria-label={sideToggleLabel} title={sideToggleLabel}>
             <PanelLeft size={18} aria-hidden="true" />
           </button>
         </div>
@@ -181,6 +183,7 @@ export function ConfigDashboard() {
         <Tabs.Content value="promptOptimizer">
           <PromptOptimizerPanel />
         </Tabs.Content>
+        <Tabs.Content value="stylePacks"><StylePacksPage admin /></Tabs.Content>
         <Tabs.Content value="safetyReview">
           <SafetyReviewPanel />
         </Tabs.Content>

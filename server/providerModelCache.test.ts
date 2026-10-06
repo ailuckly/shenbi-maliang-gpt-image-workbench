@@ -3,6 +3,7 @@ import { Database } from "bun:sqlite";
 import type { ProviderRow } from "./types";
 import {
   providerModelCatalogConnectionSignature,
+  readProviderModelProbe,
   readProviderModelCatalogCache,
   writeProviderModelCatalogCache
 } from "./providerModelCache";
@@ -91,4 +92,15 @@ describe("provider model catalog cache", () => {
       else Bun.env[envName] = previous;
     }
   });
+});
+
+test("latest directory probes retain a failed result across reload and invalidate on connection changes",()=>{
+  const db=new Database(":memory:");db.exec("create table config_audit_logs(action text,detail text,created_at text)");
+  const current=provider(),signature=providerModelCatalogConnectionSignature(current);
+  const insert=(detail:unknown,time:string)=>db.query("insert into config_audit_logs values(?,?,?)").run("provider.models",JSON.stringify(detail),time);
+  insert({id:current.id,signature,ok:true,count:2,durationMs:4},"2026-10-07T00:00:00Z");
+  insert({id:current.id,signature,ok:false,error:"Connection refused",durationMs:8},"2026-10-07T00:01:00Z");
+  expect(readProviderModelProbe(db,current)).toEqual({ok:false,error:"Connection refused",count:0,durationMs:8,checkedAt:"2026-10-07T00:01:00Z"});
+  expect(readProviderModelProbe(db,provider({base_url:"https://new.example"}))).toBeNull();
+  expect(JSON.stringify(readProviderModelProbe(db,current))).not.toContain("secret-key");db.close();
 });

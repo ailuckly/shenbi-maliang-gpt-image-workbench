@@ -57,6 +57,37 @@ export function registerStylePackRoutes(api: Hono) {
       });
     }
 
+    api.post(prefix + "/preview", async c => {
+      const auth = await access(c); if (auth instanceof Response) return auth;
+      const parsed = z.object({
+        prompt: z.string().max(30000), negativePrompt: z.string().max(10000).optional(),
+        stylePackId: z.string().max(128).optional(), manuallyEdited: z.boolean().optional(),
+        stylePack: stylePackInputSchema.optional(),
+        userParams: stylePackParamsSchema.optional()
+      }).strict().refine(value => !(value.stylePackId && value.stylePack)).safeParse(await c.req.json().catch(() => null));
+      if (!parsed.success) return c.json({ error: "预览参数无效" }, 400);
+      const row = parsed.data.stylePackId ? (admin ? owned(parsed.data.stylePackId, null) : visibleStylePack(appDb, auth.owner!, parsed.data.stylePackId)) : null;
+      if (parsed.data.stylePackId && !row) return c.json({ error: "风格包不存在或不可用" }, 404);
+      if (row && !row.enabled && !admin) return c.json({ error: "风格包已停用" }, 400);
+      return c.json(composePrompt({ ...parsed.data, stylePack: parsed.data.stylePack || (row ? publicStylePack(row) : null) }));
+    });
+    if (admin) api.post(prefix + "/:id/move", async c => {
+      const auth = await access(c); if (auth instanceof Response) return auth;
+      const row = owned(c.req.param("id") || "", null);
+      if (!row) return c.json({ error: "风格包不存在" }, 404);
+      const parsed = z.object({direction:z.enum(["up","down"])}).strict().safeParse(await c.req.json().catch(()=>null));
+      if (!parsed.success) return c.json({error:"排序参数无效"},400);
+      appDb.transaction(()=>{
+        const rows=appDb.query<StylePackRow,[string]>("select * from style_packs where scope='system' and group_key=? order by sort_order,name,id").all(row.group_key);
+        const index=rows.findIndex(pack=>pack.id===row.id), next=index+(parsed.data.direction==="up" ? -1 : 1);
+        if(next<0 || next>=rows.length)return;
+        [rows[index],rows[next]]=[rows[next],rows[index]];
+        const timestamp=now();
+        rows.forEach((pack,order)=>appDb.query("update style_packs set sort_order=?,updated_at=? where id=?").run(order,timestamp,pack.id));
+      })();
+      audit("style_pack.move",{id:row.id,direction:parsed.data.direction});
+      return c.json({ok:true});
+    });
     api.delete(prefix + "/:id", async c => {
       const auth = await access(c); if (auth instanceof Response) return auth;
       const row = owned(c.req.param("id") || "", auth.owner);
@@ -66,19 +97,4 @@ export function registerStylePackRoutes(api: Hono) {
       return c.json({ ok: true });
     });
   }
-
-  api.post("/style-packs/preview", async c => {
-    const user = await requireUser(c); if (!user) return c.json({ error: "请先登录" }, 401);
-    const parsed = z.object({
-      prompt: z.string().max(30000), negativePrompt: z.string().max(10000).optional(),
-      stylePackId: z.string().max(128).optional(), manuallyEdited: z.boolean().optional(),
-      stylePack: stylePackInputSchema.optional(),
-      userParams: stylePackParamsSchema.optional()
-    }).strict().refine(value => !(value.stylePackId && value.stylePack)).safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return c.json({ error: "预览参数无效" }, 400);
-    const row = parsed.data.stylePackId ? visibleStylePack(appDb, user.id, parsed.data.stylePackId) : null;
-    if (parsed.data.stylePackId && !row) return c.json({ error: "风格包不存在或不可用" }, 404);
-    if (row && !row.enabled) return c.json({ error: "风格包已停用" }, 400);
-    return c.json(composePrompt({ ...parsed.data, stylePack: parsed.data.stylePack || (row ? publicStylePack(row) : null) }));
-  });
 }

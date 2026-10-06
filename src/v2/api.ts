@@ -31,7 +31,8 @@ export const stylePackApi = {
   list: (admin=false, signal?:AbortSignal) => request<{stylePacks:StylePack[]}>(admin ? "/api/config/style-packs" : "/api/style-packs",{signal}),
   save: (payload:StylePackInput, id?:string, admin=false) => request<{stylePack:StylePack}>(`/api/${admin ? "config/" : ""}style-packs${id ? "/"+encodeURIComponent(id) : ""}`,{method:id ? "PATCH" : "POST",body:JSON.stringify(payload)}),
   remove: (id:string,admin=false) => request<{ok:boolean}>(`/api/${admin ? "config/" : ""}style-packs/${encodeURIComponent(id)}`,{method:"DELETE"}),
-  preview: (payload:{prompt:string;negativePrompt?:string;stylePackId?:string;stylePack?:StylePackInput;manuallyEdited?:boolean},signal?:AbortSignal) => request<{finalPrompt:string;negative:string;params:StylePack["recommendedParams"]}>("/api/style-packs/preview",{method:"POST",body:JSON.stringify(payload),signal})
+  move: (id:string,direction:"up"|"down") => request<{ok:boolean}>(`/api/config/style-packs/${encodeURIComponent(id)}/move`,{method:"POST",body:JSON.stringify({direction})}),
+  preview: (payload:{prompt:string;negativePrompt?:string;stylePackId?:string;stylePack?:StylePackInput;manuallyEdited?:boolean},signal?:AbortSignal,admin=false) => request<{finalPrompt:string;negative:string;params:StylePack["recommendedParams"]}>(`/api/${admin ? "config/" : ""}style-packs/preview`,{method:"POST",body:JSON.stringify(payload),signal})
 };
 
 // Completed candidates are delivered before done, so cancellation keeps usable work.

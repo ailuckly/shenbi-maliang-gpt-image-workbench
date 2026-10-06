@@ -537,7 +537,7 @@ export const configApi = {
       method: "PUT",
       body: JSON.stringify(imageMode)
     }),
-  providers: () => request<{ providers: ProviderConfig[] }>("/api/config/providers"),
+  providers: () => request<{ providers: ProviderConfig[]; defaultProviderId:string; probes:Record<string,{ok:boolean;error:string;count:number;durationMs:number;checkedAt:string}|null> }>("/api/config/providers"),
   providerApiKey: (id: string) =>
     request<{ apiKeyValue: string }>(`/api/config/providers/${encodeURIComponent(id)}/api-key`),
   cachedProviderModels: (id: string) =>
