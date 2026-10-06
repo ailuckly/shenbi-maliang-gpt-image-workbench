@@ -79,6 +79,27 @@
 | `prompt_optimize_custom_instruction` | 用户在输入区 AI优化风格里的自定义补充指令 |
 | `updated_at` | 更新时间 |
 
+### style_packs
+
+系统及用户私有风格包，存于 app.db。初始化时仅在整表为空时插入已有默认主风格与子风格。旧偏好自定义项通过 `style_packs_user_preferences_v1` 一次性迁移；旧 JSON 和独立补充指令继续保留，删除迁移后的包不会在重启时恢复。
+
+| 字段 | 说明 |
+| --- | --- |
+| `id` | 主键；系统种子使用稳定 ID，旧迁移使用用户与旧条目值的哈希 |
+| `scope` | `system` 或 `user` |
+| `owner_user_id` | 系统包必须为空，私有包必须非空；关联 users，用户删除时级联删除 |
+| `group_key` | 一级风格分组键 |
+| `name` / `description` | 名称与说明 |
+| `optimize_instruction` | 优化时叠加的方向指令 |
+| `prompt_prefix` / `prompt_suffix` | 最终正向提示词前后缀 |
+| `negative_prompt` | 附加负面词 |
+| `recommended_params_json` | 推荐比例、质量及数量 JSON，默认 `{}` |
+| `source_note` | 来源或迁移说明 |
+| `enabled` / `sort_order` | 启用状态（0/1）与排序 |
+| `created_at` / `updated_at` | 创建和更新时间 |
+
+索引为 `(scope, enabled, sort_order)` 与 `(owner_user_id)`。用户列表只返回启用的系统包和自己的私有包（自己的停用包可继续管理）；单包读取遵循同一权限规则。
+
 ### user_snake_progress
 
 贪吃蛇按用户保存的分数；与通用偏好分开，避免游戏计分写入覆盖其他设置。

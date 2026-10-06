@@ -17,6 +17,7 @@ import {
   makeCategorySlug
 } from "./categories";
 import { imageEditMaskDebugEnabled } from "./configFile";
+import { migrateStylePacks } from "./stylePacks";
 import { appDb, configDb, getAll, getOne, run, tableColumnExists } from "./db";
 import { DEFAULT_GLOBAL_SWITCH_ENABLED, GLOBAL_SWITCH_TYPES, type GlobalSwitchType } from "./globalSwitches";
 import {
@@ -680,6 +681,7 @@ export function initAppDb() {
   if (!tableColumnExists(appDb, "user_preferences", "prompt_optimize_custom_instruction")) {
     appDb.run("alter table user_preferences add column prompt_optimize_custom_instruction text not null default ''");
   }
+  migrateStylePacks(appDb);
   run(
     appDb,
     "update user_preferences set edit_suggestion_tone = 'default' where edit_suggestion_tone not in ('default', 'practical', 'creative', 'detail')"
