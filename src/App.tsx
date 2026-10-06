@@ -9,7 +9,7 @@ import { PageLoading } from "./components/PageLoading";
 import { useAppearanceMode } from "./hooks/useAppearanceMode";
 import { useSyncI18nPreference } from "./i18n";
 import { useDocumentBranding } from "./lib/branding";
-const LoginPage = lazy(() => import("./pages/LoginPage").then(module => ({default: module.LoginPage})));
+const LoginPage = lazy(() => import("./v2/pages/LoginPage").then(module => ({default: module.LoginPage})));
 import { ToastProvider } from "./ui";
 import { useImageCompare } from "./store/imageCompare";
 
@@ -42,7 +42,7 @@ function AppContent() {
   const authenticatedNextPath = safeNextPath();
 
   useDocumentBranding(branding.data);
-  useAppearanceMode({ enabled: loggedIn, clearOnDisable: true, preferredMode: me.data?.user?.appearanceMode });
+  useAppearanceMode({ preferredMode: loggedIn ? me.data?.user?.appearanceMode : undefined });
   useSyncI18nPreference(me.data?.user?.preferences.language, loggedIn && !me.isLoading);
 
   useEffect(() => {
