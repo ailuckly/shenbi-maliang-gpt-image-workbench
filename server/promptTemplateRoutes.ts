@@ -3,6 +3,7 @@ import type { Context, Hono } from "hono";
 import { logModelRequest } from "./auditLog";
 import { appDb, configDb, getAll, getOne, run } from "./db";
 import { requireUser } from "./auth";
+import { NEGATIVE_PROMPT_SEPARATOR, splitPlainPrompt } from "./promptEngine/schema";
 import {
   orderedPromptTemplatePresets as promptTemplatePresets,
   type PromptTemplatePreset
@@ -1213,13 +1214,6 @@ function emitPromptStreamDelta(
   state.text = text;
 }
 
-type ParsedPlainPrompt = {
-  prompt: string;
-  negativePrompt: string;
-};
-
-const NEGATIVE_PROMPT_SEPARATOR = "---NEGATIVE PROMPT---";
-
 type PromptOptimizeStyleConfig = {
   label: string;
   temperature?: number;
@@ -1893,51 +1887,6 @@ function resolvedPromptOptimizeStyleConfig(optimizeStyle: PromptOptimizeStyle, s
       userCustomStyleDescription: description
     }
   };
-}
-
-function stripPromptHeading(value: string) {
-  let text = value.trim();
-  const headingPatterns = [
-    /^(?:正向提示词|AI提示词|优化提示词|提示词|Prompt|Positive prompt|Optimized prompt)\s*[:：]\s*/i,
-    /^#+\s*(?:正向提示词|AI提示词|优化提示词|提示词|Prompt|Positive prompt|Optimized prompt)\s*\n+/i
-  ];
-  for (const pattern of headingPatterns) text = text.replace(pattern, "").trim();
-  return text;
-}
-
-function cleanPromptPart(value: string, stripHeadings: boolean) {
-  const text = value.replace(/\r\n/g, "\n").trim();
-  return stripHeadings ? stripPromptHeading(text) : text;
-}
-
-function splitPlainPrompt(content: string, options: { stripHeadings?: boolean } = {}): ParsedPlainPrompt {
-  const text = content.replace(/\r\n/g, "\n").trim();
-  if (!text) return { prompt: "", negativePrompt: "" };
-  const stripHeadings = options.stripHeadings !== false;
-  const separatorIndex = text.toUpperCase().indexOf(NEGATIVE_PROMPT_SEPARATOR);
-  if (separatorIndex >= 0) {
-    return {
-      prompt: cleanPromptPart(text.slice(0, separatorIndex), stripHeadings),
-      negativePrompt: cleanPromptPart(text.slice(separatorIndex + NEGATIVE_PROMPT_SEPARATOR.length), stripHeadings)
-    };
-  }
-  const lines = text.split("\n");
-  const labelIndex = lines.findIndex((line) => /^(?:反向提示词|Negative prompt)\s*[:：]?\s*$/i.test(line.trim()));
-  if (labelIndex >= 0) {
-    return {
-      prompt: cleanPromptPart(lines.slice(0, labelIndex).join("\n"), stripHeadings),
-      negativePrompt: cleanPromptPart(lines.slice(labelIndex + 1).join("\n"), stripHeadings)
-    };
-  }
-  const inlineIndex = lines.findIndex((line) => /^(?:反向提示词|Negative prompt)\s*[:：]/i.test(line.trim()));
-  if (inlineIndex >= 0) {
-    const line = lines[inlineIndex].replace(/^(?:反向提示词|Negative prompt)\s*[:：]\s*/i, "");
-    return {
-      prompt: cleanPromptPart(lines.slice(0, inlineIndex).join("\n"), stripHeadings),
-      negativePrompt: cleanPromptPart([line, ...lines.slice(inlineIndex + 1)].join("\n"), stripHeadings)
-    };
-  }
-  return { prompt: cleanPromptPart(text, stripHeadings), negativePrompt: "" };
 }
 
 async function requestPromptModelText({
