@@ -126,7 +126,7 @@ export type ImageProvenanceCheckResult = {
   results: ImageProvenanceSignal[];
 };
 
-export type GenerateImagePayload = {
+export type GenerateImagePayload = Partial<import("../v2/api").PromptGenerationFields> & {
   clientRequestId: string;
   sessionId?: string;
   providerId?: string;
@@ -345,7 +345,7 @@ function apiErrorMessage(data: unknown, fallback: string) {
   return fallback;
 }
 
-function parsePromptTemplateOptimizeFrame(frame: string) {
+export function parsePromptTemplateOptimizeFrame(frame: string) {
   let event = "message";
   const dataLines: string[] = [];
   for (const line of frame.split("\n")) {

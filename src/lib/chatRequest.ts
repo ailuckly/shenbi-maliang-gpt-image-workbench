@@ -5,6 +5,7 @@ import { isDrawingReferenceName } from "./drawingReference";
 import type { ImageModelId, ImageQuality } from "./imageModels";
 
 export type SubmitRequest = {
+  promptEngine?: import("../v2/api").PromptGenerationFields;
   clientRequestId: string;
   pendingScope: string;
   mode: "generation" | "edit";

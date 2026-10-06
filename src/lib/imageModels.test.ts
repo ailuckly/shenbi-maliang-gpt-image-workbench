@@ -13,6 +13,12 @@ import {
 } from "./imageModels";
 
 describe("image model selection", () => {
+  test("preserves configured model IDs through history, draft and editor normalization", () => {
+    expect(normalizeImageModel(" vendor/custom-image-v3 ", DEFAULT_EDIT_IMAGE_MODEL)).toBe("vendor/custom-image-v3");
+    expect(latestConversationImageSelection([{role:"user",metadata:{model:"vendor/custom-image-v3",quality:"max"}}])).toEqual({imageModel:"vendor/custom-image-v3",quality:"auto"});
+    expect(normalizeImageModel("bad\nmodel", DEFAULT_EDIT_IMAGE_MODEL)).toBe(DEFAULT_EDIT_IMAGE_MODEL);
+    expect(normalizeImageModel("x".repeat(257), DEFAULT_EDIT_IMAGE_MODEL)).toBe(DEFAULT_EDIT_IMAGE_MODEL);
+  });
   test("keeps the three supported public model ids explicit", () => {
     expect(isImageModelId("gpt-image-2.5-flare")).toBe(true);
     expect(isImageModelId("gpt-image-2.5-sunburst")).toBe(true);

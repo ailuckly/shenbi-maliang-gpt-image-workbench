@@ -61,7 +61,7 @@ export function isImageModelId(value: unknown): value is BuiltinImageModelId {
 
 export function normalizeImageModel(value: unknown, fallback: ImageModelId): ImageModelId {
   const normalized = String(value ?? "").trim();
-  return isImageModelId(normalized) ? normalized : fallback;
+  return normalized && normalized.length <= 256 && !/[\u0000-\u001f\u007f]/.test(normalized) ? normalized : fallback;
 }
 
 export function isGptImage25Model(value: unknown): value is Extract<BuiltinImageModelId, `gpt-image-2.5-${string}`> {
@@ -96,8 +96,8 @@ export function latestConversationImageSelection(messages: ReadonlyArray<{
 }>): ConversationImageSelection | null {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message.role !== "user" || !isImageModelId(message.metadata?.model)) continue;
-    const imageModel = message.metadata.model;
+    if (message.role !== "user" || typeof message.metadata?.model !== "string" || !message.metadata.model.trim()) continue;
+    const imageModel = normalizeImageModel(message.metadata.model, DEFAULT_GENERATION_IMAGE_MODEL);
     return {
       imageModel,
       quality: normalizeImageQuality(imageModel, message.metadata.quality)

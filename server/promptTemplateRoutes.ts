@@ -2992,6 +2992,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   const stream = new ReadableStream<Uint8Array>({
     async start(output) {
       const emit = (event: string, data: unknown) => { if (!canceled) output.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)); };
+      emit("meta", { templateId: template.id, stylePackSnapshot });
       try { emit("done", await run(emit)); }
       catch (error) { emit("error", { error: error instanceof Error ? error.message : "提示词优化失败" }); }
       finally { if (!canceled) output.close(); }

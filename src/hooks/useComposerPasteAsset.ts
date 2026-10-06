@@ -1,4 +1,4 @@
-import type { ClipboardEvent as ReactClipboardEvent } from "react";
+import { useRef, type ClipboardEvent as ReactClipboardEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../api";
 import { useI18n } from "../i18n";
@@ -67,6 +67,8 @@ async function temporaryAssetFromFile(file: File): Promise<AssetItem> {
 }
 
 export function useComposerPasteAsset({ autoUploadPastedAssets, selectedAssets, setSelectedAssets, showToast }: UseComposerPasteAssetOptions) {
+  const selectedAssetsRef = useRef(selectedAssets);
+  selectedAssetsRef.current = selectedAssets;
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const pasteAsset = useMutation({
@@ -94,6 +96,7 @@ export function useComposerPasteAsset({ autoUploadPastedAssets, selectedAssets, 
       }
     },
     onSuccess: (result, input) => {
+      const selectedAssets = selectedAssetsRef.current;
       const replaceIndex = input.replaceAssetId
         ? selectedAssets.findIndex((asset) => asset.id === input.replaceAssetId)
         : -1;
@@ -109,6 +112,7 @@ export function useComposerPasteAsset({ autoUploadPastedAssets, selectedAssets, 
         : selectedAssets.some((asset) => asset.id === result.asset.id)
           ? selectedAssets
           : [...selectedAssets, result.asset];
+      selectedAssetsRef.current = nextAssets;
       setSelectedAssets(nextAssets);
       if (result.uploaded) {
         queryClient.invalidateQueries({ queryKey: ["assets"] });

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { normalizePromptDraft, type PromptDraft } from "../v2/api";
 import { normalizeImageBackgroundOption, type ImageBackgroundOption } from "../lib/imageBackground";
 import {
   DEFAULT_GENERATION_IMAGE_MODEL,
@@ -86,6 +87,7 @@ export type ComposerPromptTemplateDraft = {
 };
 
 export type ComposerSessionDraft = {
+  promptEngine?: PromptDraft;
   draftPrompt: string;
   draftCaseUsage: DraftCaseUsage | null;
   selectedCaseMaterials: CaseMaterialItem[];
@@ -202,6 +204,7 @@ function normalizeComposerDraft(value: unknown): ComposerSessionDraft {
   const promptColorSchemeIds = Array.from(new Set(rawIds.map(String))).slice(0, 1);
   return {
     ...draft,
+    promptEngine: normalizePromptDraft(draft.promptEngine),
     background: normalizeImageBackgroundOption(draft.background),
     imageModel,
     quality: normalizeImageQuality(imageModel, draft.quality),
