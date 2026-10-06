@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 // @ts-expect-error The shipped .mjs helper is intentionally plain JavaScript for Node/Bun portability.
@@ -15,6 +15,28 @@ const localMcpPath = path.resolve(
   "distribution/codex-marketplace/plugins/maliang-image-generator/mcp/maliang-local-mcp.mjs"
 );
 const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+
+test("local helper and MCP run when the entry path uses a directory symlink", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "maliang-entry-symlink-"));
+  temporaryDirectories.push(directory);
+  const alias = path.join(directory, "plugin-alias");
+  await symlink(path.resolve("distribution/codex-marketplace/plugins/maliang-image-generator"), alias, "junction");
+  for (const [entry, args, expected] of [
+    ["skills/maliang-image-generator/scripts/maliang-helper.mjs", ["probe"], "ready"],
+    ["mcp/maliang-local-mcp.mjs", [], "maliang-local-image-store"]
+  ] as const) {
+    const child = Bun.spawn(["node", path.join(alias, entry), ...args], { stdin: "pipe", stdout: "pipe", stderr: "pipe" });
+    if (args.length === 0) child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }) + "\n");
+    child.stdin.end();
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe("");
+    const response = JSON.parse(stdout);
+    expect(response.status ?? response.result?.serverInfo?.name).toBe(expected);
+  }
+});
 
 describe("Maliang local MCP protocol negotiation", () => {
   test("keeps supported requests and falls back from unknown client versions", async () => {

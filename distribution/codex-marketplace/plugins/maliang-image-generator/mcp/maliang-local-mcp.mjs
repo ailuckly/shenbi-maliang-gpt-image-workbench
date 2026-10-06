@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -231,7 +231,7 @@ export async function runMaliangLocalMcpServer(input = process.stdin, output = p
 
 const isMainModule = Boolean(
   process.argv[1]
-  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  && await realpath(process.argv[1]).catch(() => null) === await realpath(fileURLToPath(import.meta.url))
 );
 
 if (isMainModule) await runMaliangLocalMcpServer();

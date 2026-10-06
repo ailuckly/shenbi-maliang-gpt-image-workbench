@@ -6,6 +6,7 @@ import {
   lstat,
   mkdir,
   readFile,
+  realpath,
   readdir,
   rename,
   rm,
@@ -762,7 +763,7 @@ async function main() {
     printHookOutput(updateContext(`神笔马良自动更新失败，已保留当前版本并继续本次工具调用：${message}`));
   }
 }
-var isMainModule = Boolean(process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url));
+var isMainModule = Boolean(process.argv[1] && await realpath(process.argv[1]).catch(() => null) === await realpath(fileURLToPath(import.meta.url)));
 if (isMainModule)
   await main();
 export {

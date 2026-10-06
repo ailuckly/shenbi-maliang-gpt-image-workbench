@@ -5,6 +5,7 @@ import {
   lstat,
   mkdir,
   readFile,
+  realpath,
   readdir,
   rename,
   rm,
@@ -908,7 +909,7 @@ export async function main() {
 }
 
 const isMainModule = Boolean(
-  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  process.argv[1] && await realpath(process.argv[1]).catch(() => null) === await realpath(fileURLToPath(import.meta.url))
 );
 
 if (isMainModule) await main();
