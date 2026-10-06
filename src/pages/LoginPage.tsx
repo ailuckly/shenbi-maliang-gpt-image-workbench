@@ -11,7 +11,7 @@ import {
   LOGIN_BACKGROUND_AUTO_INTERVAL_MS,
   LOGIN_BACKGROUND_FADE_MS,
   LOGIN_BACKGROUND_PRELOAD_STEP_MS,
-  clearRememberedLogin,
+  clearRememberedAccount,
   loginBackgroundsFor,
   loginTitleFallbacksFor,
   loginTitleFor,
@@ -19,9 +19,9 @@ import {
   normalizeLoginAssets,
   pickLoginBackground,
   readLoginThemePreference,
-  readRememberedLogin,
+  readRememberedAccount,
   writeLoginThemePreference,
-  writeRememberedLogin,
+  writeRememberedAccount,
   type LoginTheme
 } from "../lib/loginAssets";
 
@@ -54,11 +54,11 @@ export function LoginPage({
   const { showToast } = useToast();
   const { t } = useI18n();
   const initialLoginTheme = readLoginThemePreference();
-  const [rememberedLogin] = useState(readRememberedLogin);
+  const [rememberedAccount] = useState(readRememberedAccount);
   const [mode, setMode] = useState<LoginMode>(initialMode);
   const [modeSlideDirection, setModeSlideDirection] = useState<SlideDirection>("left");
-  const [account, setAccount] = useState(() => rememberedLogin.account);
-  const [password, setPassword] = useState(() => rememberedLogin.password);
+  const [account, setAccount] = useState(() => rememberedAccount);
+  const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerCode, setRegisterCode] = useState("");
@@ -73,7 +73,7 @@ export function LoginPage({
   const [resetConfirmPassword, setResetConfirmPassword] = useState("");
   const [registerCooldown, setRegisterCooldown] = useState(0);
   const [resetCooldown, setResetCooldown] = useState(0);
-  const [rememberPassword, setRememberPassword] = useState(() => Boolean(rememberedLogin.account || rememberedLogin.password));
+  const [rememberAccount, setRememberAccount] = useState(() => Boolean(rememberedAccount));
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
   const [loginAssets, setLoginAssets] = useState<LoginAssets>(DEFAULT_LOGIN_ASSETS);
   const [loginTheme, setLoginTheme] = useState<LoginTheme>(() => initialLoginTheme);
@@ -95,10 +95,10 @@ export function LoginPage({
   const login = useMutation({
     mutationFn: () => api.login(account, password),
     onSuccess: async () => {
-      if (rememberPassword) {
-        writeRememberedLogin(account, password);
+      if (rememberAccount) {
+        writeRememberedAccount(account);
       } else {
-        clearRememberedLogin();
+        clearRememberedAccount();
       }
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       onAuthenticated?.();
@@ -520,18 +520,18 @@ export function LoginPage({
               <div className="login-options">
                 <label className="remember-password">
                   <input
-                    checked={rememberPassword}
+                    checked={rememberAccount}
                     onChange={(event) => {
                       const checked = event.target.checked;
-                      setRememberPassword(checked);
-                      if (!checked) clearRememberedLogin();
+                      setRememberAccount(checked);
+                      if (!checked) clearRememberedAccount();
                     }}
                     type="checkbox"
                   />
                   <span className="remember-check" aria-hidden="true">
-                    {rememberPassword ? <Check size={13} /> : null}
+                    {rememberAccount ? <Check size={13} /> : null}
                   </span>
-                  <span>{t("login.rememberPassword")}</span>
+                  <span>{t("login.rememberAccount")}</span>
                 </label>
                 <button className="forgot-password-link" type="button" onClick={() => switchLoginMode("reset")}>
                   {t("login.forgotPassword")}

@@ -164,7 +164,7 @@ const messages: Messages = {
   "login.register": "Регистрация",
   "login.account": "Аккаунт",
   "login.password": "Пароль",
-  "login.rememberPassword": "Запомнить пароль",
+  "login.rememberAccount": "Запомнить аккаунт",
   "login.forgotPassword": "Забыли пароль",
   "login.getCode": "Получить код",
   "login.resetPassword": "Сбросить пароль",

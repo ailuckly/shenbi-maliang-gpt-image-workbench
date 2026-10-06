@@ -150,7 +150,7 @@ const messages: Messages = {
   "login.register": "가입",
   "login.account": "계정",
   "login.password": "비밀번호",
-  "login.rememberPassword": "비밀번호 저장",
+  "login.rememberAccount": "계정 기억",
   "login.forgotPassword": "비밀번호 찾기",
   "login.getCode": "코드 받기",
   "login.resetPassword": "비밀번호 재설정",

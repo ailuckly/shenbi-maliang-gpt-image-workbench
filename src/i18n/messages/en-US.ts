@@ -387,7 +387,7 @@ const messages: Messages = {
   "login.passwordPlaceholder": "Enter password",
   "login.showPassword": "Show password",
   "login.hidePassword": "Hide password",
-  "login.rememberPassword": "Remember password",
+  "login.rememberAccount": "Remember account",
   "login.forgotPassword": "Forgot password",
   "login.loggingIn": "Logging in...",
   "login.email": "Email",

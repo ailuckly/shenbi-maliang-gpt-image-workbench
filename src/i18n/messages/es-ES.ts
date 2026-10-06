@@ -150,7 +150,7 @@ const messages: Messages = {
   "login.register": "Registrarse",
   "login.account": "Cuenta",
   "login.password": "Contraseña",
-  "login.rememberPassword": "Recordar contraseña",
+  "login.rememberAccount": "Recordar cuenta",
   "login.forgotPassword": "Olvidé mi contraseña",
   "login.getCode": "Obtener código",
   "login.resetPassword": "Restablecer contraseña",

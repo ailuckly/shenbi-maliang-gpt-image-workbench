@@ -387,7 +387,7 @@ const messages: Messages = {
   "login.passwordPlaceholder": "请输入密码",
   "login.showPassword": "显示密码",
   "login.hidePassword": "隐藏密码",
-  "login.rememberPassword": "记住密码",
+  "login.rememberAccount": "记住账号",
   "login.forgotPassword": "忘记密码",
   "login.loggingIn": "登录中...",
   "login.email": "邮箱",

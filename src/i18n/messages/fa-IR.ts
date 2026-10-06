@@ -331,7 +331,7 @@ const messages: Messages = {
   "login.passwordPlaceholder": "رمز عبور را وارد کنید",
   "login.showPassword": "نمایش رمز عبور",
   "login.hidePassword": "پنهان کردن رمز عبور",
-  "login.rememberPassword": "ذخیره رمز عبور",
+  "login.rememberAccount": "ذخیره حساب کاربری",
   "login.forgotPassword": "فراموشی رمز عبور",
   "login.loggingIn": "در حال ورود...",
   "login.getCode": "دریافت کد",

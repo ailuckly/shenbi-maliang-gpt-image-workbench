@@ -6,11 +6,6 @@ export type LoginTheme = "light" | "dark";
 const LOGIN_THEME_STORAGE_KEY = "gpt-image-login-theme";
 const LOGIN_REMEMBER_STORAGE_KEY = "gpt-image-login-remember";
 
-type RememberedLogin = {
-  account: string;
-  password: string;
-};
-
 const DEFAULT_LOGIN_BACKGROUNDS: Record<LoginTheme, string[]> = {
   light: [
     publicAssetPath("/login/login_1.png"),
@@ -66,29 +61,31 @@ export function writeLoginThemePreference(theme: LoginTheme) {
   }
 }
 
-export function readRememberedLogin(): RememberedLogin {
-  if (typeof window === "undefined") return { account: "", password: "" };
+export function readRememberedAccount(): string {
+  if (typeof window === "undefined") return "";
   try {
-    const saved = JSON.parse(window.localStorage.getItem(LOGIN_REMEMBER_STORAGE_KEY) || "{}") as Partial<RememberedLogin>;
-    return {
-      account: typeof saved.account === "string" ? saved.account : "",
-      password: typeof saved.password === "string" ? saved.password : ""
-    };
+    const saved = JSON.parse(window.localStorage.getItem(LOGIN_REMEMBER_STORAGE_KEY) || "{}");
+    const account = typeof saved?.account === "string" ? saved.account : "";
+    // Rewrite the legacy record with an allowlist, removing every other field.
+    if (account) window.localStorage.setItem(LOGIN_REMEMBER_STORAGE_KEY, JSON.stringify({ account }));
+    else window.localStorage.removeItem(LOGIN_REMEMBER_STORAGE_KEY);
+    return account;
   } catch {
-    return { account: "", password: "" };
+    clearRememberedAccount();
+    return "";
   }
 }
 
-export function writeRememberedLogin(account: string, password: string) {
+export function writeRememberedAccount(account: string) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(LOGIN_REMEMBER_STORAGE_KEY, JSON.stringify({ account, password }));
+    window.localStorage.setItem(LOGIN_REMEMBER_STORAGE_KEY, JSON.stringify({ account }));
   } catch {
     // Login still succeeds if browser storage is unavailable.
   }
 }
 
-export function clearRememberedLogin() {
+export function clearRememberedAccount() {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(LOGIN_REMEMBER_STORAGE_KEY);

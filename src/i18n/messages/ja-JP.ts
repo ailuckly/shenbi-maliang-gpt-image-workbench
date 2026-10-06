@@ -150,7 +150,7 @@ const messages: Messages = {
   "login.register": "登録",
   "login.account": "アカウント",
   "login.password": "パスワード",
-  "login.rememberPassword": "パスワードを保存",
+  "login.rememberAccount": "アカウントを保存",
   "login.forgotPassword": "パスワードを忘れた",
   "login.getCode": "コードを取得",
   "login.resetPassword": "パスワードをリセット",
