@@ -1,6 +1,7 @@
 import type { Messages } from "./types";
 
 const messages: Messages = {
+  "picker.model.empty": "No models configured",
   "common.sourceCode": "Source code",
   "common.add": "Add",
   "common.all": "All",

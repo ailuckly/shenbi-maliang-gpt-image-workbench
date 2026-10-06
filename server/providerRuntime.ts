@@ -26,7 +26,7 @@ import {
   resolveImageBackgroundOption
 } from "../src/lib/imageBackground";
 import { DRAWING_REFERENCE_REQUEST_KEY } from "../src/lib/drawingReference";
-import { isImageModelId } from "../src/lib/imageModels";
+import { imageModelsForProvider } from "./imageModelCatalog";
 import { configDb, getAll, getOne, run } from "./db";
 import { readImageDimensions } from "./imageDimensions";
 import { ROOT } from "./paths";
@@ -3325,11 +3325,10 @@ function payloadForProvider(provider: RuntimeProviderRow, payload: Record<string
   const channel = normalizeProviderChannel(provider.channel || inferChannelFromType(provider.type));
   const hasMask = typeof payload.mask === "string" && payload.mask.trim();
   const requestedModel = String(payload.model ?? "").trim();
+  if (requestedModel && !imageModelsForProvider(provider).includes(requestedModel)) throw new Error("当前渠道目录不支持请求的图像模型");
   const nextPayload: Record<string, unknown> = {
     ...payload,
-    model: isImageModelId(requestedModel)
-      ? requestedModel
-      : String(provider.model || "").trim() || DEFAULT_IMAGE_MODEL
+    model: requestedModel || String(provider.model || "").trim() || DEFAULT_IMAGE_MODEL
   };
   const inheritedSourceBackground = nextPayload[INHERITED_SOURCE_BACKGROUND_REQUEST_KEY] === true;
   delete nextPayload[INHERITED_SOURCE_BACKGROUND_REQUEST_KEY];

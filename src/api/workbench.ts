@@ -669,6 +669,7 @@ export const api = {
   removeExternalMcpConnection: (deviceId: string) =>
     request<{ ok: boolean }>(`/api/external-mcp/connections/${encodeURIComponent(deviceId)}/remove`, { method: "DELETE" }),
   imageTaskSounds: () => request<{ sounds: import("../types").ImageTaskSound[] }>("/api/image-task-sounds"),
+  imageModels: (providerId?: string) => request<{ models: string[]; configured: boolean }>(`/api/image-models${providerId ? `?providerId=${encodeURIComponent(providerId)}` : ""}`),
   branding: () => request<PublicBranding>("/api/branding"),
   loginAssets: () => request<LoginAssets>("/api/login-assets"),
   registrationStatus: () => request<{ enabled: boolean }>("/api/auth/registration-status"),

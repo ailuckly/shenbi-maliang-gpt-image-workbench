@@ -46,15 +46,17 @@ function qualityOptionDescription(option: QualityOption, t: Translate) {
 
 export function ModelPicker({
   value,
+  models = IMAGE_MODEL_OPTIONS.map(({ value }) => value),
   onChange
 }: {
+  models?: string[];
   value: ImageModelId;
   onChange: (value: ImageModelId) => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const selected = IMAGE_MODEL_OPTIONS.find((item) => item.value === value) ?? IMAGE_MODEL_OPTIONS[0];
+  const selected = models.includes(value) ? value : models[0];
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +73,7 @@ export function ModelPicker({
       <button
         type="button"
         className="model-picker-trigger"
+        disabled={models.length === 0}
         data-tooltip={t("picker.model.tooltip")}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -79,12 +82,12 @@ export function ModelPicker({
         <span className="size-trigger-icon model-trigger-icon" aria-hidden="true">
           <Brain size={15} />
         </span>
-        <span>{imageModelDisplayName(selected.value)}</span>
+        <span>{selected ? imageModelDisplayName(selected) : t("picker.model.empty")}</span>
         <ChevronDown size={15} className={open ? "open" : ""} />
       </button>
       {open ? (
         <div className="size-picker-menu model-picker-menu" role="listbox">
-          {IMAGE_MODEL_OPTIONS.map((option) => (
+          {models.map((model) => ({ value: model, descriptionKey: IMAGE_MODEL_OPTIONS.find(({ value }) => value === model)?.descriptionKey })).map((option) => (
             <button
               type="button"
               key={option.value}
@@ -98,7 +101,7 @@ export function ModelPicker({
             >
               <span className="model-option-copy">
                 <strong>{imageModelDisplayName(option.value)}</strong>
-                <small>{t(option.descriptionKey)}</small>
+                {option.descriptionKey ? <small>{t(option.descriptionKey)}</small> : null}
               </span>
               {option.value === value ? <Check className="size-option-check" size={16} /> : <span />}
             </button>

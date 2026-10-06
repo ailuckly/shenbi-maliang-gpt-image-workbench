@@ -1,6 +1,7 @@
 import type { Messages } from "./types";
 
 const messages: Messages = {
+  "picker.model.empty": "未配置可用模型",
   "common.sourceCode": "源代码",
   "common.add": "新增",
   "common.all": "全部",

@@ -1,3 +1,4 @@
+import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
 import type { Hono } from "hono";
 import { applyAssetFieldSuggestionsToImages, ensureAssetFieldSuggestionsForImage } from "./assetSuggestions";
 import { caseMaterialReferenceFromSource, caseMaterialSourcesByIds } from "./caseMaterialSources";
@@ -151,7 +152,8 @@ function requestOptionText(body: Record<string, unknown>, ...fields: string[]) {
   return "";
 }
 
-function requestedImageModel(body: Record<string, unknown>, provider: RuntimeProviderRow) {
+function requestedImageModel(body: Record<string, unknown>, providers: RuntimeProviderRow[]) {
+  const provider = providers[0];
   const rawModel = requestOptionText(body, "model");
   if (!rawModel) {
     return {
@@ -160,9 +162,9 @@ function requestedImageModel(body: Record<string, unknown>, provider: RuntimePro
       explicit: false
     };
   }
-  if (!isImageModelId(rawModel)) {
+  if (!providers.some((candidate) => imageModelsForProvider(candidate).includes(rawModel))) {
     return {
-      error: "model 仅支持 gpt-image-2.5-flare、gpt-image-2.5-sunburst 或 gpt-image-2",
+      error: "当前渠道目录不支持该图像模型",
       model: DEFAULT_IMAGE_MODEL,
       explicit: true
     };
@@ -2027,6 +2029,14 @@ export function startInterruptedImageJobRecovery() {
 }
 
 export function registerImageRoutes(api: Hono) {
+  api.get("/image-models", async (c) => {
+    const user = await requireImageRouteUser(c);
+    if (!user) return c.json({ error: "未登录" }, 401);
+    try {
+      const providers = providerChainById(c.req.query("providerId")).filter(providerHasCredentials);
+      return c.json({ models: [...new Set(providers.flatMap((provider) => imageModelsForProvider(provider)))], configured: providers.length > 0 });
+    } catch { return c.json({ models: [], configured: false }); }
+  });
 api.get("/images", async (c) => {
   const user = await requireUser(c);
   if (!user) return c.json({ error: "未登录" }, 401);
@@ -2349,7 +2359,7 @@ api.post("/images/generate", async (c) => {
     return c.json({ error: errorMessage(error, "渠道配置不可用") }, 400);
   }
   const provider = providers[0];
-  const modelSelection = requestedImageModel(body, provider);
+  const modelSelection = requestedImageModel(body, providers);
   if (modelSelection.error) return c.json({ error: modelSelection.error }, 400);
   const model = modelSelection.model;
   const size = requestImageSize(body.size);
@@ -2657,7 +2667,7 @@ api.post("/images/edit", async (c) => {
     return c.json({ error: errorMessage(error, "渠道配置不可用") }, 400);
   }
   const provider = providers[0];
-  const modelSelection = requestedImageModel(body, provider);
+  const modelSelection = requestedImageModel(body, providers);
   if (modelSelection.error) return c.json({ error: modelSelection.error }, 400);
   const model = modelSelection.model;
   const size = requestImageSize(body.size);

@@ -695,7 +695,12 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
   const assetCategoryList = assetCategories.data?.categories ?? [];
   const assetReviewEnabled = assetCategories.data?.reviewEnabled ?? true;
   const { providerId, setSize, size, sizeOptions } = useImageProviderSelection(providerOptions);
-  const qualityOptions = useMemo(() => buildQualityOptions(imageModelQualities(imageModel)), [imageModel]);
+  const modelCatalog = useQuery({ queryKey: ["image-models", providerId], queryFn: () => api.imageModels(providerId) });
+  useEffect(() => {
+    const models = modelCatalog.data?.models ?? [];
+    if (models.length && !models.includes(imageModel)) setImageModel(models[0]);
+  }, [modelCatalog.data, imageModel]);
+  const qualityOptions = useMemo(() => imageModelQualities(imageModel).length ? buildQualityOptions(imageModelQualities(imageModel)) : [], [imageModel]);
   const selectImageModel = useCallback((nextModel: ImageModelId) => {
     setImageModel(nextModel);
     setQuality((current) => isImageQualitySupported(nextModel, current) ? current : DEFAULT_IMAGE_QUALITY);
@@ -2706,6 +2711,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         placeholder={composerPlaceholder}
         previews={composerPreviews}
         imageCount={imageCount}
+        imageModels={modelCatalog.data?.models ?? []}
         imageModel={imageModel}
         quality={quality}
         qualityOptions={qualityOptions}

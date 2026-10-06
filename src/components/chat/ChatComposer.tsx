@@ -64,6 +64,7 @@ type ChatComposerProps = {
   placeholder: string;
   previews: ChatComposerPreview[];
   imageCount: number;
+  imageModels?: string[];
   imageModel: ImageModelId;
   quality: ImageQuality;
   qualityOptions: QualityOption[];
@@ -158,6 +159,7 @@ export function ChatComposer({
   placeholder,
   previews,
   imageCount,
+  imageModels,
   imageModel,
   quality,
   qualityOptions,
@@ -976,7 +978,7 @@ export function ChatComposer({
               </div>
             ) : null}
           </div>
-          <ModelPicker value={imageModel} onChange={onImageModelChange} />
+          <ModelPicker models={imageModels} value={imageModel} onChange={onImageModelChange} />
           <QualityPicker value={quality} options={qualityOptions} onChange={(value) => onQualityChange(value as ImageQuality)} />
           <SizePicker value={size} options={sizeOptions} onChange={onSizeChange} />
           <BackgroundPicker value={background} onChange={onBackgroundChange} />
