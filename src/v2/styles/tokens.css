@@ -161,3 +161,12 @@ html .config-card p,html .config-card small {color:var(--sb-muted)}
 html .config-shell .config-side-toggle {color:var(--sb-text);background:var(--sb-soft);border-radius:6px}
 html .config-shell.config-side-collapsed .config-language-select .custom-select-trigger,html .config-shell.config-side-collapsed .config-logout-btn {background:var(--sb-surface);color:var(--sb-text);border-radius:6px;border-color:var(--sb-control-border)}
 html .config-shell button:focus-visible {outline:2px solid var(--sb-accent);outline-offset:2px}
+/* The retained share view must not cover the v2 mobile header or fade reading text. */
+.v2-shell :is(.message-enter-row,.message-enter-thread>.message-thread>.message-version-turn,.message-enter-thread>.message-thread>.message){animation:none;opacity:1;transform:none}
+.v2-shell .shared-conversation-page{display:block}
+.v2-shell .shared-conversation-topbar{position:static;top:auto;left:auto;right:auto;padding:24px 32px;min-height:0;pointer-events:auto}
+.v2-shell .shared-message-area{padding-top:16px}
+.v2-shell .shared-conversation-heading h1{max-width:100%}
+html .image-editor-shell,html .image-editor-topbar,html .image-editor-composer{background:var(--sb-surface);color:var(--sb-text);border-color:var(--sb-border)}
+html .image-editor-stage{background:var(--sb-soft)}
+@media(max-width:767px){.v2-shell .shared-conversation-topbar{padding:24px 16px}}

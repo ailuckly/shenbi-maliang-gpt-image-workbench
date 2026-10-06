@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
-import { ScrollJumpButton } from "../components/ScrollJumpButton";
 import { ChatBranchSwitch } from "../components/chat/ChatBranchSwitch";
 import { ConversationView } from "../components/chat/ConversationView";
-import { useChatScrollJump } from "../hooks/useChatScrollJump";
 import { useI18n } from "../i18n";
 import { MAIN_CHAT_BRANCH_ID, buildChatRenderState } from "../lib/chatRender";
 
@@ -59,15 +57,7 @@ export function SharedConversationPage({ authenticated }: { authenticated: boole
       };
     });
   }, [renderState.items, t]);
-  const { jumpToLoadingOrScrollEdge, messageEndRef, scrollJump } = useChatScrollJump({
-    composerPreviewCount: 0,
-    imageEditorOpen: false,
-    loadingTitle: "",
-    messageListLength: conversation.data?.messages.length ?? 0,
-    renderItemCount: renderState.items.length,
-    sessionId: `shared:${token}`,
-    showStarter: !conversation.isSuccess
-  });
+  const messageEndRef=useRef<HTMLDivElement|null>(null);
   const openAuth = (mode: "login" | "register") => {
     const params = new URLSearchParams(location.search);
     params.set("auth", mode);
@@ -128,12 +118,6 @@ export function SharedConversationPage({ authenticated }: { authenticated: boole
         ) : null}
         <div ref={messageEndRef} className="message-scroll-anchor" aria-hidden="true" />
       </div>
-      <ScrollJumpButton
-        className="page-scroll-jump-btn"
-        scrollJump={scrollJump}
-        onClick={jumpToLoadingOrScrollEdge}
-        hidden={!conversation.isSuccess || renderState.items.length === 0}
-      />
     </section>
   );
 }

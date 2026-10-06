@@ -17,7 +17,6 @@ import { FeatureIntroModal } from "../components/FeatureIntroModal";
 import { ImageEditWorkspace } from "../components/ImageEditWorkspace";
 import { PromptStarter } from "../components/PromptStarter";
 import { RenderingErrorMessage, RenderingMessage } from "../components/RenderingMessage";
-import { ScrollJumpButton } from "../components/ScrollJumpButton";
 import { absoluteShareUrl, ShareConversationDialog } from "../components/ShareConversationDialog";
 import { SessionActionsMenu } from "../components/sidebar/SessionActionsMenu";
 import {
@@ -70,7 +69,6 @@ import { normalizePromptOptimizeStyle, sanitizePromptOptimizeStyleGroups } from 
 import { getTimeGreetingKey } from "../lib/timeGreeting";
 import { workImageFromLibraryCard, workImageFromMessage } from "../lib/workImages";
 import { useComposerPasteAsset } from "../hooks/useComposerPasteAsset";
-import { useChatScrollJump } from "../hooks/useChatScrollJump";
 import { useChatViewState } from "../hooks/useChatViewState";
 import { GUIDE_KEYS, useGuideSeen } from "../hooks/useGuideSeen";
 import { useImageProviderSelection } from "../hooks/useImageProviderSelection";
@@ -2448,16 +2446,8 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       };
     });
   }, [renderItems]);
-  const { jumpToLoadingOrScrollEdge, loadingMessageRef, messageEndRef, scrollJump } = useChatScrollJump({
-    composerPreviewCount: composerPreviews.length,
-    imageEditorOpen: Boolean(imageEditor),
-    loadingTitle,
-    messageListLength: messageList.length,
-    renderItemCount: renderItems.length,
-    sessionId,
-    showStarter,
-    visiblePendingMessageId: visiblePendingUserMessage?.id
-  });
+  const loadingMessageRef=useRef<HTMLDivElement|null>(null);
+  const messageEndRef=useRef<HTMLDivElement|null>(null);
   const handleRunningImageJobsSettled = useCallback(() => {
     if (sessionId) clearSessionGenerationStatus(sessionId);
   }, [clearSessionGenerationStatus, sessionId]);
@@ -2634,12 +2624,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           }
         />
       ) : null}
-      <ScrollJumpButton
-        scrollJump={scrollJump}
-        loading={Boolean(visibleLoadingMode)}
-        onClick={jumpToLoadingOrScrollEdge}
-        hidden={materialPickerOpen}
-      />
       {assetTarget ? (
         <AddAssetFromImageModal
           image={assetTarget.item}
