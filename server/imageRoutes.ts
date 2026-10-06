@@ -1123,8 +1123,6 @@ type StoredImageJobTrigger = "manual" | "startup";
 class ImageJobClaimError extends Error {}
 class ImageJobExecutionSupersededError extends Error {}
 
-const MAX_STARTUP_IMAGE_JOB_RECOVERIES = 1;
-
 function imageJobExecutionIsActive(jobId: string, manualRetryCount: number, recoveryCount: number) {
   return Boolean(
     getOne<{ id: string }>(
@@ -2011,20 +2009,9 @@ export function startInterruptedImageJobRecovery() {
       failed += 1;
       continue;
     }
-    const recoveryCount = Math.max(0, Math.trunc(Number(job.recovery_count ?? 0)) || 0);
-    if (recoveryCount >= MAX_STARTUP_IMAGE_JOB_RECOVERIES) {
-      markInterruptedImageJobFailed(job, "任务自动恢复未完成，请重新生成");
-      failed += 1;
-      continue;
-    }
-    try {
-      startStoredImageJob(job, "startup");
-      resumed += 1;
-    } catch (error) {
-      if (error instanceof ImageJobClaimError) continue;
-      markInterruptedImageJobFailed(job, errorMessage(error, "任务自动恢复失败，请重新生成"));
-      failed += 1;
-    }
+    // Synchronous suppliers have no persisted idempotency token: resubmission can charge twice.
+    markInterruptedImageJobFailed(job, "服务重启中断了任务；已完成图片已保留，请手动重试未完成部分");
+    failed += 1;
   }
   console.info(`图片任务启动恢复完成：接管 ${resumed} 个，失败 ${failed} 个`);
 }
@@ -3215,6 +3202,7 @@ api.post("/image-jobs/cancel", async (c) => {
     user.id,
     clientRequestId
   );
+  const preservedImageCount = job ? storedImageJobImages(job).length : 0;
   if (!job) {
     const pendingSession = getOne<{ id: string }>(
       appDb,
@@ -3232,6 +3220,7 @@ api.post("/image-jobs/cancel", async (c) => {
       jobId: requestedJobId || null,
       sessionId: pendingSession?.id ?? null,
       sessionDeleted,
+      preservedImageCount,
       status: "cancelled"
     });
   }
@@ -3245,12 +3234,12 @@ api.post("/image-jobs/cancel", async (c) => {
       ? deleteCancelledEmptySessionRecord(user.id, job.session_id, clientRequestId)
       : false;
     clearImageJobCancelIntent(user.id, clientRequestId);
-    return c.json({ cancelled: true, clientRequestId, jobId: job.id, sessionId: job.session_id, sessionDeleted, status: "cancelled" });
+    return c.json({ cancelled: true, clientRequestId, jobId: job.id, sessionId: job.session_id, sessionDeleted, preservedImageCount, status: "cancelled" });
   }
 
   const cancelled = run(
     appDb,
-    "update image_jobs set status = ?, error = null, result_image_id = null, updated_at = ? where id = ? and user_id = ? and status = ?",
+    "update image_jobs set status = ?, error = null, updated_at = ? where id = ? and user_id = ? and status = ?",
     "cancelled",
     now(),
     job.id,
@@ -3267,7 +3256,7 @@ api.post("/image-jobs/cancel", async (c) => {
     : false;
   clearImageJobCancelIntent(user.id, clientRequestId);
   emitJobStatus(user.id, job.session_id, job.id, "cancelled", job.type);
-  return c.json({ cancelled: true, clientRequestId, jobId: job.id, sessionId: job.session_id, sessionDeleted, status: "cancelled" });
+  return c.json({ cancelled: true, clientRequestId, jobId: job.id, sessionId: job.session_id, sessionDeleted, preservedImageCount, status: "cancelled" });
 });
 
 api.post("/image-jobs/:id/retry", async (c) => {

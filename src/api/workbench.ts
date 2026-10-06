@@ -850,7 +850,7 @@ export const api = {
       { method: "POST" }
     ),
   cancelImageJob: (payload: { clientRequestId: string; jobId?: string | null }) =>
-    request<{ cancelled: true; clientRequestId: string; jobId: string | null; sessionId: string | null; sessionDeleted: boolean; status: "cancelled" }>(
+    request<{ cancelled: true; clientRequestId: string; jobId: string | null; sessionId: string | null; sessionDeleted: boolean; preservedImageCount?: number; status: "cancelled" }>(
       "/api/image-jobs/cancel",
       { method: "POST", body: JSON.stringify(payload) }
     ),

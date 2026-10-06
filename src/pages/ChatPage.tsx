@@ -1364,7 +1364,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       submitAbortControllersRef.current.get(target.clientRequestId)?.abort();
       const result = await cancelRequest;
       const affectedSessionId = result.sessionId ?? target.sessionId;
-      const requestSessionWillBeDeleted = result.sessionDeleted || target.pendingScope === NEW_SESSION_PENDING_SCOPE;
+      const requestSessionWillBeDeleted = result.sessionDeleted;
       const navigateToNewChat = Boolean(
         requestSessionWillBeDeleted
         && affectedSessionId
@@ -1376,7 +1376,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       if (affectedSessionId) {
         if (requestSessionWillBeDeleted) removeSessionSummary(affectedSessionId);
         clearSessionGenerationStatus(affectedSessionId);
-        queryClient.setQueryData<{ messages: Message[] }>(["messages", affectedSessionId], (current) => current ? {
+        if (!result.preservedImageCount) queryClient.setQueryData<{ messages: Message[] }>(["messages", affectedSessionId], (current) => current ? {
           ...current,
           messages: current.messages.filter((message) => {
             const messageJobId = String(message.metadata?.jobId ?? "").trim();

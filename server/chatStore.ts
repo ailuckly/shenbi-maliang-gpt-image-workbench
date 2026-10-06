@@ -467,6 +467,8 @@ async function deleteMessageSourceReferencesForJob(userId: string, jobId: string
 
 export async function deleteImageJobArtifacts(userId: string, jobId: string, clientRequestId = "") {
   const normalizedJobId = jobId.trim();
+  // Cancellation discards unfinished work, never results already committed to the user's history.
+  if (normalizedJobId && getOne(appDb, "select id from images where user_id = ? and job_id = ? limit 1", userId, normalizedJobId)) return;
   if (normalizedJobId) {
     await deleteImagesMatching(userId, "select id from images where user_id = ? and job_id = ?", [userId, normalizedJobId]);
   }
