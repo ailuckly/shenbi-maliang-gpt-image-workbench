@@ -28,6 +28,7 @@ import type { Messages } from "./messages/types";
 import drawingMessages from "./messages/drawingMessages";
 import caseSharingMessages from "./messages/caseSharingMessages";
 import imageCompareMessages from "./messages/imageCompareMessages";
+import { v2Messages } from "./messages/v2";
 
 export type { LanguagePreference, LocaleCode } from "./locales";
 export { AUTO_LANGUAGE, DEFAULT_LOCALE, enabledLocales, localeRegistry, normalizeLanguagePreference } from "./locales";
@@ -105,7 +106,10 @@ function interpolate(template: string, params: TranslationParams = {}) {
 }
 
 function messageForKey(key: string, resolvedLanguage: LocaleCode) {
-  for (const locale of fallbackChain(resolvedLanguage)) {
+  const chain = key.startsWith("v2.") ? uniqueLocales([resolvedLanguage, "en-US"]) : fallbackChain(resolvedLanguage);
+  for (const locale of chain) {
+    const v2 = v2Messages[locale as "zh-CN" | "en-US"]?.[key];
+    if (typeof v2 === "string") return v2;
     const message = messagesByLocale[locale]?.[key];
     if (typeof message === "string") return message;
   }

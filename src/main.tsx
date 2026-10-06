@@ -2,8 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import App from "./App";
-import ConfigApp from "./ConfigApp";
+const App = React.lazy(() => import("./App"));
+const ConfigApp = React.lazy(() => import("./ConfigApp"));
+import { PageLoading } from "./components/PageLoading";
 import { I18nProvider } from "./i18n";
 import { clearPromptTemplateFormDraftCache } from "./lib/promptTemplateDraftCache";
 import { installRuntimeErrorReporting, reportRuntimeClientError } from "./lib/runtimeErrorReporter";
@@ -31,6 +32,7 @@ import "./styles/responsive.css";
 import "./styles/appearance.css";
 import "./styles/rtl.css";
 import "./styles/app-update.css";
+import "./v2/styles/tokens.css";
 
 clearPromptTemplateFormDraftCache();
 installRuntimeErrorReporting();
@@ -56,11 +58,11 @@ ReactDOM.createRoot(document.getElementById("root")!, {
     <I18nProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter basename={routerBasename}>
-          <Routes>
+          <React.Suspense fallback={<PageLoading />}><Routes>
             <Route path="/config/*" element={<ConfigApp />} />
             <Route path="/*" element={<App />} />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          </Routes></React.Suspense>
         </BrowserRouter>
       </QueryClientProvider>
     </I18nProvider>

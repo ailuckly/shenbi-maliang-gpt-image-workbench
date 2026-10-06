@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FocusEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
@@ -13,14 +13,17 @@ import { cx } from "../lib/cx";
 import { isReturningFromImageCompare } from "../lib/imageComparePage";
 import { pauseRenderingMotion } from "../lib/renderingMotion";
 import { IMAGE_PAGE_SIZE } from "../lib/pagination";
-import { AssetsPage } from "../pages/AssetsPage";
-import { CasesPage } from "../pages/CasesPage";
-import { ChatPage } from "../pages/ChatPage";
-import { ImagesPage } from "../pages/ImagesPage";
-import { InspirationBarragePage } from "../pages/InspirationBarragePage";
-import { ImageProvenancePage } from "../pages/ImageProvenancePage";
-import { PromptTemplateEditorPage, PromptTemplatesPage } from "../pages/PromptTemplatesPage";
-import { SharedConversationPage } from "../pages/SharedConversationPage";
+const AssetsPage = lazy(() => import("../pages/AssetsPage").then(module => ({default: module.AssetsPage})));
+const CasesPage = lazy(() => import("../pages/CasesPage").then(module => ({default: module.CasesPage})));
+const ChatPage = lazy(() => import("../pages/ChatPage").then(module => ({default: module.ChatPage})));
+const ImagesPage = lazy(() => import("../pages/ImagesPage").then(module => ({default: module.ImagesPage})));
+const InspirationBarragePage = lazy(() => import("../pages/InspirationBarragePage").then(module => ({default: module.InspirationBarragePage})));
+const ImageProvenancePage = lazy(() => import("../pages/ImageProvenancePage").then(module => ({default: module.ImageProvenancePage})));
+const PromptTemplatesPage = lazy(() => import("../pages/PromptTemplatesPage").then(module => ({default:module.PromptTemplatesPage})));
+const PromptTemplateEditorPage = lazy(() => import("../pages/PromptTemplatesPage").then(module => ({default:module.PromptTemplateEditorPage})));
+import { PageLoading } from "./PageLoading";
+const ComponentGallery = import.meta.env.DEV ? lazy(() => import("../v2/ui/ComponentGallery").then(module => ({default:module.ComponentGallery}))) : null;
+const SharedConversationPage = lazy(() => import("../pages/SharedConversationPage").then(module => ({default: module.SharedConversationPage})));
 import { useWorkbench } from "../store/workbench";
 import type { AvatarHistoryEntry, ChatSession, ImageJob, User, UserPreferences } from "../types";
 import { ConfirmDialog, useToast } from "../ui";
@@ -60,11 +63,7 @@ function loadHelpCenterPage() {
   return helpCenterPagePromise;
 }
 
-function HelpCenterPage(props: { user: User }) {
-  const Page = helpCenterPageModule?.HelpCenterPage;
-  if (!Page) throw loadHelpCenterPage();
-  return <Page {...props} />;
-}
+const HelpCenterPage = lazy(() => loadHelpCenterPage().then(module => ({default: module.HelpCenterPage})));
 
 type DeleteSessionTarget = {
   id: string;
@@ -2235,7 +2234,8 @@ export function WorkbenchShell({ user }: { user: User }) {
       <main className="content">
         {(branding.data?.showGithubEntry ?? true) ? <a className="workbench-source-code" href={branding.data?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL} target="_blank" rel="noreferrer">{t("common.sourceCode")}</a> : null}
         <div className="page-route-stage" ref={routeTransitionStageRef}>
-          <Routes>
+          <Suspense fallback={<PageLoading />}><Routes>
+            {ComponentGallery ? <Route path="/__v2-components" element={<ComponentGallery />} /> : null}
             <Route path="/" element={<ChatPage user={user} />} />
             <Route path="/chat/:sessionId" element={<ChatPage user={user} sessionActions={chatPageSessionActions} />} />
             <Route
@@ -2285,7 +2285,7 @@ export function WorkbenchShell({ user }: { user: User }) {
             />
             <Route path="/share/:token" element={<SharedConversationPage authenticated />} />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          </Routes></Suspense>
         </div>
       </main>
     </div>

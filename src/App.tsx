@@ -1,19 +1,19 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./api";
-import { SharedWorkbenchShell } from "./components/SharedWorkbenchShell";
+const SharedWorkbenchShell = lazy(() => import("./components/SharedWorkbenchShell").then(module => ({default: module.SharedWorkbenchShell})));
 import { AppUpdateNotifier } from "./components/AppUpdateNotifier";
-import { WorkbenchShell } from "./components/WorkbenchShell";
+const WorkbenchShell = lazy(() => import("./components/WorkbenchShell").then(module => ({default: module.WorkbenchShell})));
 import { PageLoading } from "./components/PageLoading";
 import { useAppearanceMode } from "./hooks/useAppearanceMode";
 import { useSyncI18nPreference } from "./i18n";
 import { useDocumentBranding } from "./lib/branding";
-import { LoginPage } from "./pages/LoginPage";
+const LoginPage = lazy(() => import("./pages/LoginPage").then(module => ({default: module.LoginPage})));
 import { ToastProvider } from "./ui";
 import { useImageCompare } from "./store/imageCompare";
 
-export default function App() {
+function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
@@ -126,4 +126,8 @@ export default function App() {
       <AppUpdateNotifier />
     </ToastProvider>
   );
+}
+
+export default function App() {
+  return <Suspense fallback={<PageLoading />}><AppContent /></Suspense>;
 }
