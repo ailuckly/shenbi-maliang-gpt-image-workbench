@@ -62,3 +62,30 @@ test("style APIs enforce owner/config authorization, validation, visibility, pre
     expect(stderr).toBe("");expect(code).toBe(0);expect(stdout.trim()).toBe("style-routes-ok");
   } finally { await rm(directory,{recursive:true,force:true}); }
 });
+
+test("style pack APIs isolate owners and preview unsaved edits with generation composition rules",async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),"shenbi-style-api-"));
+  try {
+    const url=(name:string)=>JSON.stringify(new URL(name,import.meta.url).href);
+    const program=`
+      import assert from 'node:assert/strict';import {Hono} from 'hono';
+      import {appDb,configDb} from ${url("./db.ts")};import {initAppDb,initConfigDb} from ${url("./schema.ts")};
+      import {registerStylePackRoutes} from ${url("./stylePackRoutes.ts")};import {composePrompt} from ${url("./promptEngine/compose.ts")};
+      initAppDb();initConfigDb();const stamp=new Date().toISOString(),expires=new Date(Date.now()+60000).toISOString();
+      for(const owner of ['A','B']){appDb.query('insert into users(id,account,username,password_hash,created_at,updated_at) values(?,?,?,?,?,?)').run(owner,owner,owner,'test-only',stamp,stamp);appDb.query('insert into user_auth_sessions values(?,?,?,?)').run('session-'+owner,owner,expires,stamp);}
+      const app=new Hono();registerStylePackRoutes(app);const request=(owner,method,url,data)=>app.request(url,{method,headers:{'content-type':'application/json',cookie:'app_session=session-'+owner},...(data ? {body:JSON.stringify(data)} : {})});
+      const input={name:'Private A',groupKey:'brand',promptPrefix:'PREFIX',promptSuffix:'SUFFIX',negativePrompt:'blur, watermark',recommendedParams:{n:2,aspectRatio:'1:1'}};
+      const created=await request('A','POST','/style-packs',input);assert.equal(created.status,201);const pack=(await created.json()).stylePack;assert.equal(pack.scope,'user');assert(!('ownerUserId' in pack));
+      const mine=await(await request('A','GET','/style-packs')).json(),others=await(await request('B','GET','/style-packs')).json();assert(mine.stylePacks.some(row=>row.id===pack.id));assert(!others.stylePacks.some(row=>row.id===pack.id));
+      assert.equal((await request('B','PATCH','/style-packs/'+pack.id,{name:'stolen'})).status,404);assert.equal((await request('B','DELETE','/style-packs/'+pack.id)).status,404);assert.equal((await request('B','POST','/style-packs/preview',{prompt:'sample',stylePackId:pack.id})).status,404);
+      assert.equal((await request('A','PATCH','/style-packs/system:standard',{name:'system stolen'})).status,404);assert.equal((await request('A','GET','/config/style-packs')).status,401);
+      const preview=await request('A','POST','/style-packs/preview',{prompt:'Actual request',negativePrompt:'blur',stylePack:input});assert.equal(preview.status,200);assert.deepEqual(await preview.json(),composePrompt({prompt:'Actual request',negativePrompt:'blur',stylePack:input}));
+      assert.equal((await request('A','POST','/style-packs/preview',{prompt:'request',stylePack:{...input,owner_user_id:'B'}})).status,400);assert.equal((await request('A','POST','/style-packs/preview',{prompt:'request',stylePack:input,stylePackId:pack.id})).status,400);assert.equal((await app.request('/style-packs/preview',{method:'POST',body:JSON.stringify({prompt:'request',stylePack:input}),headers:{'content-type':'application/json'}})).status,401);
+      const edit=await request('A','PATCH','/style-packs/'+pack.id,{promptPrefix:'Changed'});assert.equal(edit.status,200);assert.equal((await edit.json()).stylePack.promptPrefix,'Changed');assert.equal((await request('A','DELETE','/style-packs/'+pack.id)).status,200);
+      assert.equal((await request('A','POST','/style-packs/preview',{prompt:'request',stylePackId:pack.id})).status,404);
+      appDb.close();configDb.close();console.log('style-api-ok');
+    `;
+    const child=Bun.spawn([process.execPath,"--eval",program],{env:{...Bun.env,GPT_IMAGE_DATA_DIR:directory,GPT_IMAGE_APP_DB_PATH:path.join(directory,"app.db"),GPT_IMAGE_CONFIG_DB_PATH:path.join(directory,"config.db")},stdout:"pipe",stderr:"pipe"});
+    const [stdout,stderr,code]=await Promise.all([new Response(child.stdout).text(),new Response(child.stderr).text(),child.exited]);expect(stderr).toBe("");expect(code).toBe(0);expect(stdout.trim().split("\n").at(-1)).toBe("style-api-ok");
+  } finally {await rm(directory,{recursive:true,force:true});}
+},15000);

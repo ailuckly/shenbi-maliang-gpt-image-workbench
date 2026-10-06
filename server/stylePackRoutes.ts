@@ -72,12 +72,13 @@ export function registerStylePackRoutes(api: Hono) {
     const parsed = z.object({
       prompt: z.string().max(30000), negativePrompt: z.string().max(10000).optional(),
       stylePackId: z.string().max(128).optional(), manuallyEdited: z.boolean().optional(),
+      stylePack: stylePackInputSchema.optional(),
       userParams: stylePackParamsSchema.optional()
-    }).strict().safeParse(await c.req.json().catch(() => null));
+    }).strict().refine(value => !(value.stylePackId && value.stylePack)).safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "预览参数无效" }, 400);
     const row = parsed.data.stylePackId ? visibleStylePack(appDb, user.id, parsed.data.stylePackId) : null;
     if (parsed.data.stylePackId && !row) return c.json({ error: "风格包不存在或不可用" }, 404);
     if (row && !row.enabled) return c.json({ error: "风格包已停用" }, 400);
-    return c.json(composePrompt({ ...parsed.data, stylePack: row ? publicStylePack(row) : null }));
+    return c.json(composePrompt({ ...parsed.data, stylePack: parsed.data.stylePack || (row ? publicStylePack(row) : null) }));
   });
 }

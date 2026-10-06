@@ -13,6 +13,7 @@ import { cx } from "../lib/cx";
 import { isReturningFromImageCompare } from "../lib/imageComparePage";
 import { pauseRenderingMotion } from "../lib/renderingMotion";
 import { IMAGE_PAGE_SIZE } from "../lib/pagination";
+const StylePacksPage = lazy(() => import("../v2/pages/StylePacksPage").then(module => ({default: module.StylePacksPage})));
 const AssetsPage = lazy(() => import("../pages/AssetsPage").then(module => ({default: module.AssetsPage})));
 const CasesPage = lazy(() => import("../pages/CasesPage").then(module => ({default: module.CasesPage})));
 const ChatPage = lazy(() => import("../pages/ChatPage").then(module => ({default: module.ChatPage})));
@@ -1887,6 +1888,7 @@ export function WorkbenchShell({ user }: { user: User }) {
             />
             <Route path="/cases/barrage" element={branding.isPending ? null : features.inspiration_barrage_entry ? <PageRouteTransition key="cases-barrage"><InspirationBarragePage /></PageRouteTransition> : <Navigate to="/" replace />} />
             <Route path="/image-provenance" element={branding.isPending ? null : features.image_provenance_entry ? <PageRouteTransition key="image-provenance"><ImageProvenancePage /></PageRouteTransition> : <Navigate to="/" replace />} />
+            <Route path="/style-packs" element={<StylePacksPage />} />
             <Route path="/prompt-templates" element={<PageRouteTransition key="prompt-templates"><PromptTemplatesPage /></PageRouteTransition>} />
             <Route path="/prompt-templates/:templateId/edit" element={<PageRouteTransition key="prompt-template-editor"><PromptTemplateEditorPage /></PageRouteTransition>} />
             <Route
