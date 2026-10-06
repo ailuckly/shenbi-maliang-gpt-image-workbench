@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 import { useI18n } from "../i18n";
 import { cx } from "../lib/cx";
@@ -31,16 +31,14 @@ export function ImageLightbox({
   const index = Math.max(0, Math.min(state?.index ?? 0, Math.max(0, items.length - 1)));
   const activeItem = items[index] ?? null;
   const canSwitch = items.length > 1;
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!activeItem) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
       if (!canSwitch) return;
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") event.preventDefault();
       if (event.key === "ArrowLeft") onChangeIndex(index <= 0 ? items.length - 1 : index - 1);
       if (event.key === "ArrowRight") onChangeIndex(index >= items.length - 1 ? 0 : index + 1);
     }
@@ -57,8 +55,11 @@ export function ImageLightbox({
     onChangeIndex(nextIndex);
   };
 
-  return createPortal(
-    <div className={cx("reference-image-lightbox", canSwitch && "has-thumbs")} onMouseDown={onClose} role="dialog" aria-modal="true" aria-label={t("imageLightbox.preview")}>
+  return <Dialog.Root open onOpenChange={open => { if (!open) onClose(); }}><Dialog.Portal><Dialog.Content asChild aria-describedby={undefined}
+    onOpenAutoFocus={() => { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; }}
+    onCloseAutoFocus={event => { if (returnFocus.current?.isConnected) { event.preventDefault(); returnFocus.current.focus(); } }}>
+    <div className={cx("reference-image-lightbox", canSwitch && "has-thumbs")} onMouseDown={onClose}>
+      <Dialog.Title className="sr-only">{t("imageLightbox.preview")}</Dialog.Title>
       {activeItem.downloadUrl ? (
         <a
           className="reference-image-download"
@@ -123,7 +124,5 @@ export function ImageLightbox({
           </div>
         </>
       ) : null}
-    </div>,
-    document.body
-  );
+    </div></Dialog.Content></Dialog.Portal></Dialog.Root>;
 }
