@@ -1,114 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Activity,
-  ArrowDown,
-  ArrowUp,
-  Archive,
-  Bot,
-  Bug,
-  Check,
-  Database,
-  Download,
-  FolderOpen,
-  ImageIcon,
-  KeyRound,
-  Lightbulb,
-  LoaderCircle,
-  LogOut,
-  Mail,
-  Network,
-  PanelLeft,
-  Pencil,
-  ScrollText,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Save,
-  Shield,
-  ShieldCheck,
-  SlidersHorizontal,
-  Smartphone,
-  Trash2,
-  Upload,
-  Users,
-  WandSparkles
-} from "lucide-react";
-import { api, configApi } from "../../api";
-import { LightweightLineChart } from "../../components/LightweightChart";
-import { MarkdownView } from "../../components/MarkdownView";
-import { useInfinitePageLoader } from "../../hooks/useInfinitePageLoader";
-import { DEFAULT_SITE_NAME } from "../../lib/branding";
-import { copyTextToClipboard } from "../../lib/clipboard";
-import { cx } from "../../lib/cx";
-import { formatImageFileSize } from "../../lib/format";
-import type {
-  BackupRun,
-  BackupSettings,
-  ChangelogEntry,
-  BrandingAsset,
-  BrandingAssetType,
-  BrandingSettings,
-  ConfigStatistics,
-  DebugSettings,
-  ImageAccount,
-  ImageAccountImportPreviewItem,
-  ImageAccountImportSource,
-  ImageGenerationMode,
-  GlobalSwitchType,
-  ModelRequestLog,
-  PromptOptimizerProvider,
-  ProviderConfig,
-  ProviderRequestLog,
-  ProxyConfig,
-  SafetyReviewLog,
-  SafetyReviewSettings,
-  SmsSettings,
-  StatisticsPreset,
-  SmtpSettings,
-  StarterCopySettings,
-  StarterDailyCopy,
-  Team
-} from "../../types";
-import type { ConfigAssetReviewItem, ConfigCaseReviewItem } from "../../api/config";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useI18n } from "../../i18n";
+import { Button, Dialog, Input, Textarea } from "../../v2/ui";
+import { configApi } from "../../api";
+import type { Team } from "../../types";
+import type { ConfigUser } from "../../api/config";
 import { ConfirmDialog, CustomSelect, PromptDialog, useToast } from "../../ui";
-import { useConfigCopy } from "../configCopy";
-import {
-  ConfigHeader,
-  REQUEST_LOG_PAGE_SIZE,
-  SwitchControl,
-  durationLabel,
-  emptyProvider,
-  formatDate,
-  inputDateOffset,
-  inputDateValue,
-  nextChangelogVersion,
-  numberLabel,
-  percentLabel,
-  providerDateFromId,
-  shouldAutoRefreshAccountUsage,
-  todayInputDate,
-  uniqueProviderFormId,
-  isGeneratedProviderId,
-  isGeneratedProviderName
-} from "../shared";
-
-type ConfigUser = {
-  id: string;
-  teamId: string;
-  teamName: string;
-  account: string;
-  username: string;
-  email: string;
-  phone: string;
-  disabled: boolean;
-  hasConfigAccess: boolean;
-  lastLoginAt: string;
-  createdAt: string;
-  updatedAt: string;
-  sessionCount: number;
-  imageCount: number;
-};
+import { ConfigHeader, SwitchControl, formatDate } from "../shared";
 
 type ConfigUserPayload = {
   account: string;
@@ -117,6 +15,7 @@ type ConfigUserPayload = {
   phone: string;
   password?: string;
   teamId: string;
+  tierId: string;
   disabled: boolean;
   hasConfigAccess: boolean;
 };
@@ -151,303 +50,48 @@ function userSwitchConfirmCopy(confirm: UserSwitchConfirm | null) {
   };
 }
 
-export function TeamAccountPanel() {
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-  const configCopy = useConfigCopy();
+export function TeamAccountPanel({ onUsers }: { onUsers: (teamId: string) => void }) {
+  const cache = useQueryClient();
+  const { t } = useI18n();
+  const returnFocus = useRef<HTMLButtonElement>(null);
   const teams = useQuery({ queryKey: ["config-teams"], queryFn: configApi.teams });
-  const [selectedTeamId, setSelectedTeamId] = useState("all");
-  const [teamDialog, setTeamDialog] = useState<{ mode: "create" | "edit"; team?: Team } | null>(null);
-  const [userDialog, setUserDialog] = useState<{
-    mode: "create" | "edit";
-    user?: ConfigUser;
-    teamId?: string;
-  } | null>(null);
-  const [resetUser, setResetUser] = useState<ConfigUser | null>(null);
-  const [confirmAction, setConfirmAction] = useState<
-    | { kind: "team"; team: Team }
-    | { kind: "user"; user: ConfigUser }
-    | null
-  >(null);
-  const [switchConfirm, setSwitchConfirm] = useState<UserSwitchConfirm | null>(null);
-  const switchConfirmCopy = userSwitchConfirmCopy(switchConfirm);
-  const allUserCount = useMemo(
-    () => teams.data?.teams.reduce((sum, team) => sum + team.userCount, 0) ?? 0,
-    [teams.data?.teams]
-  );
-  const selectedTeam =
-    selectedTeamId === "all" ? null : teams.data?.teams.find((team) => team.id === selectedTeamId) ?? null;
-  const teamUsers = useQuery({
-    queryKey: ["config-users", { teamId: selectedTeam?.id ?? "all" }],
-    queryFn: () => configApi.users(selectedTeam?.id ? { teamId: selectedTeam.id } : undefined),
-    enabled: Boolean(teams.data)
+  const [editing, setEditing] = useState<{ team?: Team } | null>(null);
+  const [deleting, setDeleting] = useState<Team | null>(null);
+  const save = useMutation({
+    mutationFn: async (payload: { name: string; description: string }) => { if (editing?.team) await configApi.updateTeam(editing.team.id, payload); else await configApi.createTeam(payload); },
+    onSuccess: () => { setEditing(null); void cache.invalidateQueries({ queryKey: ["config-teams"] }); }
   });
-  const createTeam = useMutation({
-    mutationFn: (payload: { name: string; description: string }) => configApi.createTeam(payload),
-    onSuccess: () => {
-      setTeamDialog(null);
-      showToast("团队已新增");
-      queryClient.invalidateQueries({ queryKey: ["config-teams"] });
-    }
-  });
-  const updateTeam = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { name: string; description: string } }) =>
-      configApi.updateTeam(id, payload),
-    onSuccess: () => {
-      setTeamDialog(null);
-      showToast("团队已保存");
-      queryClient.invalidateQueries({ queryKey: ["config-teams"] });
-    }
-  });
-  const deleteTeam = useMutation({
-    mutationFn: (id: string) => configApi.deleteTeam(id),
-    onSuccess: () => {
-      showToast("团队已删除");
-      setSelectedTeamId("");
-      setConfirmAction(null);
-      queryClient.invalidateQueries({ queryKey: ["config-teams"] });
-    }
-  });
-  const createUser = useMutation({
-    mutationFn: (payload: ConfigUserPayload & { password: string }) => configApi.createUser(payload),
-    onSuccess: () => {
-      setUserDialog(null);
-      showToast("账号已新增");
-      queryClient.invalidateQueries({ queryKey: ["config-users"] });
-      queryClient.invalidateQueries({ queryKey: ["config-teams"] });
-    }
-  });
-  const updateUser = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ConfigUserPayload }) =>
-      configApi.updateUser(id, payload),
-    onSuccess: () => {
-      setUserDialog(null);
-      showToast("账号已保存");
-      queryClient.invalidateQueries({ queryKey: ["config-users"] });
-      queryClient.invalidateQueries({ queryKey: ["config-teams"] });
-    }
-  });
-  const toggleUser = useMutation({
-    mutationFn: ({ id, disabled }: { id: string; disabled: boolean }) => configApi.updateUser(id, { disabled }),
-    onSuccess: () => {
-      showToast("账号状态已更新");
-      queryClient.invalidateQueries({ queryKey: ["config-users"] });
-    }
-  });
-  const toggleConfigAccess = useMutation({
-    mutationFn: ({ id, hasConfigAccess }: { id: string; hasConfigAccess: boolean }) =>
-      configApi.updateUser(id, { hasConfigAccess }),
-    onSuccess: () => {
-      showToast("管理权限已更新");
-      queryClient.invalidateQueries({ queryKey: ["config-users"] });
-    }
-  });
-  const resetPassword = useMutation({
-    mutationFn: ({ id, password }: { id: string; password: string }) => configApi.resetPassword(id, password),
-    onSuccess: () => {
-      setResetUser(null);
-      showToast("密码已重置");
-      queryClient.invalidateQueries({ queryKey: ["config-users"] });
-    }
-  });
-  const deleteUser = useMutation({
-    mutationFn: (id: string) => configApi.deleteUser(id),
-    onSuccess: () => {
-      showToast("账号已删除");
-      setConfirmAction(null);
-      queryClient.invalidateQueries({ queryKey: ["config-users"] });
-      queryClient.invalidateQueries({ queryKey: ["config-teams"] });
-    }
-  });
-
-  useEffect(() => {
-    if (!selectedTeamId) setSelectedTeamId("all");
-  }, [selectedTeamId, teams.data?.teams]);
-
-  return (
-    <section className="config-card">
-      <ConfigHeader title="团队管理" desc="左侧按团队筛选账号，右侧维护账号与团队信息。" />
-      <div className="team-manager">
-        <aside className="team-tree">
-          <button className="secondary-btn full" onClick={() => setTeamDialog({ mode: "create" })}>
-            新增团队
-          </button>
-          <div className="team-tree-list">
-            <button
-              type="button"
-              className={selectedTeamId === "all" ? "team-option active" : "team-option"}
-              onClick={() => setSelectedTeamId("all")}
-            >
-              <span className="team-option-name">全部分组</span>
-              <span className="team-option-count">{allUserCount}</span>
-            </button>
-            {teams.data?.teams.map((team) => (
-              <button
-                key={team.id}
-                type="button"
-                className={selectedTeam?.id === team.id ? "team-option editable active" : "team-option editable"}
-                onClick={() => setSelectedTeamId(team.id)}
-              >
-                <span className="team-option-name">{team.name}</span>
-                <span className="team-option-count">{team.userCount}</span>
-                <span
-                  className="team-option-edit"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`编辑团队 ${team.name}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setTeamDialog({ mode: "edit", team });
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setTeamDialog({ mode: "edit", team });
-                  }}
-                >
-                  <Pencil size={14} />
-                </span>
-              </button>
-            ))}
-          </div>
-        </aside>
-        <section className="team-detail">
-          <div className="team-detail-head">
-            <div>
-              <h3>{selectedTeam?.name ?? "全部分组"}</h3>
-              <p>
-                {selectedTeam
-                  ? selectedTeam.description || "暂无说明"
-                  : `${teams.data?.teams.length ?? 0} ${configCopy("个团队")}，${allUserCount} ${configCopy("个账号")}`}
-              </p>
-            </div>
-            {teams.data?.teams.length ? (
-              <div className="row-actions">
-                <button
-                  className="secondary-btn"
-                  onClick={() => setUserDialog({ mode: "create", teamId: selectedTeam?.id ?? teams.data?.teams[0]?.id })}
-                >
-                  新增账号
-                </button>
-                {selectedTeam ? (
-                  <button
-                    className="danger-btn"
-                    onClick={() => setConfirmAction({ kind: "team", team: selectedTeam })}
-                  >
-                    删除团队
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <UserTable
-            users={teamUsers.data?.users ?? []}
-            onEdit={(user) => setUserDialog({ mode: "edit", user })}
-            onToggle={(user) => setSwitchConfirm({ kind: "status", user })}
-            onConfigAccessToggle={(user) => setSwitchConfirm({ kind: "configAccess", user })}
-            onReset={(user) => setResetUser(user)}
-            onDelete={(user) => setConfirmAction({ kind: "user", user })}
-          />
-        </section>
-      </div>
-      {teamDialog ? (
-        <TeamDialog
-          mode={teamDialog.mode}
-          team={teamDialog.team}
-          onClose={() => setTeamDialog(null)}
-          onSubmit={(payload) => {
-            if (teamDialog.mode === "create") createTeam.mutate(payload);
-            else updateTeam.mutate({ id: teamDialog.team!.id, payload });
-          }}
-        />
-      ) : null}
-      {userDialog ? (
-        <UserDialog
-          mode={userDialog.mode}
-          user={userDialog.user}
-          teams={teams.data?.teams ?? []}
-          defaultTeamId={userDialog.teamId ?? selectedTeam?.id}
-          onClose={() => setUserDialog(null)}
-          onSubmit={(payload) => {
-            if (userDialog.mode === "create") {
-              createUser.mutate(payload as ConfigUserPayload & { password: string });
-            } else {
-              updateUser.mutate({
-                id: userDialog.user!.id,
-                payload: {
-                  account: payload.account,
-                  username: payload.username,
-                  email: payload.email,
-                  phone: payload.phone,
-                  teamId: payload.teamId,
-                  disabled: payload.disabled,
-                  hasConfigAccess: payload.hasConfigAccess
-                }
-              });
-            }
-          }}
-        />
-      ) : null}
-      <PromptDialog
-        open={Boolean(resetUser)}
-        title="重置密码"
-        label="新密码"
-        type="password"
-        description={resetUser ? `为账号「${resetUser.account}」设置新密码。` : undefined}
-        confirmText="重置密码"
-        onCancel={() => setResetUser(null)}
-        onSubmit={(password) => {
-          if (resetUser) resetPassword.mutate({ id: resetUser.id, password });
-        }}
-      />
-      <ConfirmDialog
-        open={Boolean(confirmAction)}
-        title={confirmAction?.kind === "team" ? "删除团队" : "删除账号"}
-        description={
-          confirmAction?.kind === "team"
-            ? `确认删除团队「${confirmAction.team.name}」？团队下有账号时不能删除。`
-            : confirmAction?.kind === "user"
-              ? `确认删除账号「${confirmAction.user.account}」？该账号的对话、图片和素材记录会一起删除。`
-              : ""
-        }
-        confirmText="删除"
-        destructive
-        onCancel={() => setConfirmAction(null)}
-        onConfirm={() => {
-          if (confirmAction?.kind === "team") deleteTeam.mutate(confirmAction.team.id);
-          if (confirmAction?.kind === "user") deleteUser.mutate(confirmAction.user.id);
-        }}
-      />
-      <ConfirmDialog
-        open={Boolean(switchConfirm)}
-        title={switchConfirmCopy.title}
-        description={switchConfirmCopy.description}
-        confirmText={switchConfirmCopy.confirmText}
-        destructive={switchConfirmCopy.destructive}
-        onCancel={() => setSwitchConfirm(null)}
-        onConfirm={() => {
-          if (!switchConfirm) return;
-          if (switchConfirm.kind === "status") {
-            toggleUser.mutate({ id: switchConfirm.user.id, disabled: !switchConfirm.user.disabled });
-          } else {
-            toggleConfigAccess.mutate({
-              id: switchConfirm.user.id,
-              hasConfigAccess: !switchConfirm.user.hasConfigAccess
-            });
-          }
-          setSwitchConfirm(null);
-        }}
-      />
-    </section>
-  );
+  const remove = useMutation({ mutationFn: configApi.deleteTeam, onSuccess: () => { setDeleting(null); void cache.invalidateQueries({ queryKey: ["config-teams"] }); } });
+  return <section className="v2-page v2-stack">
+    <h1>{t("config.nav.teams")}</h1>
+    <p>{t("v2.tiers.teamHint")}</p>
+    <Button onClick={event => { returnFocus.current = event.currentTarget; save.reset(); setEditing({}); }}>{t("v2.tiers.newTeam")}</Button>
+    {teams.error || remove.error ? <p role="alert">{(teams.error || remove.error)?.message}</p> : null}
+    <div className="table-wrap"><table>
+      <thead><tr><th>{t("v2.admin.name")}</th><th>{t("v2.pack.summary")}</th><th>{t("v2.tiers.members")}</th><th>{t("v2.tiers.actions")}</th></tr></thead>
+      <tbody>{teams.data?.teams.map(team => <tr key={team.id}>
+        <td><Button variant="ghost" onClick={() => onUsers(team.id)}>{team.name}</Button></td><td>{team.description}</td>
+        <td><Button variant="ghost" onClick={() => onUsers(team.id)}>{team.userCount}</Button></td>
+        <td><Button onClick={event => { returnFocus.current = event.currentTarget; save.reset(); setEditing({ team }); }}>{t("common.edit")}</Button> <Button variant="danger" onClick={event => { returnFocus.current = event.currentTarget; remove.reset(); setDeleting(team); }}>{t("common.delete")}</Button></td>
+      </tr>)}</tbody>
+    </table></div>
+    {editing ? <TeamDialog key={editing.team?.id ?? "new"} returnFocus={returnFocus} team={editing.team} error={save.error?.message} saving={save.isPending} onClose={() => setEditing(null)} onSubmit={payload => save.mutate(payload)} /> : null}
+    <Dialog open={Boolean(deleting)} title={t("v2.tiers.deleteTeam")} returnFocus={returnFocus} description={t("v2.tiers.deleteTeamHint", { name: deleting?.name ?? "" })} onOpenChange={open => { if (!open) setDeleting(null); }}>
+      {remove.error ? <p role="alert">{remove.error.message}</p> : null}
+      <Button variant="danger" disabled={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>{t("common.delete")}</Button>
+    </Dialog>
+  </section>;
 }
 
-export function AccountSearchPanel() {
+export function AccountSearchPanel({ initialTeamId = "" }: { initialTeamId?: string }) {
+  const { t } = useI18n();
+  const tiers = useQuery({ queryKey: ["config-user-tiers"], queryFn: configApi.userTiers });
+  const [tierFilter, setTierFilter] = useState("");
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [keyword, setKeyword] = useState("");
-  const [teamFilter, setTeamFilter] = useState("");
+  const [teamFilter, setTeamFilter] = useState(initialTeamId);
+  useEffect(() => setTeamFilter(initialTeamId), [initialTeamId]);
   const [statusFilter, setStatusFilter] = useState("");
   const [userDialog, setUserDialog] = useState<{ mode: "create" | "edit"; user?: ConfigUser } | null>(null);
   const [resetUser, setResetUser] = useState<ConfigUser | null>(null);
@@ -461,8 +105,8 @@ export function AccountSearchPanel() {
   const registrationEnabled = registrationSettings.data?.settings.enabled ?? false;
   const teams = useQuery({ queryKey: ["config-teams"], queryFn: configApi.teams });
   const users = useQuery({
-    queryKey: ["config-users", { keyword, teamFilter, statusFilter }],
-    queryFn: () => configApi.users({ keyword, teamId: teamFilter, status: statusFilter })
+    queryKey: ["config-users", { keyword, teamFilter, tierFilter, statusFilter }],
+    queryFn: () => configApi.users({ keyword, teamId: teamFilter, tierId: tierFilter, status: statusFilter })
   });
   const saveRegistrationSettings = useMutation({
     mutationFn: (enabled: boolean) => configApi.saveRegistrationSettings({ enabled }),
@@ -549,6 +193,7 @@ export function AccountSearchPanel() {
             ...(teams.data?.teams.map((team) => ({ value: team.id, label: team.name })) ?? [])
           ]}
         />
+        <CustomSelect ariaLabel={t("v2.tiers.tier")} value={tierFilter} onChange={setTierFilter} options={[{ value: "", label: t("v2.tiers.all") }, ...(tiers.data?.tiers.map(tier => ({ value: tier.id, label: tier.name })) ?? [])]} />
         <CustomSelect
           value={statusFilter}
           onChange={setStatusFilter}
@@ -558,13 +203,14 @@ export function AccountSearchPanel() {
             { value: "disabled", label: "禁用" }
           ]}
         />
-        <button className="secondary-btn" onClick={() => setUserDialog({ mode: "create" })}>
+        <button className="secondary-btn" onClick={() => { createUser.reset(); setUserDialog({ mode: "create" }); }}>
           新增账号
         </button>
       </div>
+      {users.error || tiers.error ? <p role="alert">{(users.error || tiers.error)?.message}</p> : null}
       <UserTable
         users={users.data?.users ?? []}
-        onEdit={(user) => setUserDialog({ mode: "edit", user })}
+        onEdit={(user) => { updateUser.reset(); setUserDialog({ mode: "edit", user }); }}
         onToggle={(user) => setSwitchConfirm({ kind: "status", user })}
         onConfigAccessToggle={(user) => setSwitchConfirm({ kind: "configAccess", user })}
         onReset={(user) => setResetUser(user)}
@@ -575,6 +221,8 @@ export function AccountSearchPanel() {
           mode={userDialog.mode}
           user={userDialog.user}
           teams={teams.data?.teams ?? []}
+          error={(userDialog.mode === "create" ? createUser.error : updateUser.error)?.message}
+          saving={createUser.isPending || updateUser.isPending}
           defaultTeamId={teamFilter || teams.data?.teams[0]?.id}
           onClose={() => setUserDialog(null)}
           onSubmit={(payload) => {
@@ -589,6 +237,7 @@ export function AccountSearchPanel() {
                   email: payload.email,
                   phone: payload.phone,
                   teamId: payload.teamId,
+                  tierId: payload.tierId,
                   disabled: payload.disabled,
                   hasConfigAccess: payload.hasConfigAccess
                 }
@@ -659,6 +308,7 @@ function UserTable({
   onReset: (user: ConfigUser) => void;
   onDelete: (user: ConfigUser) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="table-wrap">
       <table>
@@ -669,6 +319,8 @@ function UserTable({
             <th>邮箱</th>
             <th>手机号</th>
             <th>团队</th>
+            <th>{t("v2.tiers.tier")}</th>
+            <th>{t("v2.tiers.today")}</th>
             <th>状态</th>
             <th>管理权限</th>
             <th>对话</th>
@@ -686,6 +338,8 @@ function UserTable({
               <td>{user.email || "-"}</td>
               <td>{user.phone || "-"}</td>
               <td>{user.teamName}</td>
+              <td>{user.tier.name}</td>
+              <td>{t("v2.tiers.usage", user.today)}</td>
               <td>
                 <SwitchControl
                   checked={!user.disabled}
@@ -713,7 +367,7 @@ function UserTable({
           ))}
           {users.length === 0 ? (
             <tr>
-              <td colSpan={12}>暂无账号</td>
+              <td colSpan={14}>暂无账号</td>
             </tr>
           ) : null}
         </tbody>
@@ -722,46 +376,21 @@ function UserTable({
   );
 }
 
-function TeamDialog({
-  mode,
-  team,
-  onClose,
-  onSubmit
-}: {
-  mode: "create" | "edit";
-  team?: Team;
-  onClose: () => void;
-  onSubmit: (payload: { name: string; description: string }) => void;
+function TeamDialog({ team, error, saving, returnFocus, onClose, onSubmit }: {
+  returnFocus: React.RefObject<HTMLButtonElement | null>; team?: Team; error?: string; saving: boolean;
+  onClose: () => void; onSubmit: (payload: { name: string; description: string }) => void;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(team?.name ?? "");
   const [description, setDescription] = useState(team?.description ?? "");
-
-  return (
-    <div className="modal-backdrop">
-      <section className="case-modal compact-modal">
-        <header>
-          <h3>{mode === "create" ? "新增团队" : "编辑团队"}</h3>
-          <button onClick={onClose}>关闭</button>
-        </header>
-        <label>
-          团队名称
-          <input value={name} onChange={(event) => setName(event.target.value)} autoFocus />
-        </label>
-        <label>
-          团队说明
-          <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} />
-        </label>
-        <div className="row-actions">
-          <button className="secondary-btn" onClick={onClose}>
-            取消
-          </button>
-          <button className="primary-btn" onClick={() => onSubmit({ name, description })} disabled={!name.trim()}>
-            保存
-          </button>
-        </div>
-      </section>
-    </div>
-  );
+  return <Dialog open returnFocus={returnFocus} title={t(team ? "v2.tiers.editTeam" : "v2.tiers.newTeam")} onOpenChange={open => { if (!open) onClose(); }}>
+    <form className="v2-stack" onSubmit={event => { event.preventDefault(); onSubmit({ name, description }); }}>
+      <Input label={t("v2.admin.name")} value={name} onChange={event => setName(event.target.value)} required autoFocus />
+      <Textarea label={t("v2.pack.summary")} value={description} onChange={event => setDescription(event.target.value)} />
+      {error ? <p role="alert">{error}</p> : null}
+      <Button type="submit" variant="primary" disabled={saving || !name.trim()}>{t("common.save")}</Button>
+    </form>
+  </Dialog>;
 }
 
 function UserDialog({
@@ -769,6 +398,8 @@ function UserDialog({
   user,
   teams,
   defaultTeamId,
+  error,
+  saving,
   onClose,
   onSubmit
 }: {
@@ -776,9 +407,14 @@ function UserDialog({
   user?: ConfigUser;
   teams: Team[];
   defaultTeamId?: string;
+  error?: string;
+  saving: boolean;
   onClose: () => void;
   onSubmit: (payload: ConfigUserPayload) => void;
 }) {
+  const { t } = useI18n();
+  const tiers = useQuery({ queryKey: ["config-user-tiers"], queryFn: configApi.userTiers });
+  const [tierId, setTierId] = useState(user?.tierId ?? "");
   const [account, setAccount] = useState(user?.account ?? "");
   const [username, setUsername] = useState(user?.username ?? user?.account ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -826,6 +462,9 @@ function UserDialog({
             placeholder="选择团队"
           />
         </label>
+        <label>{t("v2.tiers.tier")}
+          <CustomSelect ariaLabel={t("v2.tiers.tier")} value={tierId} onChange={setTierId} options={[{ value: "", label: t("v2.tiers.followDefault") }, ...(tiers.data?.tiers.map(tier => ({ value: tier.id, label: tier.name })) ?? [])]} />
+        </label>
         <div className="switch-row">
           <span>账号状态</span>
           <SwitchControl
@@ -842,14 +481,15 @@ function UserDialog({
             onChange={setHasConfigAccess}
           />
         </div>
+        {error || tiers.error ? <p role="alert">{error || tiers.error?.message}</p> : null}
         <div className="row-actions">
           <button className="secondary-btn" onClick={onClose}>
             取消
           </button>
           <button
             className="primary-btn"
-            disabled={!account.trim() || !teamId || (mode === "create" && !password)}
-            onClick={() => onSubmit({ account, username, email, phone, password, teamId, disabled, hasConfigAccess })}
+            disabled={saving || !account.trim() || !teamId || (mode === "create" && !password)}
+            onClick={() => onSubmit({ account, username, email, phone, password, teamId, tierId, disabled, hasConfigAccess })}
           >
             保存
           </button>

@@ -42,6 +42,7 @@ export const CONFIG_TAB_VALUES = [
   "statistics",
   "users",
   "teams",
+  "userTiers",
   "contentCategories",
   "soundManagement",
   "assetReviews",
@@ -82,6 +83,7 @@ export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
   { value: "statistics", label: "数据统计", Icon: Activity },
   { value: "users", label: "用户账号", Icon: Users },
   { value: "teams", label: "团队管理", Icon: Shield },
+  { value: "userTiers", label: "用户等级", Icon: ShieldCheck },
   { value: "contentCategories", label: "分类管理", Icon: Tags },
   { value: "soundManagement", label: "提示音管理", Icon: Volume2 },
   { value: "assetReviews", label: "素材审核", Icon: FolderOpen },
@@ -118,7 +120,7 @@ export const CONFIG_NAV_CATEGORIES: Array<{
   { value: "generation", label: "模型与渠道", items: ["providers", "promptOptimizer", "imageMode", "safetyReview", "imageAccounts", "cpa"] },
   { value: "prompt", label: "提示词工程", items: ["stylePacks", "imageCategories", "caseLibrary", "promptStrategy"] },
   { value: "content", label: "内容", items: ["contentCategories", "soundManagement", "assetReviews", "caseReviews", "starterCopy", "changelog"] },
-  { value: "members", label: "组织", items: ["users", "teams"] },
+  { value: "members", label: "组织", items: ["users", "teams", "userTiers"] },
   { value: "system", label: "系统", items: ["branding", "smtp", "sms", "backup", "proxy", "debug", "modelLogs", "requests", "audit"] }
 ];
 

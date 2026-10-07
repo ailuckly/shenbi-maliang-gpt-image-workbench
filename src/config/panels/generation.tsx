@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -431,6 +432,7 @@ function ImageAccountDialog({
   onClose: () => void;
   onSubmit: (payload: Partial<ImageAccount>) => void;
 }) {
+  const { t } = useI18n();
   const [form, setForm] = useState<Partial<ImageAccount>>(() => imageAccountFormFromAccount(account));
 
   return (
@@ -466,6 +468,7 @@ function ImageAccountDialog({
           </label>
           <label>
             订阅套餐
+            <small>{t("v2.tiers.subscriptionHint")}</small>
             <input
               value={form.accountType ?? ""}
               onChange={(event) => setForm({ ...form, accountType: event.target.value })}
@@ -800,6 +803,7 @@ function ImageAccountBulkImportDialog({
 }
 
 export function ImageAccountPoolPanel() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const didAutoRefreshUsage = useRef(false);
@@ -894,7 +898,7 @@ export function ImageAccountPoolPanel() {
           <thead>
             <tr>
               <th>账号</th>
-              <th>订阅套餐</th>
+              <th>订阅套餐<small>{t("v2.tiers.subscriptionHint")}</small></th>
               <th>状态</th>
               <th>Codex 额度</th>
               <th>CPA统计</th>
