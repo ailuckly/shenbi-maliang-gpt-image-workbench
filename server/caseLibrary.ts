@@ -5,34 +5,14 @@ import { appDb, getAll, getOne, run } from "./db";
 import { FILES_DIR } from "./paths";
 import { IMAGE_CATEGORIES } from "./promptEngine/imageCategories";
 import { now } from "./utils";
+import { CASE_LIBRARY_SOURCES, sourceCaseId, sourceImageCategory, fetchCaseSource, type SourceCase, type ModelFamily } from "./caseLibrarySources";
 
-// Community prompt cases from freestylefly/awesome-gpt-image-2 (data/cases.json). They are
-// synced into the local database on demand and never committed; see README for the source.
-const REPOSITORY_RAW = "https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main";
 export const CASE_LIBRARY_DIR = path.join(FILES_DIR, "case-library");
 export const CASE_LIBRARY_ID_PREFIX = "library-";
 const CASE_IMAGE_MAX_SIZE = 1280;
 const DOWNLOAD_CONCURRENCY = 6;
 // Below this relevance a reference case is more likely to mislead than help.
 const MIN_REFERENCE_SCORE = 2;
-
-const SOURCE_CATEGORY_TO_IMAGE_CATEGORY: Record<string, string> = {
-  "UI & Interfaces": "ui",
-  "Charts & Infographics": "infographic",
-  "Posters & Typography": "poster",
-  "Products & E-commerce": "product",
-  "Brand & Logos": "brand",
-  "Architecture & Spaces": "architecture",
-  "Photography & Realism": "photo",
-  "Illustration & Art": "illustration",
-  "Characters & People": "character",
-  "Scenes & Storytelling": "scene",
-  "History & Classical Themes": "history",
-  "Documents & Publishing": "document",
-  "Other Use Cases": "general"
-};
-
-type SourceCase = { id: number; title: string; image: string; prompt: string; category: string };
 
 export type CaseLibraryStatus = {
   running: boolean;
@@ -44,6 +24,8 @@ export type CaseLibraryStatus = {
   finishedAt: string;
 };
 
+const emptyStatus = (): CaseLibraryStatus => ({ running: false, total: 0, processed: 0, failed: 0, error: "", startedAt: "", finishedAt: "" });
+const sourceStatuses = new Map(CASE_LIBRARY_SOURCES.map((source) => [source.id, emptyStatus()]));
 const status: CaseLibraryStatus = { running: false, total: 0, processed: 0, failed: 0, error: "", startedAt: "", finishedAt: "" };
 
 export function caseLibraryCategoryId(imageCategoryId: string) {
@@ -56,7 +38,12 @@ export function caseLibraryImageFile(caseId: string) {
 
 export function caseLibraryStatus() {
   const count = getOne<{ count: number }>(appDb, "select count(*) as count from case_items where id like ?", `${CASE_LIBRARY_ID_PREFIX}%`)?.count ?? 0;
-  return { ...status, count };
+  const sources = CASE_LIBRARY_SOURCES.map((source) => ({
+    id: source.id, name: source.name, license: source.license,
+    count: getOne<{ count: number }>(appDb, "select count(*) as count from case_library_meta where source = ?", source.id)?.count ?? 0,
+    status: { ...sourceStatuses.get(source.id)! }
+  }));
+  return { ...status, count, sources };
 }
 
 function ensureCategories() {
@@ -81,19 +68,12 @@ async function fileExists(file: string) {
   }
 }
 
-async function fetchWithTimeout(url: string, timeoutMs: number) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-  if (!response.ok) throw new Error(`${response.status} ${url}`);
-  return response;
-}
-
-async function syncOne(item: SourceCase) {
-  const caseId = `${CASE_LIBRARY_ID_PREFIX}${item.id}`;
-  const imageCategory = SOURCE_CATEGORY_TO_IMAGE_CATEGORY[item.category] ?? "general";
+async function syncOne(item: SourceCase, source: typeof CASE_LIBRARY_SOURCES[number]) {
+  const caseId = sourceCaseId(source, item);
+  const imageCategory = sourceImageCategory(item);
   const file = caseLibraryImageFile(caseId);
   if (!(await fileExists(file))) {
-    const imagePath = item.image.startsWith("/") ? `/data${item.image}` : `/data/${item.image}`;
-    const response = await fetchWithTimeout(`${REPOSITORY_RAW}${imagePath}`, 60_000);
+    const response = await fetchCaseSource(item.image);
     const source = Buffer.from(await response.arrayBuffer());
     const output = await sharp(source)
       .rotate()
@@ -117,44 +97,52 @@ async function syncOne(item: SourceCase) {
     `/api/case-library/images/${caseId}.webp`,
     now()
   );
+  run(appDb, `insert into case_library_meta (case_id, source, model_family, tags_json, created_at)
+    values (?, ?, ?, ?, ?) on conflict(case_id) do update set source = excluded.source,
+    model_family = excluded.model_family, tags_json = excluded.tags_json`,
+    caseId, source.id, source.modelFamily, JSON.stringify(item.tags), now());
 }
 
 /** Starts a background sync; returns false when one is already running. */
-export function startCaseLibrarySync() {
+export function startCaseLibrarySync(sourceId?: string) {
+  const sources = sourceId === undefined ? CASE_LIBRARY_SOURCES : CASE_LIBRARY_SOURCES.filter((source) => source.id === sourceId);
+  if (!sources.length) throw new Error("Unknown case-library source");
   if (status.running) return false;
-  Object.assign(status, { running: true, total: 0, processed: 0, failed: 0, error: "", startedAt: now(), finishedAt: "" });
+  Object.assign(status, emptyStatus(), { running: true, startedAt: now() });
   void (async () => {
     try {
       await mkdir(CASE_LIBRARY_DIR, { recursive: true });
-      const response = await fetchWithTimeout(`${REPOSITORY_RAW}/data/cases.json`, 60_000);
-      const data = await response.json() as { cases?: SourceCase[] };
-      const cases = (data.cases ?? []).filter((item) => item && Number.isFinite(item.id) && item.prompt && item.image);
-      status.total = cases.length;
       ensureCategories();
-      let cursor = 0;
-      const worker = async () => {
-        while (cursor < cases.length) {
-          const item = cases[cursor++];
-          try {
-            await syncOne(item);
-          } catch {
-            status.failed += 1;
-          }
-          status.processed += 1;
-        }
-      };
-      await Promise.all(Array.from({ length: DOWNLOAD_CONCURRENCY }, worker));
-    } catch (error) {
-      status.error = error instanceof Error ? error.message : String(error);
-    } finally {
-      status.running = false;
-      status.finishedAt = now();
-    }
+      for (const source of sources) {
+        const current = sourceStatuses.get(source.id)!;
+        Object.assign(current, emptyStatus(), { running: true, startedAt: now() });
+        try {
+          const cases = source.select(source.parse(await source.fetch()));
+          current.total = cases.length;
+          status.total += cases.length;
+          let cursor = 0;
+          const worker = async () => {
+            while (cursor < cases.length) {
+              const item = cases[cursor++];
+              try { await syncOne(item, source); }
+              catch { current.failed += 1; status.failed += 1; }
+              current.processed += 1;
+              status.processed += 1;
+            }
+          };
+          await Promise.all(Array.from({ length: DOWNLOAD_CONCURRENCY }, worker));
+        } catch (error) {
+          current.error = error instanceof Error ? error.message : String(error);
+          status.error = [status.error, `${source.id}: ${current.error}`].filter(Boolean).join("; ");
+        } finally { current.running = false; current.finishedAt = now(); }
+      }
+    } catch (error) { status.error = error instanceof Error ? error.message : String(error); }
+    finally { status.running = false; status.finishedAt = now(); }
   })();
   return true;
 }
 
-type LibraryCaseRow = { id: string; title: string; prompt: string };
+type LibraryCaseRow = { id: string; title: string; prompt: string; model_family: string | null };
 
 function tokens(text: string) {
   const lower = text.toLowerCase();
@@ -169,10 +157,10 @@ function tokens(text: string) {
  * Picks the library cases in the same image category whose prompts share the most terms with
  * the request; used as structure/specificity references by the optimizer.
  */
-export function referenceCasesForRequest(request: string, imageCategoryId: string, limit = 2) {
+export function referenceCasesForRequest(request: string, imageCategoryId: string, limit = 2, modelFamily?: ModelFamily) {
   const rows = getAll<LibraryCaseRow>(
     appDb,
-    "select id, title, prompt from case_items where id like ? and category_id = ?",
+    "select c.id, c.title, c.prompt, m.model_family from case_items c left join case_library_meta m on m.case_id = c.id where c.id like ? and c.category_id = ?",
     `${CASE_LIBRARY_ID_PREFIX}%`,
     caseLibraryCategoryId(imageCategoryId)
   );
@@ -194,7 +182,7 @@ export function referenceCasesForRequest(request: string, imageCategoryId: strin
       return { row, score: score > 0 && sameLanguage ? score * 1.2 : score };
     })
     .filter((item) => item.score >= MIN_REFERENCE_SCORE)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || (modelFamily ? Number(b.row.model_family === modelFamily) - Number(a.row.model_family === modelFamily) : 0))
     .slice(0, limit)
     .map(({ row }) => ({ title: row.title, prompt: row.prompt.slice(0, 1500) }));
 }

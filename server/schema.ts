@@ -1309,6 +1309,20 @@ export function initAppDb() {
   `);
 
   appDb.run(`
+    create table if not exists case_library_meta (
+      case_id text primary key,
+      source text not null,
+      model_family text not null,
+      tags_json text not null default '[]',
+      created_at text not null,
+      foreign key (case_id) references case_items(id) on delete cascade
+    )
+  `);
+  appDb.run(`insert or ignore into case_library_meta (case_id, source, model_family, created_at)
+    select id, 'awesome-gpt-image-2', 'gpt', created_at from case_items
+    where id glob 'library-[0-9]*' and substr(id, 9) not glob '*[^0-9]*'`);
+
+  appDb.run(`
     create table if not exists case_group_images (
       id text primary key,
       group_id text not null,

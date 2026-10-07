@@ -20,6 +20,17 @@ Changes made in this fork, and the combined work, are distributed under AGPL-3.0
   `docs/templates.md`. Its case prompts and images are community content owned by their original authors and are not
   bundled with ShenBi.
 
+- [xianyu110/awesome-nanobananapro-prompts](https://github.com/xianyu110/awesome-nanobananapro-prompts),
+  MIT. ShenBi supports curated runtime sync of its Nano Banana prompts and includes a trimmed JSON parser fixture
+  from `gpt4o-image-prompts-master/data/prompts.json` in `server/fixtures/caseLibrary/`.
+
+- [YouMind-OpenLab/awesome-nano-banana-pro-prompts](https://github.com/YouMind-OpenLab/awesome-nano-banana-pro-prompts),
+  attribution: YouMind-OpenLab, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+  ShenBi includes a trimmed `README_zh.md` parser fixture and supports curated runtime sync.
+  Prompts are filtered and argument placeholders are replaced with their default values
+  (提示词经筛选与变量默认值替换). Individual synced cases do not retain author or source links;
+  repository-level attribution and license links are recorded here and in README.md.
+
 ## Third-party assets
 
 Audio files uploaded or migrated into a runtime data directory are not distributed as part of this project

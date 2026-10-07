@@ -597,6 +597,20 @@ AI 客户端改图时使用的一次性本地图片上传记录。上传链接�
 
 相关索引：`case_items_review_created_id_idx`、`case_items_approved_created_id_idx`、`case_items_user_created_id_idx`、`case_items_category_created_id_idx` 支撑灵感空间审核、我的、分类和时间游标加载；`case_items_group_idx`、`case_items_group_created_id_idx` 支撑多图灵感按组聚合和翻页。
 
+### case_library_meta
+
+app.db 中系统案例的来源与模型族；`case_id` 外键到 `case_items(id)`，删除案例时级联删除。
+
+| 字段 | 说明 |
+| --- | --- |
+| `case_id` | 案例 ID，主键；旧 `library-<数字>`、新增 `library-nbcn-<数字>` / `library-ym-<id>` |
+| `source` | `awesome-gpt-image-2`、`nanobanana-cn` 或 `youmind` |
+| `model_family` | `gpt` / `gemini` |
+| `tags_json` | 来源标签 JSON 数组，默认 `[]` |
+| `created_at` | 元数据创建时间 |
+
+启动幂等补写旧纯数字 `library-` 案例为 `awesome-gpt-image-2 / gpt`，不改变案例或本地图片。新来源按需同步时写入元数据，不保留单条作者与来源链接。
+
 ### case_group_images
 
 灵感组内图片。单图灵感也会有一条组内图片记录，多图灵感用多条记录保存排序和封面。
