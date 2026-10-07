@@ -24,6 +24,8 @@ import { useToast } from "../../ui";
 
 const USER_MESSAGE_COLLAPSED_LINES = 10;
 const ASSISTANT_LONG_IMAGE_RATIO = 1.8;
+const ASSISTANT_WIDE_IMAGE_RATIO = 1.6;
+const ASSISTANT_PORTRAIT_IMAGE_RATIO = 1.15;
 const MESSAGE_MORE_CARD_WIDTH = 172;
 const IMAGE_MESSAGE_MORE_CARD_WIDTH = 268;
 const MESSAGE_MORE_CARD_GAP = 8;
@@ -84,6 +86,11 @@ function resolveChatMessageCapabilities(
 
 function messagePreviewUrl(message: Message) {
   return message.imagePreviewUrl ?? message.imageUrl ?? "";
+}
+
+/** Full-size view uses the stored original, not the 1600px preview. */
+function messageOriginalUrl(message: Message) {
+  return message.imageOriginalUrl ?? message.imageUrl ?? messagePreviewUrl(message);
 }
 
 function messageThumbnailUrl(message: Message) {
@@ -240,11 +247,27 @@ function parseImageSize(size: string | null | undefined) {
   return width > 0 && height > 0 ? { width, height } : null;
 }
 
-function isLongAssistantImage(message: Message | null | undefined) {
+function assistantImageDimensions(message: Message | null | undefined) {
   const parsedSize = parseImageSize(message?.imageSize);
-  const width = Number(message?.imageWidth || parsedSize?.width || 0);
-  const height = Number(message?.imageHeight || parsedSize?.height || 0);
+  return {
+    width: Number(message?.imageWidth || parsedSize?.width || 0),
+    height: Number(message?.imageHeight || parsedSize?.height || 0)
+  };
+}
+
+function isLongAssistantImage(message: Message | null | undefined) {
+  const { width, height } = assistantImageDimensions(message);
   return width > 0 && height / width >= ASSISTANT_LONG_IMAGE_RATIO;
+}
+
+/** Wide and portrait results get their own display width so they are shown whole and large. */
+function assistantImageShape(message: Message | null | undefined): "wide" | "portrait" | "long" | "standard" {
+  const { width, height } = assistantImageDimensions(message);
+  if (!(width > 0 && height > 0)) return "standard";
+  if (height / width >= ASSISTANT_LONG_IMAGE_RATIO) return "long";
+  if (width / height >= ASSISTANT_WIDE_IMAGE_RATIO) return "wide";
+  if (height / width >= ASSISTANT_PORTRAIT_IMAGE_RATIO) return "portrait";
+  return "standard";
 }
 
 function sameLocalDay(a: Date, b: Date) {
@@ -756,7 +779,7 @@ function AssistantImageGroup({
   const canOpenEditor = capabilities.editImage && Boolean(image && onOpenEditor);
   const groupImages = imageMessages.map((message) => workImageFromMessage(message, sessionId ?? null)).filter((item): item is WorkImage => Boolean(item));
   const resultPreviewItems = imageMessages.map((message) => ({
-    url: messagePreviewUrl(message),
+    url: messageOriginalUrl(message),
     thumbnailUrl: messageThumbnailUrl(message),
     name: message.content || t("chatMessages.viewNthImage", { index: slots.findIndex((item) => item?.id === message.id) + 1 })
   }));
@@ -764,6 +787,7 @@ function AssistantImageGroup({
     ? sharedResultMessages
     : imageMessages;
   const longImage = isLongAssistantImage(activeMessage);
+  const imageShape = assistantImageShape(activeMessage);
   const emptySlotPlaceholderState = imageResultPlaceholderState(false, jobStatus);
   const activePlaceholderState = imageResultPlaceholderState(Boolean(activeMessage), jobStatus);
   const placeholderFailed = emptySlotPlaceholderState === "failed";
@@ -839,6 +863,8 @@ function AssistantImageGroup({
         className={cx(
           "image-result-group",
           longImage && "image-result-group-long",
+          imageShape === "wide" && "image-result-group-wide",
+          imageShape === "portrait" && "image-result-group-portrait",
           placeholderRendering && "is-rendering"
         )}
         style={imageGroupStyle}
@@ -892,7 +918,12 @@ function AssistantImageGroup({
           <RenderingMessage mode={renderingMode} imageGroupLayout />
         ) : (
           <div
-            className={cx("image-result image-result-main", activeMessage && longImage && "image-result-long")}
+            className={cx(
+              "image-result image-result-main",
+              activeMessage && longImage && "image-result-long",
+              activeMessage && imageShape === "wide" && "image-result-wide",
+              activeMessage && imageShape === "portrait" && "image-result-portrait"
+            )}
             ref={mainImageRef}
           >
             {activeMessage ? (
@@ -1156,6 +1187,7 @@ export function ChatMessage({
   const userTextToggleable = message.role === "user" && userTextOverflowing;
   const userTextCollapsed = userTextToggleable && !userTextExpanded;
   const longAssistantImage = message.role === "assistant" && isLongAssistantImage(message);
+  const assistantShape = message.role === "assistant" ? assistantImageShape(message) : "standard";
   const directReferencePreviewItems = directReferenceImages.map((item) => ({
     url: item.previewUrl ?? item.url,
     downloadUrl: item.originalUrl ?? item.url,
@@ -1181,7 +1213,7 @@ export function ChatMessage({
   const resultPreviewItems = message.imageUrl
     ? [
         {
-          url: messagePreviewUrl(message),
+          url: messageOriginalUrl(message),
           thumbnailUrl: messageThumbnailUrl(message),
           name: message.content || t("imageLightbox.preview")
         }
@@ -1377,7 +1409,14 @@ export function ChatMessage({
     >
       {message.imageUrl && message.role === "assistant" ? (
         <>
-          <div className={cx("image-result", longAssistantImage && "image-result-long")}>
+          <div
+            className={cx(
+              "image-result",
+              longAssistantImage && "image-result-long",
+              assistantShape === "wide" && "image-result-wide",
+              assistantShape === "portrait" && "image-result-portrait"
+            )}
+          >
             <button
               type="button"
               className="image-result-open"

@@ -565,11 +565,13 @@ function ProviderSettings({ text }: { text: boolean }) {
                   >
                     {["auto", "images_api", "responses"].map((value) => (
                       <option key={value} value={value}>
-                        {value}
+                        {t("v2.admin.routeOption." + value)}
                       </option>
                     ))}
                   </Select>
+                  <p className="v2-field-hint">{t("v2.admin.routeHint")}</p>
                   {input("responsesModel", "responsesModel")}
+                  <p className="v2-field-hint">{t("v2.admin.responsesModelHint")}</p>
                   <Input
                     label={t("v2.admin.sizes")}
                     value={form.sizes.join(",")}
@@ -582,6 +584,7 @@ function ProviderSettings({ text }: { text: boolean }) {
                       })
                     }
                   />
+                  <p className="v2-field-hint">{t("v2.admin.sizesHint")}</p>
                   <Input
                     label={t("v2.admin.qualities")}
                     value={form.qualities.join(",")}

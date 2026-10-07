@@ -28,10 +28,15 @@ const DEFAULT_REQUEST_SIZE = "auto";
 
 const BASE_SIZE_OPTIONS: SizeOption[] = [
   { value: "1024x1024", label: "方形", labelKey: "picker.size.square", ratio: "1:1", previewRatio: "1 / 1", description: "头像、产品图、通用配图", descriptionKey: "picker.size.squareDesc" },
+  { value: "1344x2016", label: "海报", labelKey: "picker.size.poster", ratio: "2:3", previewRatio: "2 / 3", description: "竖版海报、书封、印刷品", descriptionKey: "picker.size.posterDesc" },
   { value: "1536x2048", label: "竖版", labelKey: "picker.size.portrait", ratio: "3:4", previewRatio: "3 / 4", description: "海报、人物、封面", descriptionKey: "picker.size.portraitDesc" },
   { value: "1152x2048", label: "故事", labelKey: "picker.size.story", ratio: "9:16", previewRatio: "9 / 16", description: "手机故事、短视频封面", descriptionKey: "picker.size.storyDesc" },
+  { value: "1024x2048", label: "长图", labelKey: "picker.size.tall", ratio: "1:2", previewRatio: "1 / 2", description: "竖向长卷、条幅、手机长图", descriptionKey: "picker.size.tallDesc" },
   { value: "2048x1536", label: "横屏", labelKey: "picker.size.landscape", ratio: "4:3", previewRatio: "4 / 3", description: "插画、横向构图", descriptionKey: "picker.size.landscapeDesc" },
-  { value: "2048x1152", label: "宽屏", labelKey: "picker.size.widescreen", ratio: "16:9", previewRatio: "16 / 9", description: "大屏横幅、演示封面", descriptionKey: "picker.size.widescreenDesc" }
+  { value: "2048x1152", label: "宽屏", labelKey: "picker.size.widescreen", ratio: "16:9", previewRatio: "16 / 9", description: "大屏横幅、演示封面", descriptionKey: "picker.size.widescreenDesc" },
+  { value: "2048x1024", label: "宽幅", labelKey: "picker.size.wide", ratio: "2:1", previewRatio: "2 / 1", description: "横幅、网页头图、宽幅插画", descriptionKey: "picker.size.wideDesc" },
+  { value: "2688x1152", label: "电影", labelKey: "picker.size.cinema", ratio: "21:9", previewRatio: "21 / 9", description: "电影宽银幕、带鱼屏壁纸", descriptionKey: "picker.size.cinemaDesc" },
+  { value: "2560x1024", label: "长卷", labelKey: "picker.size.scroll", ratio: "5:2", previewRatio: "5 / 2", description: "横向长卷、全景、留白小品", descriptionKey: "picker.size.scrollDesc" }
 ];
 
 const QUALITY_PRESETS: Record<string, { label: string; labelKey: string; descriptionKey: string }> = {

@@ -1716,3 +1716,47 @@ td button:not(.primary-btn):not(.secondary-btn):not(.danger-btn):not(.ghost-btn)
   background: var(--button-default-hover-bg);
 }
 
+
+/* Result images are shown whole and large: wide images use the conversation width,
+   portraits stay narrower so they fit on screen. */
+.assistant-message:has(> .image-result),
+.assistant-image-group-message {
+  max-width: min(720px, 100%);
+}
+
+.image-result {
+  width: min(600px, 100%);
+}
+
+.image-result-portrait {
+  width: min(460px, 100%);
+}
+
+.image-result-wide {
+  width: min(960px, 100%);
+}
+
+.assistant-message:has(> .image-result-wide),
+.assistant-image-group-message:has(.image-result-group-wide) {
+  max-width: 100%;
+}
+
+.image-result-group {
+  width: min(668px, 100%);
+}
+
+.image-result-group-portrait {
+  width: min(528px, 100%);
+}
+
+.image-result-group-wide {
+  width: min(1000px, 100%);
+}
+
+.image-result.image-result-long {
+  width: min(400px, 100%);
+}
+
+.image-result-group.image-result-group-long {
+  width: min(468px, 100%);
+}

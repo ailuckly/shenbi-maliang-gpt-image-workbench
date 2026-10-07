@@ -5,6 +5,7 @@ import {
   DEFAULT_IMAGE_MODEL,
   DEFAULT_IMAGE_QUALITIES,
   DEFAULT_IMAGE_SIZES,
+  PREVIOUS_DEFAULT_IMAGE_SIZES,
   DEFAULT_REQUEST_SIZE,
   DEFAULT_RESPONSES_MODEL,
   STUDIO_BACKEND_BASE_URL
@@ -91,6 +92,20 @@ function migrateGptImageProviderSizes() {
     const sizes = parseProviderSizeList(row.sizes);
     if (!sameStringList(sizes, LEGACY_DALLE_IMAGE_SIZES) && !sameStringList(sizes, EXPANDED_GPT_IMAGE_2_SIZES)) continue;
     run(configDb, "update provider_configs set sizes = ?, default_size = ?, updated_at = ? where id = ?", nextSizes, DEFAULT_REQUEST_SIZE, timestamp, row.id);
+  }
+  run(configDb, "insert into config_migrations (id, created_at) values (?, ?)", migrationId, timestamp);
+}
+
+function migrateWideAspectProviderSizes() {
+  const migrationId = "provider_wide_aspect_sizes_20261007";
+  if (getOne<{ id: string }>(configDb, "select id from config_migrations where id = ?", migrationId)) return;
+  const timestamp = now();
+  const rows = getAll<Pick<ProviderRow, "id" | "sizes">>(configDb, "select id, sizes from provider_configs");
+  const nextSizes = JSON.stringify(DEFAULT_IMAGE_SIZES);
+  // Only lists still equal to the previous default are extended; custom lists are left alone.
+  for (const row of rows) {
+    if (!sameStringList(parseProviderSizeList(row.sizes), PREVIOUS_DEFAULT_IMAGE_SIZES)) continue;
+    run(configDb, "update provider_configs set sizes = ?, updated_at = ? where id = ?", nextSizes, timestamp, row.id);
   }
   run(configDb, "insert into config_migrations (id, created_at) values (?, ?)", migrationId, timestamp);
 }
@@ -2483,6 +2498,7 @@ export function initConfigDb() {
     "%/images/edits"
   );
   migrateGptImageProviderSizes();
+  migrateWideAspectProviderSizes();
   run(
     configDb,
     "update image_generation_settings set mode = ? where mode in (?, ?, ?, ?, ?)",

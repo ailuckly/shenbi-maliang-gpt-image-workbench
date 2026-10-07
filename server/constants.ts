@@ -12,7 +12,9 @@ export const DEFAULT_REQUEST_SIZE = "auto";
 export const DEFAULT_REQUEST_QUALITY = "auto";
 export const DEFAULT_IMAGE_RESULT_RETRY_COUNT = 1;
 export const DEFAULT_MULTI_IMAGE_CONCURRENCY = 2;
-export const DEFAULT_IMAGE_SIZES = ["1024x1024", "1536x2048", "1152x2048", "2048x1536", "2048x1152"];
+// Wide/tall ratios (2:1, 21:9, 5:2, 2:3, 1:2) are requests; channels may cap pixels but keep the ratio.
+export const PREVIOUS_DEFAULT_IMAGE_SIZES = ["1024x1024", "1536x2048", "1152x2048", "2048x1536", "2048x1152"];
+export const DEFAULT_IMAGE_SIZES = ["1024x1024", "1344x2016", "1536x2048", "1152x2048", "1024x2048", "2048x1536", "2048x1152", "2048x1024", "2688x1152", "2560x1024"];
 export const DEFAULT_IMAGE_QUALITIES = ["low", "medium", "high"];
 export const LOGIN_ASSET_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif"]);
 export const AUTO_PROVIDER_ID = "auto";

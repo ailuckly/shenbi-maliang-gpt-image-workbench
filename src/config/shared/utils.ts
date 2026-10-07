@@ -176,7 +176,7 @@ export function emptyProvider(channel: ProviderConfig["channel"] = "api", existi
     responsesPath: "/v1/responses",
     model: "gpt-image-2.5-sunburst",
     responsesModel: "gpt-6-astra",
-    sizes: ["1024x1024", "1536x2048", "1152x2048", "2048x1536", "2048x1152"],
+    sizes: ["1024x1024", "1344x2016", "1536x2048", "1152x2048", "1024x2048", "2048x1536", "2048x1152", "2048x1024", "2688x1152", "2560x1024"],
     qualities: ["low", "medium", "high"],
     defaultSize: "auto",
     defaultQuality: "high",

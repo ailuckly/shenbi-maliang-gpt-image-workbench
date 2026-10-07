@@ -1,6 +1,7 @@
 import { redactProviderSecrets } from "./secretRedaction";
 import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
 import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
+import { inferAspectSize } from "./imageAspect";
 import type { Hono } from "hono";
 import { applyAssetFieldSuggestionsToImages, ensureAssetFieldSuggestionsForImage } from "./assetSuggestions";
 import { caseMaterialReferenceFromSource, caseMaterialSourcesByIds } from "./caseMaterialSources";
@@ -12,6 +13,7 @@ import {
   requestImageQuality,
   requestMultiImageConcurrency,
   requestImageSize,
+  DEFAULT_REQUEST_SIZE,
   resolveImageResultRetryCount
 } from "./constants";
 import { recordCasePromptUsage } from "./caseUsage";
@@ -2359,7 +2361,11 @@ api.post("/images/generate", async (c) => {
   const modelSelection = requestedImageModel(body, providers);
   if (modelSelection.error) return c.json({ error: modelSelection.error }, 400);
   const model = modelSelection.model;
-  const size = requestImageSize(body.size);
+  const requestedSize = requestImageSize(body.size);
+  // "auto" lets the request text pick a ratio (横向宽幅 → 5:2, PPT → 16:9, 海报 → 2:3 …).
+  const size = requestedSize === DEFAULT_REQUEST_SIZE
+    ? inferAspectSize(String(body.originalRequest ?? body.prompt ?? ""), safeJson<string[]>(provider.sizes, [])) ?? requestedSize
+    : requestedSize;
   const quality = requestImageQuality(body.quality, provider.default_quality);
   if (modelSelection.explicit && isImageModelId(model) && !isImageQualitySupported(model, quality)) {
     return c.json({ error: `${model} 不支持质量 ${quality}` }, 400);

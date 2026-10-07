@@ -1,6 +1,12 @@
 import type { Messages } from "./types";
 export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
   "zh-CN": {
+    "v2.admin.routeOption.auto":"自动（推荐）：先走 Responses，失败再走图片接口",
+    "v2.admin.routeOption.images_api":"仅图片接口：提示词原样出图",
+    "v2.admin.routeOption.responses":"仅 Responses：文本模型改写后出图",
+    "v2.admin.routeHint":"Responses 会先由下方的改写模型把需求写成专业的画面说明再调用图像模型，构图和排版通常更好，但多一次文本模型调用、稍慢；图片接口直接把提示词交给图像模型，适合你已经写好完整提示词的场景。",
+    "v2.admin.responsesModelHint":"只在走 Responses 时使用，负责改写提示词并调用图像工具，不是图像模型本身。建议填渠道里最强的通用文本模型（例如 gpt-6.1-sol、gpt-6-astra）；模型越强，越能读懂长提示词和诗意描述。换模型后可用同一提示词对比效果。",
+    "v2.admin.sizesHint":"这是请求的尺寸与比例，渠道可能限制最大像素（例如 ChatGPT 账号渠道约 157 万像素），但会尽量保持比例。用户选「自动」时，系统会根据需求里的「横向宽幅」「PPT」「海报」「16:9」等词从这里挑最接近的比例。",
     "v2.chat.actualPrompt":"实际提示词",
     "v2.chat.negativePrompt":"负面词",
     "v2.chat.negativeShort":"负面词：{text}",
@@ -140,6 +146,12 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.gallery.menu":"菜单", "v2.gallery.dialog":"打开对话框", "v2.gallery.dialogDescription":"Tab 保持在对话框中；Escape 关闭并返回打开按钮。"
   },
   "en-US": {
+    "v2.admin.routeOption.auto":"Auto (recommended): Responses first, then Images API",
+    "v2.admin.routeOption.images_api":"Images API only: prompt sent as-is",
+    "v2.admin.routeOption.responses":"Responses only: text model rewrites, then generates",
+    "v2.admin.routeHint":"Responses lets the rewrite model below turn the request into a detailed art-directed brief before calling the image model, which usually improves composition and typography at the cost of one extra text call. The Images API passes your prompt straight to the image model, best when the prompt is already complete.",
+    "v2.admin.responsesModelHint":"Used only on the Responses route to rewrite the prompt and call the image tool; it is not the image model. Use the strongest general text model on this channel (for example gpt-6.1-sol or gpt-6-astra) and compare with the same prompt after switching.",
+    "v2.admin.sizesHint":"Requested sizes and ratios. Channels may cap pixels (a ChatGPT-account channel gives about 1.57 MP) but keep the ratio. With size on Auto, words such as wide, PPT, poster or 16:9 in the request pick the closest ratio from this list.",
     "v2.chat.actualPrompt":"Actual prompt",
     "v2.chat.negativePrompt":"Negative prompt",
     "v2.chat.negativeShort":"Negative: {text}",
