@@ -224,7 +224,10 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.gallery.errorField":"校验示例", "v2.gallery.errorDescription":"示例：请填写该字段。", "v2.gallery.checkbox":"勾选示例",
     "v2.gallery.empty":"暂无内容", "v2.gallery.emptyDescription":"示例：创建内容后会显示在这里。",
     "v2.gallery.feedback":"交互反馈示例", "v2.gallery.primary":"主要操作", "v2.gallery.disabled":"不可用",
-    "v2.gallery.menu":"菜单", "v2.gallery.dialog":"打开对话框", "v2.gallery.dialogDescription":"Tab 保持在对话框中；Escape 关闭并返回打开按钮。"
+    "v2.gallery.menu":"菜单", "v2.gallery.dialog":"打开对话框", "v2.gallery.dialogDescription":"Tab 保持在对话框中；Escape 关闭并返回打开按钮。",
+    "v2.caseLibrary.sourcesDescription":"同步多个社区来源的案例，按图类归入灵感空间。新来源会筛除参考图依赖和名单中的 IP / 名人。图片压缩后保存在本地数据目录。",
+    "v2.caseLibrary.license":"许可：{license}",
+    "v2.caseLibrary.syncSource":"同步此来源"
   },
   "en-US": {
     "config.nav.setup":"Quick setup",
@@ -450,6 +453,9 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.gallery.errorField":"Validation example", "v2.gallery.errorDescription":"Example: complete this field.", "v2.gallery.checkbox":"Checkbox example",
     "v2.gallery.empty":"No content", "v2.gallery.emptyDescription":"Example: created content appears here.",
     "v2.gallery.feedback":"Interaction feedback example", "v2.gallery.primary":"Primary action", "v2.gallery.disabled":"Unavailable",
-    "v2.gallery.menu":"Menu", "v2.gallery.dialog":"Open dialog", "v2.gallery.dialogDescription":"Tab stays within the dialog; Escape closes and returns to the trigger."
+    "v2.gallery.menu":"Menu", "v2.gallery.dialog":"Open dialog", "v2.gallery.dialogDescription":"Tab stays within the dialog; Escape closes and returns to the trigger.",
+    "v2.caseLibrary.sourcesDescription":"Sync community cases from multiple sources into the inspiration space by image category. New sources exclude reference-dependent prompts and listed IPs or celebrities. Compressed images are stored locally.",
+    "v2.caseLibrary.license":"License: {license}",
+    "v2.caseLibrary.syncSource":"Sync this source"
   }
 };

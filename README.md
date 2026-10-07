@@ -205,6 +205,9 @@ data/     本地运行数据目录，启动后自动生成
 - [prompt-optimizer](https://github.com/linshenkx/prompt-optimizer)：文生图、图生图、多图与迭代优化模板的结构与方法（AGPL-3.0）。
 - [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2)：13 个图类的结构清单与避坑指南（MIT）。后台「案例库」可从该项目同步社区提示词案例到本地数据目录，案例的提示词与图片版权归各自原作者，不随本仓库分发，请仅用于学习与参考。
 
+- [xianyu110/awesome-nanobananapro-prompts](https://github.com/xianyu110/awesome-nanobananapro-prompts)（MIT）：后台可同步 Nano Banana 中文精选提示词案例；仓库包含少量解析测试样例。
+- [YouMind-OpenLab/awesome-nano-banana-pro-prompts](https://github.com/YouMind-OpenLab/awesome-nano-banana-pro-prompts)：署名 YouMind-OpenLab，许可 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；提示词经筛选与变量默认值替换，后台可同步精选案例，仓库包含少量解析测试样例。单条案例不保留作者与链接，来源归属与许可在此及 NOTICE.md 集中记录。
+
 项目仓库和发行包不包含图片任务提示音。管理员可在后台“提示音管理”中前往 Mixkit 等素材网站手动下载并上传到本地；运行时上传的第三方音频不属于本项目许可证的授权范围，使用者应自行确认素材许可。
 
 ## ⚠️ 免责声明
