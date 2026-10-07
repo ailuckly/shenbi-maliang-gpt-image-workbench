@@ -39,3 +39,41 @@ jobs:
 
       - name: Build
         run: bun run build
+
+  # Push to main → after all checks pass, update the production server.
+  # The deploy key is restricted on the server to /usr/local/sbin/shenbi-deploy
+  # (git reset to origin/main + scripts/deploy/install-server.sh); it cannot open a shell.
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o ServerAliveInterval=30 "root@$DEPLOY_HOST" deploy
+
+      - name: Smoke test
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "http://$DEPLOY_HOST/api/health"; then exit 0; fi
+            sleep 3
+          done
+          echo "Production health check failed" >&2
+          exit 1

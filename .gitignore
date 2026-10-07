@@ -39,3 +39,7 @@ __pycache__/
 
 .DS_Store
 Thumbs.db
+
+# Deploy build staging (scripts/deploy/install-server.sh)
+dist-next/
+dist.old/

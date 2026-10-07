@@ -45,7 +45,9 @@ if [ -d "$APP_DIR/.git" ]; then
 else
   as_user "git clone --depth 1 --branch $BRANCH $REPO $APP_DIR"
 fi
-as_user "cd $APP_DIR && $BUN install --frozen-lockfile && $BUN run build"
+# Build into dist-next and swap only on success, so the running site never serves a half-built dist.
+as_user "cd $APP_DIR && $BUN install --frozen-lockfile && $BUN run check && $BUN x vite build --outDir dist-next --emptyOutDir"
+as_user "cd $APP_DIR && rm -rf dist.old && { [ -d dist ] && mv dist dist.old || true; } && mv dist-next dist"
 
 log "Data"
 if [ -f "$DATA_DIR/app.db" ]; then
@@ -137,6 +139,11 @@ for _ in $(seq 1 30); do
   if curl -fsS http://127.0.0.1:8787/api/health >/dev/null; then break; fi
   sleep 2
 done
-curl -fsS http://127.0.0.1:8787/api/health && echo
+if ! curl -fsS http://127.0.0.1:8787/api/health; then
+  echo "Health check failed; recent service log:" >&2
+  journalctl -u shenbi -n 40 --no-pager >&2
+  exit 1
+fi
+echo
 curl -fsS -o /dev/null -w "nginx :80 -> %{http_code}\n" http://127.0.0.1/api/health
 systemctl --no-pager --lines 5 status shenbi | head -12
