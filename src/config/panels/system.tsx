@@ -1955,6 +1955,7 @@ function modelRequestSourceLabel(source: string) {
   if (!value) return "";
   const usageLabels: Record<string, string> = {
     "prompt.optimize": "自由提示词优化",
+    "prompt.intent": "对话意图判断",
     "template.optimize": "表单提示词优化",
     "template.translate": "表单提示词翻译",
     "image.prompt_plan": "多图提示词规划",

@@ -1,4 +1,4 @@
-import { RotateCcw, Square, WandSparkles, X } from "lucide-react";
+import { MessageCircle, RotateCcw, Square, WandSparkles, X } from "lucide-react";
 import { useI18n } from "../../i18n";
 import { cx } from "../../lib/cx";
 import type { PromptCandidate, PromptMode } from "../../v2/api";
@@ -17,7 +17,9 @@ export type PromptOptimizeRun = {
   /** 智能模式: show 生成 on each card instead of only filling the composer. */
   confirm: boolean;
   expected: number;
-  status: "running" | "done" | "error";
+  /** "reply": the message was small talk, so `reply` answers it instead of candidates. */
+  status: "running" | "done" | "error" | "reply";
+  reply?: string;
   candidates: PromptCandidate[];
   failures: { index: number; error: string }[];
   error: string;
@@ -36,10 +38,41 @@ type PromptCandidatesBlockProps = {
   onRestore: () => void;
   onCancel: () => void;
   onDismiss: () => void;
+  /** Generates the original message anyway after a small-talk reply. */
+  onForceGenerate?: (source: string) => void;
 };
 
-export function PromptCandidatesBlock({ run, onApply, onGenerate, onRestore, onCancel, onDismiss }: PromptCandidatesBlockProps) {
+export function PromptCandidatesBlock({ run, onApply, onGenerate, onRestore, onCancel, onDismiss, onForceGenerate }: PromptCandidatesBlockProps) {
   const { t } = useI18n();
+  if (run.status === "reply") {
+    return (
+      <section className="prompt-candidates is-reply" aria-live="polite">
+        <header className="prompt-candidates-header">
+          <MessageCircle size={15} aria-hidden="true" />
+          <span className="prompt-candidates-title">{t("v2.chat.intentReplyTitle")}</span>
+          <span className="prompt-candidates-actions">
+            <button
+              type="button"
+              className="prompt-candidates-action icon-only"
+              onClick={onDismiss}
+              aria-label={t("v2.chat.dismissCandidates")}
+              title={t("v2.chat.dismissCandidates")}
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          </span>
+        </header>
+        <p className="prompt-candidates-reply">{run.reply}</p>
+        {onForceGenerate ? (
+          <span className="prompt-candidate-actions">
+            <button type="button" className="prompt-candidate-use" onClick={() => onForceGenerate(run.source)}>
+              {t("v2.chat.intentForceGenerate")}
+            </button>
+          </span>
+        ) : null}
+      </section>
+    );
+  }
   const running = run.status === "running";
   const slots = Array.from({ length: run.expected }, (_, index) => index);
   const failedEverything = run.status === "error" && run.candidates.length === 0;

@@ -36,6 +36,11 @@ export const stylePackApi = {
   preview: (payload:{prompt:string;negativePrompt?:string;stylePackId?:string;stylePack?:StylePackInput;manuallyEdited?:boolean},signal?:AbortSignal,admin=false) => request<{finalPrompt:string;negative:string;params:StylePack["recommendedParams"]}>(`/api/${admin ? "config/" : ""}style-packs/preview`,{method:"POST",body:JSON.stringify(payload),signal})
 };
 
+export type PromptIntentResult = {intent:"image"|"chat";reply?:string;source?:string};
+export function detectPromptIntent(prompt:string, context:{hasImages:boolean;hasPreviousImage:boolean}, signal?:AbortSignal) {
+  return request<PromptIntentResult>("/api/prompt-intent",{method:"POST",body:JSON.stringify({prompt,...context}),signal});
+}
+
 // Completed candidates are delivered before done, so cancellation keeps usable work.
 export async function optimizePrompt(payload:OptimizeRequest, signal:AbortSignal, onCandidate:(candidate:PromptCandidate)=>void, onCandidateError:(failure:{index:number;error:string})=>void, onMetadata?:(metadata:Pick<OptimizeResult,"templateId"|"stylePackSnapshot"|"imageCategory">)=>void):Promise<OptimizeResult> {
   const response=await fetch("/api/prompt-optimizer/optimize",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json",Accept:"text/event-stream, application/json"},body:JSON.stringify(payload),signal:AbortSignal.any([signal,AbortSignal.timeout(95000)])});

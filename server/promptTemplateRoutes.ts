@@ -1,3 +1,4 @@
+import { PROMPT_INTENT_DEFAULT_REPLY, classifyPromptIntentByRule, ruleChatReply } from "../src/lib/promptIntent";
 import { redactProviderJson, redactProviderSecrets } from "./secretRedaction";
 import { promptOptimizeStyleConfigs, promptOptimizeSubStyleConfigs } from "./promptEngine/legacyStyleConfigs";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
@@ -38,7 +39,7 @@ import {
 
 type PromptTemplateVisibility = "private" | "shared";
 type ModelRequestLogContext = {
-  purpose: "prompt.optimize" | "prompt.translate" | "template.optimize" | "template.translate";
+  purpose: "prompt.optimize" | "prompt.intent" | "prompt.translate" | "template.optimize" | "template.translate";
   userId?: string;
   jobId?: string;
   source?: string;
@@ -3059,6 +3060,27 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   } });
 }
 
+const PROMPT_INTENT_SYSTEM_PROMPT = `你是图像生成工作台的入口判断器。用户的每条消息要么是想生成/修改图片的描述，要么是闲聊或提问。
+只输出一行 JSON：{"image": true} 或 {"image": false, "reply": "..."}。
+- 任何可以画出来的内容（哪怕只是一个名词或短语，如“柴犬”“赛博朋克城市”）都算 image=true。
+- 问候、致谢、问你是谁、问怎么用、与画面无关的问题算 image=false；reply 用用户的语言简短友好地回答（不超过 80 字），并引导用户描述想要的画面。
+- 你只能生成和修改图片，reply 里不要答应写诗、写文章、查资料等其他任务。`;
+const PROMPT_INTENT_PREVIOUS_IMAGE_NOTE = "\n- 当前会话里已经有生成的图片，“更亮一点”“换个颜色”“把它变温暖”这类修改要求都算 image=true。";
+
+export function parsePromptIntentContent(content: string): { intent: "image" | "chat"; reply?: string } {
+  const match = content.match(/\{[\s\S]*\}/);
+  try {
+    const data = JSON.parse(match ? match[0] : content) as { image?: unknown; reply?: unknown };
+    if (data.image === false) {
+      const reply = String(data.reply ?? "").trim().slice(0, 300);
+      return { intent: "chat", reply: reply || PROMPT_INTENT_DEFAULT_REPLY };
+    }
+  } catch {
+    // Unparseable output counts as an image request.
+  }
+  return { intent: "image" };
+}
+
 export function registerPromptTemplateRoutes(api: Hono) {
   api.get("/prompt-templates", async (c) => {
     const user = await requireUser(c);
@@ -3223,6 +3245,37 @@ export function registerPromptTemplateRoutes(api: Hono) {
       return c.json(optimized);
     } catch (error) {
       return c.json({ error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }, 502);
+    }
+  });
+
+  // 智能模式 sends here first: rules settle the clear cases, a small model the unclear ones.
+  // Any failure falls back to "image" so a real request is never blocked.
+  api.post("/prompt-intent", async (c) => {
+    const user = await requireUser(c);
+    if (!user) return c.json({ error: "未登录" }, 401);
+    const body = await c.req.json().catch(() => ({}));
+    const record = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {};
+    const prompt = String(record.prompt ?? "").trim().slice(0, 2000);
+    const ruled = classifyPromptIntentByRule(prompt, { hasImages: Boolean(record.hasImages) });
+    if (ruled === "image") return c.json({ intent: "image", source: "rule" });
+    if (ruled === "chat") return c.json({ intent: "chat", reply: ruleChatReply(prompt), source: "rule" });
+    const provider = resolveLanguageModelProvider("prompt.intent");
+    if (!provider) return c.json({ intent: "image", source: "fallback" });
+    try {
+      const content = await requestPromptModelText({
+        provider,
+        messages: [
+          { role: "system", content: PROMPT_INTENT_SYSTEM_PROMPT + (record.hasPreviousImage ? PROMPT_INTENT_PREVIOUS_IMAGE_NOTE : "") },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0,
+        signal: AbortSignal.timeout(10_000),
+        logContext: { purpose: "prompt.intent", userId: user.id, source: "prompt-intent" }
+      });
+      const parsed = parsePromptIntentContent(content);
+      return c.json({ ...parsed, source: "model" });
+    } catch {
+      return c.json({ intent: "image", source: "fallback" });
     }
   });
 

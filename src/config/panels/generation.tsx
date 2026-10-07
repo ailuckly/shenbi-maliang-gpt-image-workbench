@@ -2557,6 +2557,7 @@ const LANGUAGE_MODEL_ASSIGNMENT_GROUPS: Array<{
     description: "面向提示词创作、表单处理和图片续改的内容生成任务。",
     items: [
       { usageKey: "prompt.optimize", label: "对话提示词优化", description: "对话输入框里的 AI 提示词优化。", recommendation: "质量优先" },
+      { usageKey: "prompt.intent", label: "对话意图判断", description: "智能模式下判断一句话是画图需求还是闲聊（如「你好」），闲聊直接文字回复、不生图；规则能判断的不调用模型。", recommendation: "选最便宜的小模型" },
       { usageKey: "template.optimize", label: "表单提示词优化", description: "站内表单和导出网页的 AI 优化。", recommendation: "质量优先" },
       { usageKey: "template.translate", label: "表单提示词翻译", description: "站内表单和导出网页的中英翻译。", recommendation: "速度优先" },
       { usageKey: "image.prompt_plan", label: "多图提示词规划", description: "判断多图提示词是否已按图片分组，并整理为独立生图请求。", recommendation: "低延迟优先" },

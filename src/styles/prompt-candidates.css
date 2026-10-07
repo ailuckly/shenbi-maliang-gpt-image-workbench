@@ -379,3 +379,11 @@
 .composer-prompt-mode-option { min-height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--app-muted); font: inherit; font-size: 12px; cursor: pointer; }
 .composer-prompt-mode-option.is-active { background: var(--app-text); color: var(--app-text-inverted); }
 .composer-prompt-mode-option:focus-visible { outline: 2px solid var(--app-text); outline-offset: 1px; }
+
+.prompt-candidates-reply {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}

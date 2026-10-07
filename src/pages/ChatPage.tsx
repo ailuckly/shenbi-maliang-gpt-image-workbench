@@ -32,6 +32,7 @@ import {
 import { MAIN_CHAT_BRANCH_ID, buildChatRenderState, isServerEchoOfPending } from "../lib/chatRender";
 import { resolveChatSessionTransition } from "../lib/chatSessionTransition";
 import { cx } from "../lib/cx";
+import { PROMPT_INTENT_DEFAULT_REPLY, classifyPromptIntentByRule, ruleChatReply } from "../lib/promptIntent";
 import { isDrawingReferenceName } from "../lib/drawingReference";
 import { type AssetUploadMode } from "../lib/assets";
 import { getAppIntroSlides } from "../lib/featureIntroSlides";
@@ -43,6 +44,7 @@ import {
   DEFAULT_GENERATION_IMAGE_MODEL,
   DEFAULT_IMAGE_QUALITY,
   imageModelQualities,
+  isGeminiImageModel,
   isImageQualitySupported,
   latestConversationImageSelection,
   normalizeImageModel,
@@ -70,7 +72,7 @@ import type { DrawingElement } from "../lib/drawingCanvas";
 import { normalizePromptOptimizeStyle, sanitizePromptOptimizeStyleGroups } from "../lib/promptOptimizeStyles";
 import { getTimeGreetingKey } from "../lib/timeGreeting";
 import { DEFAULT_STYLE_PACK_ID, stylePackAffectsPrompt, stylePackGroups } from "../lib/stylePackGroups";
-import { optimizePrompt, stylePackApi, type PromptCandidate, type PromptGenerationFields, type PromptMode, type StylePack } from "../v2/api";
+import { detectPromptIntent, optimizePrompt, stylePackApi, type PromptCandidate, type PromptGenerationFields, type PromptMode, type StylePack } from "../v2/api";
 import { workImageFromLibraryCard, workImageFromMessage } from "../lib/workImages";
 import { useComposerPasteAsset } from "../hooks/useComposerPasteAsset";
 import { useChatScrollJump } from "../hooks/useChatScrollJump";
@@ -1531,7 +1533,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     const prompt = (options.prompt ?? draftPrompt).trim();
     if (currentScopeBusy || !prompt) return;
     const selectedRequestSize = requestSizeFromSelection(size);
-    const backgroundRequestOptions = imageBackgroundRequestOptions(background);
+    const backgroundRequestOptions = imageBackgroundRequestOptions(isGeminiImageModel(imageModel) ? "auto" : background);
     const caseUsage = draftCaseUsage?.caseItemId ? draftCaseUsage : null;
     const latestAssistantImage = [...visibleBranchMessages]
       .reverse()
@@ -1726,7 +1728,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     optimizeAbortRef.current = null;
     setOptimizeRun(null);
   };
-  const requestPromptOptimize = (source: string, customInstruction: string, options: { candidates?: number; confirm?: boolean } = {}) => {
+  const requestPromptOptimize = (source: string, customInstruction: string, options: { candidates?: number; confirm?: boolean; checkIntent?: boolean } = {}) => {
     optimizeAbortRef.current?.abort();
     const controller = new AbortController();
     optimizeAbortRef.current = controller;
@@ -1756,7 +1758,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       error: "",
       appliedIndex: null
     });
-    void optimizePrompt(
+    const startOptimize = () => void optimizePrompt(
       {
         prompt: source,
         mode,
@@ -1788,6 +1790,48 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     }).finally(() => {
       if (optimizeAbortRef.current === controller) optimizeAbortRef.current = null;
     });
+    if (!options.checkIntent) {
+      startOptimize();
+      return;
+    }
+    // Small talk such as "你好" gets a short reply instead of an optimized image prompt.
+    void detectPromptIntent(source, { hasImages: referenceCount > 0, hasPreviousImage: continuesImage }, controller.signal)
+      .catch(() => ({ intent: "image" as const, reply: undefined }))
+      .then((intent) => {
+        if (controller.signal.aborted) return;
+        if (intent.intent === "chat") {
+          if (optimizeAbortRef.current === controller) optimizeAbortRef.current = null;
+          update((current) => ({ ...current, status: "reply", reply: intent.reply || PROMPT_INTENT_DEFAULT_REPLY }));
+          return;
+        }
+        startOptimize();
+      });
+  };
+  const showIntentReply = (source: string) => {
+    optimizeAbortRef.current?.abort();
+    optimizeAbortRef.current = null;
+    setOptimizeRun({
+      id: Date.now(),
+      scopeKey: composerScopeKey,
+      source,
+      mode: "t2i",
+      stylePackName: "",
+      stylePackAddsText: false,
+      categoryLabel: "",
+      exampleTitles: [],
+      confirm: false,
+      expected: 0,
+      status: "reply",
+      reply: ruleChatReply(source),
+      candidates: [],
+      failures: [],
+      error: "",
+      appliedIndex: null
+    });
+  };
+  const forceGenerateFromIntentReply = (source: string) => {
+    setOptimizeRun(null);
+    submitDraft({ prompt: source });
   };
   const applyPromptCandidate = (candidate: PromptCandidate) => {
     setDraftPrompt(candidatePromptText(candidate));
@@ -1806,8 +1850,14 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     const prompt = draftPrompt.trim();
     if (!prompt || currentScopeBusy) return;
     const chosen = visibleOptimizeRun && visibleOptimizeRun.appliedIndex !== null;
+    const hasImages = Boolean(editImage) || selectedAssets.length > 0 || selectedCaseMaterials.length > 0;
     if (promptMode === "smart" && !chosen && stylePackPickerGroups.length) {
-      requestPromptOptimize(prompt, "", { candidates: 1, confirm: true });
+      requestPromptOptimize(prompt, "", { candidates: 1, confirm: true, checkIntent: !hasImages });
+      return;
+    }
+    // 直出 stays literal: only obvious small talk is stopped, without any model call.
+    if (!chosen && classifyPromptIntentByRule(prompt, { hasImages }) === "chat") {
+      showIntentReply(prompt);
       return;
     }
     submitDraft();
@@ -2799,6 +2849,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
               onRestore={restorePromptOptimizeSource}
               onCancel={cancelPromptOptimize}
               onDismiss={dismissPromptOptimize}
+              onForceGenerate={forceGenerateFromIntentReply}
             />
           </div>
         ) : null}

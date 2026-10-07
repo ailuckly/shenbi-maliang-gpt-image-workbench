@@ -274,7 +274,13 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.tiers.deleteTeam": "删除团队",
     "v2.tiers.deleteTeamHint": "确认删除「{name}」？有成员的团队不能删除。",
     "v2.tiers.members": "成员数",
-    "v2.tiers.subscriptionHint": "ChatGPT 账号的套餐，仅用于 ChatGPT Web 渠道，不是用户等级"
+    "v2.tiers.subscriptionHint": "ChatGPT 账号的套餐，仅用于 ChatGPT Web 渠道，不是用户等级",
+    "v2.chat.intentReplyTitle": "这句话不像画图需求",
+    "v2.chat.intentForceGenerate": "仍然按原文生成图片",
+    "v2.chat.intentChecking": "正在理解你的需求…",
+    "v2.usage.remaining": "今日剩余 {images} 张 · 优化 {optimizes} 次",
+    "v2.usage.unlimited": "今日不限额",
+    "v2.usage.tier": "等级：{name}"
   },
   "en-US": {
     "config.nav.setup":"Quick setup",
@@ -550,6 +556,12 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.tiers.deleteTeam": "Delete team",
     "v2.tiers.deleteTeamHint": "Delete “{name}”? Teams with members cannot be deleted.",
     "v2.tiers.members": "Members",
-    "v2.tiers.subscriptionHint": "The ChatGPT account plan, used only for the ChatGPT Web channel; this is not a user tier"
+    "v2.tiers.subscriptionHint": "The ChatGPT account plan, used only for the ChatGPT Web channel; this is not a user tier",
+    "v2.chat.intentReplyTitle": "This doesn’t look like an image request",
+    "v2.chat.intentForceGenerate": "Generate an image from it anyway",
+    "v2.chat.intentChecking": "Understanding your request…",
+    "v2.usage.remaining": "Today: {images} images · {optimizes} optimizations left",
+    "v2.usage.unlimited": "No daily limit",
+    "v2.usage.tier": "Tier: {name}"
   }
 };

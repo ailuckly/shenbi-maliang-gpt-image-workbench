@@ -195,6 +195,7 @@ export type PromptOptimizerProvider = {
 
 export type LanguageModelUsageKey =
   | "prompt.optimize"
+  | "prompt.intent"
   | "template.optimize"
   | "template.translate"
   | "image.prompt_plan"

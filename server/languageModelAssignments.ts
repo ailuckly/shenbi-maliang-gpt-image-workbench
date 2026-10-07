@@ -7,6 +7,7 @@ import { now } from "./utils";
 
 export const LANGUAGE_MODEL_USAGE_KEYS = [
   "prompt.optimize",
+  "prompt.intent",
   "template.optimize",
   "template.translate",
   "image.prompt_plan",
