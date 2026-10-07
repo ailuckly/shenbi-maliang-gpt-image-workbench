@@ -1716,6 +1716,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       mode,
       stylePackName: selectedStylePack && selectedStylePack.id !== DEFAULT_STYLE_PACK_ID ? selectedStylePack.name : "",
       stylePackAddsText: stylePackAffectsPrompt(selectedStylePack),
+      categoryLabel: "",
       expected,
       status: "running",
       candidates: [],
@@ -1739,7 +1740,11 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         ...current,
         candidates: [...current.candidates.filter((item) => item.index !== candidate.index), candidate].sort((a, b) => a.index - b.index)
       })),
-      (failure) => update((current) => ({ ...current, failures: [...current.failures.filter((item) => item.index !== failure.index), failure] }))
+      (failure) => update((current) => ({ ...current, failures: [...current.failures.filter((item) => item.index !== failure.index), failure] })),
+      (metadata) => {
+        const label = metadata.imageCategory?.label;
+        if (label) update((current) => ({ ...current, categoryLabel: label }));
+      }
     ).then(() => {
       update((current) => ({ ...current, status: "done" }));
     }).catch((reason: unknown) => {

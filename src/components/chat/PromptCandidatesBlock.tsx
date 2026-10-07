@@ -10,6 +10,8 @@ export type PromptOptimizeRun = {
   mode: PromptMode;
   stylePackName: string;
   stylePackAddsText: boolean;
+  /** Image category the optimizer used (自动识别), e.g. 海报与排版. */
+  categoryLabel: string;
   expected: number;
   status: "running" | "done" | "error";
   candidates: PromptCandidate[];
@@ -42,6 +44,7 @@ export function PromptCandidatesBlock({ run, onApply, onRestore, onCancel, onDis
       <header className="prompt-candidates-header">
         <WandSparkles size={15} aria-hidden="true" />
         <span className="prompt-candidates-title">{running ? t("v2.chat.optimizing") : t("v2.chat.candidatesTitle")}</span>
+        {run.categoryLabel ? <span className="prompt-candidates-pack">{t("v2.chat.categoryTag", { name: run.categoryLabel })}</span> : null}
         {run.stylePackName ? <span className="prompt-candidates-pack">{run.stylePackName}</span> : null}
         <span className="prompt-candidates-actions">
           {running ? (

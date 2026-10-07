@@ -6,6 +6,7 @@ import { logModelRequest } from "./auditLog";
 import { appDb, configDb, getAll, getOne, run } from "./db";
 import { requireUser } from "./auth";
 import { NEGATIVE_PROMPT_SEPARATOR, parseStructuredPrompt, splitPlainPrompt, type StructuredPrompt } from "./promptEngine/schema";
+import { classifyImageCategory, imageCategoryById, imageCategoryGuidance } from "./promptEngine/imageCategory";
 import { renderPromptTemplate, selectPromptTemplate } from "./promptEngine/registry";
 import { composePrompt } from "./promptEngine/compose";
 import { publicStylePack, visibleStylePack } from "./stylePacks";
@@ -2923,7 +2924,8 @@ const promptEngineInputSchema = z.object({
   language: z.enum(["zh", "en"]).optional(), stylePackId: z.string().min(1).max(128).optional(),
   candidates: z.number().int().min(1).max(3).default(1), previousPrompt: z.string().max(30000).optional(),
   followUp: z.string().max(10000).optional(), templateId: z.string().max(128).optional(),
-  referenceCount: z.number().int().min(0).max(20).default(0), referenceSummary: z.string().max(3000).optional()
+  referenceCount: z.number().int().min(0).max(20).default(0), referenceSummary: z.string().max(3000).optional(),
+  category: z.string().max(40).optional()
 }).passthrough();
 
 async function promptEngineOptimizeResponse(c: Context, record: Record<string, unknown>, prompt: string, userId: string, provider: PromptOptimizerProviderRow) {
@@ -2940,6 +2942,8 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   const row = input.stylePackId ? visibleStylePack(appDb, userId, input.stylePackId) : null;
   if (input.stylePackId && (!row || !row.enabled)) return c.json({ error: "风格包不存在、已停用或无权使用" }, 404);
   const stylePackSnapshot = row ? publicStylePack(row) : null;
+  const imageCategory = imageCategoryById(input.category) ?? classifyImageCategory([prompt, input.followUp ?? ""].join("\n"));
+  const categoryInfo = { id: imageCategory.id, label: imageCategory.label };
   const preferences = userPreferences(userId);
   const customInstruction = [...new Set([
     preferences.promptOptimizeCustomInstruction,
@@ -2962,6 +2966,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
             { role: "system", content: rendered.system },
             { role: "user", content: rendered.user + "\n" + JSON.stringify({
               styleInstruction: stylePackSnapshot?.optimizeInstruction || "", customInstruction,
+              imageCategory: imageCategoryGuidance(imageCategory),
               priority: "Explicit request and follow-up constraints take priority over style additions.",
               imageCount: normalizePromptOptimizeImageCount(record.imageCount ?? record.n)
             }) + "\nCandidate: " + (index + 1) }
@@ -2984,7 +2989,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
     candidates.sort((a, b) => a.index - b.index);
     errors.sort((a, b) => a.index - b.index);
     if (!candidates.length) throw new Error(errors[0]?.error || "模型没有返回可用候选");
-    return { candidates, errors, templateId: template.id, stylePackSnapshot, providerName: provider.name, model: provider.model };
+    return { candidates, errors, templateId: template.id, stylePackSnapshot, imageCategory: categoryInfo, providerName: provider.name, model: provider.model };
   };
   if (!provider.stream_enabled) {
     try { return c.json(await run()); }
@@ -2995,7 +3000,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   const stream = new ReadableStream<Uint8Array>({
     async start(output) {
       const emit = (event: string, data: unknown) => { if (!canceled) output.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(redactProviderJson(data))}\n\n`)); };
-      emit("meta", { templateId: template.id, stylePackSnapshot });
+      emit("meta", { templateId: template.id, stylePackSnapshot, imageCategory: categoryInfo });
       try { emit("done", await run(emit)); }
       catch (error) { emit("error", { error: error instanceof Error ? redactProviderSecrets(error.message) : "提示词优化失败" }); }
       finally { if (!canceled) output.close(); }

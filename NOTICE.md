@@ -15,6 +15,11 @@ Changes made in this fork, and the combined work, are distributed under AGPL-3.0
   AGPL-3.0-only. ShenBi may adapt prompt templates and prompt-engineering methods from this project.
   Files containing adapted material must name the source file or template in a comment or metadata field.
 
+- [freestylefly/awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2), Copyright (c) 2026 freestylefly,
+  MIT. The 13 image-category structures and pitfalls in `server/promptEngine/imageCategories.ts` are adapted from its
+  `docs/templates.md`. Its case prompts and images are community content owned by their original authors and are not
+  bundled with ShenBi.
+
 ## Third-party assets
 
 Audio files uploaded or migrated into a runtime data directory are not distributed as part of this project
