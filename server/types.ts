@@ -1,5 +1,6 @@
 export type UserRow = {
   id: string;
+  tier_id?: string | null;
   team_id: string | null;
   account: string | null;
   username: string;

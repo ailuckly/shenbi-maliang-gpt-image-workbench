@@ -1,3 +1,5 @@
+import { registerUserTierRoutes } from "./userTierRoutes";
+import { getTier, tierForUser, usageSummary } from "./userTiers";
 import { shouldUseSecureCookie } from "./cookieSecurity";
 import { redactProviderJson } from "./secretRedaction";
 import { existsSync } from "node:fs";
@@ -346,6 +348,7 @@ api.onError((error, c) => {
 
 api.get("/health", (c) => c.json({ ok: true }));
 
+registerUserTierRoutes(api);
 registerUserRoutes(api);
 registerSnakeProgressRoutes(api);
 
@@ -653,12 +656,14 @@ api.get("/config/users", (c) => {
   const blocked = requireConfig(c);
   if (blocked) return blocked;
   const teamId = c.req.query("teamId");
+  const tierId = c.req.query("tierId");
   const keyword = String(c.req.query("keyword") ?? "").trim();
   const status = String(c.req.query("status") ?? "").trim();
   const disabledFilter = status === "enabled" ? 0 : status === "disabled" ? 1 : null;
   const keywordLike = `%${keyword}%`;
   const users = getAll<{
     id: string;
+    tier_id: string | null;
     team_id: string | null;
     team_name: string | null;
     account: string | null;
@@ -674,7 +679,7 @@ api.get("/config/users", (c) => {
     image_count: number;
   }>(
     appDb,
-    `select u.id, u.team_id, t.name as team_name, u.account, u.username, u.email, u.phone, u.disabled, u.has_config_access, u.last_login_at, u.created_at, u.updated_at,
+    `select u.id, u.tier_id, u.team_id, t.name as team_name, u.account, u.username, u.email, u.phone, u.disabled, u.has_config_access, u.last_login_at, u.created_at, u.updated_at,
       (select count(*) from sessions s where s.user_id = u.id and s.deleted_at is null) as session_count,
       (select count(*) from images i where i.user_id = u.id) as image_count
      from users u
@@ -695,8 +700,11 @@ api.get("/config/users", (c) => {
     disabledFilter
   );
   return c.json({
-    users: users.map((user) => ({
+    users: users.filter(user => !tierId || tierForUser(user.id).id === tierId).map((user) => ({
       id: user.id,
+      tierId: user.tier_id ?? "",
+      tier: tierForUser(user.id),
+      today: usageSummary(user.id, 1).today,
       teamId: user.team_id ?? defaultTeamId(),
       teamName: user.team_name ?? "默认团队",
       account: user.account?.trim() || user.username,
@@ -724,6 +732,8 @@ api.post("/config/users", async (c) => {
   const phone = normalizePhone(body.phone);
   const password = String(body.password ?? "");
   const teamId = String(body.teamId ?? defaultTeamId()).trim() || defaultTeamId();
+  const tierId = body.tierId == null ? "" : body.tierId;
+  if (typeof tierId !== "string" || (tierId && !getTier(tierId))) return c.json({ error: "用户等级不存在" }, 400);
   const disabled = Boolean(body.disabled) ? 1 : 0;
   const hasConfigAccess = Boolean(body.hasConfigAccess) ? 1 : 0;
   if (!account || !password) return c.json({ error: "请输入账号和密码" }, 400);
@@ -740,11 +750,12 @@ api.post("/config/users", async (c) => {
     run(
       appDb,
       `insert into users (
-        id, team_id, account, username, email, phone, password_hash,
+        id, team_id, tier_id, account, username, email, phone, password_hash,
         disabled, has_config_access, email_verified_at, phone_verified_at, created_at, updated_at
-      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       userId,
       teamId,
+      tierId || null,
       account,
       validatedUsername.username,
       email,
@@ -757,9 +768,9 @@ api.post("/config/users", async (c) => {
       timestamp,
       timestamp
     );
-    audit("user.create", { userId, account, username: validatedUsername.username, email, phone, teamId, hasConfigAccess: Boolean(hasConfigAccess) });
+    audit("user.create", { userId, account, username: validatedUsername.username, email, phone, teamId, tierId, hasConfigAccess: Boolean(hasConfigAccess) });
     return c.json({
-      user: { id: userId, teamId, account, username: validatedUsername.username, email, phone, disabled: Boolean(disabled), hasConfigAccess: Boolean(hasConfigAccess), createdAt: timestamp, updatedAt: timestamp }
+      user: { id: userId, teamId, tierId, account, username: validatedUsername.username, email, phone, disabled: Boolean(disabled), hasConfigAccess: Boolean(hasConfigAccess), createdAt: timestamp, updatedAt: timestamp }
     });
   } catch (error) {
     return c.json({ error: "账号、邮箱或手机号已存在" }, 409);
@@ -777,6 +788,8 @@ api.patch("/config/users/:id", async (c) => {
   const email = normalizeEmail(body.email ?? existing.email);
   const phone = normalizePhone(body.phone ?? existing.phone);
   const teamId = String(body.teamId ?? existing.team_id ?? defaultTeamId()).trim() || defaultTeamId();
+  const tierId = body.tierId === undefined ? existing.tier_id ?? "" : body.tierId;
+  if (typeof tierId !== "string" || (tierId && !getTier(tierId))) return c.json({ error: "用户等级不存在" }, 400);
   const disabled = typeof body.disabled === "boolean" ? (body.disabled ? 1 : 0) : existing.disabled;
   const hasConfigAccess =
     typeof body.hasConfigAccess === "boolean" ? (body.hasConfigAccess ? 1 : 0) : existing.has_config_access;
@@ -797,7 +810,7 @@ api.patch("/config/users/:id", async (c) => {
     run(
       appDb,
       `update users
-       set account = ?, username = ?, email = ?, phone = ?, team_id = ?,
+       set account = ?, username = ?, email = ?, phone = ?, team_id = ?, tier_id = ?,
            disabled = ?, has_config_access = ?, updated_at = ?
        where id = ?`,
       account,
@@ -805,6 +818,7 @@ api.patch("/config/users/:id", async (c) => {
       email,
       phone,
       teamId,
+      tierId || null,
       disabled,
       hasConfigAccess,
       now(),
@@ -813,7 +827,7 @@ api.patch("/config/users/:id", async (c) => {
   } catch {
     return c.json({ error: "账号、邮箱或手机号已存在" }, 409);
   }
-  audit("user.update", { userId: c.req.param("id"), account, username: validatedUsername.username, email, phone, teamId, disabled: Boolean(disabled), hasConfigAccess: Boolean(hasConfigAccess) });
+  audit("user.update", { userId: c.req.param("id"), account, username: validatedUsername.username, email, phone, teamId, tierId, disabled: Boolean(disabled), hasConfigAccess: Boolean(hasConfigAccess) });
   return c.json({ ok: true });
 });
 

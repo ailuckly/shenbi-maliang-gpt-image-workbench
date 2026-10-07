@@ -18,6 +18,7 @@ import {
   makeCategorySlug
 } from "./categories";
 import { imageEditMaskDebugEnabled } from "./configFile";
+import { migrateUserTiers } from "./userTiers";
 import { migrateStylePacks } from "./stylePacks";
 import { appDb, configDb, getAll, getOne, run, tableColumnExists } from "./db";
 import { DEFAULT_GLOBAL_SWITCH_ENABLED, GLOBAL_SWITCH_TYPES, type GlobalSwitchType } from "./globalSwitches";
@@ -634,6 +635,8 @@ export function initAppDb() {
     appDb,
     "update users set appearance_mode = 'system' where appearance_mode not in ('system', 'dark', 'light', 'maliang', 'chunyu')"
   );
+
+  migrateUserTiers(appDb);
 
   appDb.run(`
     create table if not exists user_avatar_history (
