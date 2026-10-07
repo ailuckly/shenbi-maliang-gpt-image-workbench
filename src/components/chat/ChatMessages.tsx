@@ -16,6 +16,7 @@ import { type MessageRevision } from "../../lib/chatRender";
 import { cx } from "../../lib/cx";
 import { formatImageAnnotationMessageDisplayText } from "../../lib/imageAnnotations";
 import { userPromptDisplay } from "../../lib/promptDisplay";
+import { ImageQualityCheck } from "./ImageQualityCheck";
 import { imageResultPlaceholderState } from "../../lib/imageResultPlaceholder";
 import { imageModelDisplayName, isImageModelId } from "../../lib/imageModels";
 import { workImageFromMessage } from "../../lib/workImages";
@@ -978,6 +979,7 @@ function AssistantImageGroup({
             ) : null}
             {capabilities.compareImage && image ? <ImageCompareButton image={image} groupImages={groupImages} /> : null}
             <MessageMoreButton createdAt={activeMessage.createdAt} imageExecution={activeExecution} />
+            {mode === "workspace" && activeMessage.imageId ? <ImageQualityCheck imageId={activeMessage.imageId} createdAt={activeMessage.createdAt} /> : null}
           </div>
         ) : null}
       </div>
@@ -1453,6 +1455,7 @@ export function ChatMessage({
             ) : null}
             {capabilities.compareImage && image ? <ImageCompareButton image={image} /> : null}
             <MessageMoreButton createdAt={message.createdAt} imageExecution={imageExecution} />
+            {mode === "workspace" && message.imageId ? <ImageQualityCheck imageId={message.imageId} createdAt={message.createdAt} /> : null}
           </div>
         </>
       ) : null}

@@ -285,6 +285,7 @@ export type GlobalSwitchType =
   | "ai_client_install_entry"
   | "entertainment_entry"
   | "inspiration_entry"
+  | "image_quality_check"
   | "inspiration_barrage_entry"
   | "image_provenance_entry"
   | "chatgpt_web_entry"

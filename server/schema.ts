@@ -697,6 +697,25 @@ export function initAppDb() {
     appDb.run("alter table user_preferences add column prompt_optimize_custom_instruction text not null default ''");
   }
   migrateStylePacks(appDb);
+  appDb.run(`
+    create table if not exists image_quality_checks (
+      image_id text primary key,
+      user_id text not null,
+      status text not null check (status in ('pending', 'done', 'failed')),
+      passed integer,
+      score real,
+      issues_json text not null default '[]',
+      suggestion text not null default '',
+      model text not null default '',
+      error text not null default '',
+      created_at text not null,
+      updated_at text not null,
+      foreign key (image_id) references images(id) on delete cascade,
+      foreign key (user_id) references users(id) on delete cascade
+    )
+  `);
+  // Checks interrupted by a restart are not resumed; mark them so the UI stops waiting.
+  appDb.run("update image_quality_checks set status = 'failed', error = '服务重启，检查已中断' where status = 'pending'");
   run(
     appDb,
     "update user_preferences set edit_suggestion_tone = 'default' where edit_suggestion_tone not in ('default', 'practical', 'creative', 'detail')"

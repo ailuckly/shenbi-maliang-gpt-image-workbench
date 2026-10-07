@@ -264,3 +264,106 @@
   width: min(760px, 100%);
   justify-self: center;
 }
+
+/* Automatic quality check chip under result images. */
+.image-quality-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.image-quality-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  margin-left: 4px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.image-quality-chip.is-passed { color: #15803d; }
+.image-quality-chip.is-warning { color: #b45309; background: rgba(245, 158, 11, 0.12); cursor: pointer; }
+.image-quality-chip.is-warning:hover,
+.image-quality-chip.is-warning:focus-visible { background: rgba(245, 158, 11, 0.2); }
+
+.image-quality-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 8px;
+  width: min(380px, 80vw);
+  padding: 12px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-menu-bg, var(--app-surface));
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  color: var(--app-text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.image-quality-panel ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.image-quality-panel p { margin: 0; color: var(--app-muted); }
+.image-quality-type { margin-right: 6px; padding: 0 6px; border-radius: 6px; background: var(--app-hover-bg); font-size: 12px; }
+
+.image-quality-fix {
+  justify-self: start;
+  min-height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-text);
+  color: var(--app-text-inverted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* The toolbar styles every button as a square icon button; the chip needs its own box. */
+.assistant-image-toolbar .image-quality-chip {
+  width: auto;
+  height: auto;
+  min-height: 28px;
+  flex-direction: row;
+  padding: 0 10px;
+  border-radius: 999px;
+}
+
+/* Results sit just above the composer, so the panel opens upwards. */
+.image-quality-panel {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.assistant-image-toolbar .image-quality-chip,
+.assistant-image-toolbar .image-quality-fix {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  place-items: initial;
+}
+
+.assistant-image-toolbar .image-quality-fix {
+  width: auto;
+  height: auto;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--app-text-inverted);
+  background: var(--app-text);
+}
+
+.assistant-image-toolbar .image-quality-panel .image-quality-fix,
+.assistant-image-toolbar .image-quality-panel .image-quality-fix:hover,
+.assistant-image-toolbar .image-quality-panel .image-quality-fix:focus-visible {
+  color: var(--app-text-inverted);
+  background: var(--app-text);
+}

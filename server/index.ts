@@ -109,6 +109,7 @@ import { registerPromptReferenceLinkRoutes } from "./promptReferenceLinkRoutes";
 import { registerPromptTemplateRoutes } from "./promptTemplateRoutes";
 import { registerStylePackRoutes } from "./stylePackRoutes";
 import { registerCaseLibraryRoutes } from "./caseLibraryRoutes";
+import { registerImageQualityCheckRoutes } from "./imageQualityCheckRoutes";
 import { registerSearchHistoryRoutes } from "./searchHistoryRoutes";
 import { registerSearchRoutes } from "./searchRoutes";
 import {
@@ -369,6 +370,7 @@ registerPromptColorSchemeRoutes(api);
 registerPromptTemplateRoutes(api);
 registerStylePackRoutes(api);
 registerCaseLibraryRoutes(api);
+registerImageQualityCheckRoutes(api);
 
 registerImageRoutes(api);
 

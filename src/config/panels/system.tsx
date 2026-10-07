@@ -965,6 +965,12 @@ export function BrandingSettingsPanel() {
           ["sound_management_entry", "提示音管理"]
         ] as const).map(([type, title]) => <GlobalSwitchRow key={type} type={type} title={title} desc="默认隐藏；开启后显示对应页面和菜单。" defaultEnabled={false} invalidateQueryKeys={["branding"]} />)}
         <GlobalSwitchRow
+          type="image_quality_check"
+          title="生成后自动检查"
+          desc="每张图生成后用文本模型（需支持看图）核对文字、主体、比例和明显瑕疵，结果显示在图片下方，可一键按建议修正。每张图多一次模型调用，默认开启。"
+          defaultEnabled
+        />
+        <GlobalSwitchRow
           type="github_entry"
           title="源代码入口"
           desc="控制登录页和工作台的源代码链接，默认开启。"

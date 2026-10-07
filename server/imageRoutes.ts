@@ -2,6 +2,7 @@ import { redactProviderSecrets } from "./secretRedaction";
 import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
 import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
 import { inferAspectSize } from "./imageAspect";
+import { scheduleImageQualityChecks } from "./imageQualityCheck";
 import type { Hono } from "hono";
 import { applyAssetFieldSuggestionsToImages, ensureAssetFieldSuggestionsForImage } from "./assetSuggestions";
 import { caseMaterialReferenceFromSource, caseMaterialSourcesByIds } from "./caseMaterialSources";
@@ -297,6 +298,8 @@ async function ensureImageEditSuggestionsForImages(
   imageIds: string[],
   prepared?: PreparedImageEditSuggestions | null
 ) {
+  // Every completed generation/edit path passes through here; quality checks run in the background.
+  scheduleImageQualityChecks(userId, imageIds);
   const ids = Array.from(new Set(imageIds.map((id) => id.trim()).filter(Boolean)));
   if (ids.length === 0) return;
 

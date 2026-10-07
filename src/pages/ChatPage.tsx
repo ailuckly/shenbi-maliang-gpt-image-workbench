@@ -11,6 +11,7 @@ import { ChatBranchSwitch } from "../components/chat/ChatBranchSwitch";
 import { ChatComposer } from "../components/chat/ChatComposer";
 import { ConversationView } from "../components/chat/ConversationView";
 import { candidatePromptText, PromptCandidatesBlock, type PromptOptimizeRun } from "../components/chat/PromptCandidatesBlock";
+import { QUALITY_FIX_EVENT, type QualityFixDetail } from "../components/chat/ImageQualityCheck";
 import { DrawingCanvasDialog } from "../components/DrawingCanvasDialog";
 import { FeatureIntroModal } from "../components/FeatureIntroModal";
 import { ImageEditWorkspace } from "../components/ImageEditWorkspace";
@@ -1953,6 +1954,20 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setSelectedAssets,
     setSelectedCaseMaterials
   ]);
+  useEffect(() => {
+    // "按建议修正" from a quality check: edit that exact image with the checker's instruction.
+    const handleQualityFix = (event: Event) => {
+      const detail = (event as CustomEvent<QualityFixDetail>).detail;
+      if (!detail || currentScopeBusy) return;
+      const message = (messages.data?.messages ?? []).find((item) => item.role === "assistant" && item.imageId === detail.imageId);
+      if (!message) return;
+      setEditImage(workImageFromMessage(message, sessionId ?? null));
+      setDraftPrompt(detail.prompt, null);
+      window.setTimeout(() => textareaRef.current?.focus(), 0);
+    };
+    window.addEventListener(QUALITY_FIX_EVENT, handleQualityFix);
+    return () => window.removeEventListener(QUALITY_FIX_EVENT, handleQualityFix);
+  }, [currentScopeBusy, messages.data, sessionId, setDraftPrompt, setEditImage]);
   const previousSessionKeyRef = useRef(sessionId ?? "");
   useEffect(() => {
     const transition = resolveChatSessionTransition(previousSessionKeyRef.current, sessionId);
