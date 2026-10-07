@@ -199,6 +199,7 @@ export type LanguageModelUsageKey =
   | "template.translate"
   | "image.prompt_plan"
   | "image.edit_suggestions"
+  | "image.quality_check"
   | "title.chat"
   | "title.case"
   | "title.asset"

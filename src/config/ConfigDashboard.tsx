@@ -31,6 +31,9 @@ import { CpaPanel, ImageAccountPoolPanel, ImageModePanel, SafetyReviewPanel } fr
 import { ProvidersPanel, PromptOptimizerPanel } from "../v2/config/ProvidersPanel";
 import { StylePacksPage } from "../v2/pages/StylePacksPage";
 import { CaseLibraryPanel } from "../v2/config/CaseLibraryPanel";
+import { ImageCategoriesPanel } from "../v2/config/ImageCategoriesPanel";
+import { PromptStrategyPanel } from "../v2/config/PromptStrategyPanel";
+import { SetupOverviewPanel } from "../v2/config/SetupOverviewPanel";
 import { AccountSearchPanel, TeamAccountPanel } from "./panels/members";
 import { ChangelogPanel, StatisticsPanel } from "./panels/overview";
 import { ImageTaskSoundManagementPanel } from "./panels/sounds";
@@ -53,7 +56,7 @@ export function ConfigDashboard() {
   const shellRef = useRef<HTMLDivElement>(null);
   const switches = useQuery({ queryKey: ["config-global-switches"], queryFn: configApi.globalSwitches });
   const features = Object.fromEntries((switches.data?.switches ?? []).map(({ type, enabled }) => [type, enabled]));
-  const displayedTab = configTabVisible(activeTab, features) ? activeTab : "statistics";
+  const displayedTab = configTabVisible(activeTab, features) ? activeTab : "setup";
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   useSyncI18nPreference(me.data?.user?.preferences?.language, Boolean(me.data?.user));
   useConfigCopyScope(shellRef);
@@ -154,6 +157,9 @@ export function ConfigDashboard() {
         </div>
       </aside>
       <main className="config-main">
+        <Tabs.Content value="setup">
+          <SetupOverviewPanel onNavigate={changeActiveTab} />
+        </Tabs.Content>
         <Tabs.Content value="statistics">
           <StatisticsPanel />
         </Tabs.Content>
@@ -186,6 +192,8 @@ export function ConfigDashboard() {
         </Tabs.Content>
         <Tabs.Content value="stylePacks"><StylePacksPage admin /></Tabs.Content>
         <Tabs.Content value="caseLibrary"><CaseLibraryPanel /></Tabs.Content>
+        <Tabs.Content value="imageCategories"><ImageCategoriesPanel /></Tabs.Content>
+        <Tabs.Content value="promptStrategy"><PromptStrategyPanel /></Tabs.Content>
         <Tabs.Content value="safetyReview">
           <SafetyReviewPanel />
         </Tabs.Content>

@@ -110,6 +110,7 @@ import { registerPromptTemplateRoutes } from "./promptTemplateRoutes";
 import { registerStylePackRoutes } from "./stylePackRoutes";
 import { registerCaseLibraryRoutes } from "./caseLibraryRoutes";
 import { registerImageQualityCheckRoutes } from "./imageQualityCheckRoutes";
+import { registerSetupStatusRoutes } from "./setupStatusRoutes";
 import { registerSearchHistoryRoutes } from "./searchHistoryRoutes";
 import { registerSearchRoutes } from "./searchRoutes";
 import {
@@ -371,6 +372,7 @@ registerPromptTemplateRoutes(api);
 registerStylePackRoutes(api);
 registerCaseLibraryRoutes(api);
 registerImageQualityCheckRoutes(api);
+registerSetupStatusRoutes(api);
 
 registerImageRoutes(api);
 

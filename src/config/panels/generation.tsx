@@ -2556,7 +2556,8 @@ const LANGUAGE_MODEL_ASSIGNMENT_GROUPS: Array<{
       { usageKey: "template.optimize", label: "表单提示词优化", description: "站内表单和导出网页的 AI 优化。", recommendation: "质量优先" },
       { usageKey: "template.translate", label: "表单提示词翻译", description: "站内表单和导出网页的中英翻译。", recommendation: "速度优先" },
       { usageKey: "image.prompt_plan", label: "多图提示词规划", description: "判断多图提示词是否已按图片分组，并整理为独立生图请求。", recommendation: "低延迟优先" },
-      { usageKey: "image.edit_suggestions", label: "图片续改建议", description: "图片完成前预生成及按需刷新的续改建议。", recommendation: "低延迟优先" }
+      { usageKey: "image.edit_suggestions", label: "图片续改建议", description: "图片完成前预生成及按需刷新的续改建议。", recommendation: "低延迟优先" },
+      { usageKey: "image.quality_check", label: "图片质量检查", description: "生成后看图核对文字、主体、比例与瑕疵；必须选择支持图片输入的模型。", recommendation: "支持看图、准确优先" }
     ]
   },
   {

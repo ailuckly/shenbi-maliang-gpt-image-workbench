@@ -1959,6 +1959,7 @@ function modelRequestSourceLabel(source: string) {
     "template.translate": "表单提示词翻译",
     "image.prompt_plan": "多图提示词规划",
     "image.edit_suggestions": "图片续改建议",
+    "image.quality_check": "图片质量检查",
     "title.chat": "对话标题",
     "title.case": "灵感标题",
     "title.asset": "素材名称",

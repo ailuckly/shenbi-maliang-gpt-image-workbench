@@ -4,6 +4,7 @@ import type { InfiniteData } from "@tanstack/react-query";
 import { Share } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import { request } from "../api/client";
 import { AddAssetFromImageModal } from "../components/AddAssetFromImageModal";
 import { AiClientInstallDialog } from "../components/AiClientInstallDialog";
 import { CaseMaterialPickerModal } from "../components/CaseMaterialPickerModal";
@@ -745,6 +746,11 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setStylePackIdState(id);
     writeStoredStylePackId(id);
   }, []);
+  const promptEngineSettings = useQuery({
+    queryKey: ["prompt-engine-settings"],
+    queryFn: ({ signal }) => request<{ candidateCount: number }>("/api/prompt-engine/settings", { signal }),
+    staleTime: 5 * 60_000
+  });
   const [optimizeRun, setOptimizeRun] = useState<PromptOptimizeRun | null>(null);
   const optimizeAbortRef = useRef<AbortController | null>(null);
   const visibleOptimizeRun = optimizeRun?.scopeKey === composerScopeKey ? optimizeRun : null;
@@ -1706,7 +1712,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     // Attachments decide the mode; a follow-up in a conversation with images edits the latest one.
     const mode: PromptMode = referenceCount >= 2 ? "multi" : referenceCount === 1 || continuesImage ? "i2i" : "t2i";
     const runId = Date.now();
-    const expected = 3;
+    const expected = Math.min(3, Math.max(1, promptEngineSettings.data?.candidateCount ?? 3));
     const update = (change: (current: PromptOptimizeRun) => PromptOptimizeRun) => {
       setOptimizeRun((current) => current?.id === runId ? change(current) : current);
     };

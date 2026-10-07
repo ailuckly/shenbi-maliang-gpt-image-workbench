@@ -38,6 +38,7 @@ import {
 export const CONFIG_TAB_STORAGE_KEY = "gpt-image.config.activeTab";
 export const CONFIG_SIDE_COLLAPSED_STORAGE_KEY = "gpt-image.config.sidebarCollapsed";
 export const CONFIG_TAB_VALUES = [
+  "setup",
   "statistics",
   "users",
   "teams",
@@ -50,6 +51,8 @@ export const CONFIG_TAB_VALUES = [
   "promptOptimizer",
   "stylePacks",
   "caseLibrary",
+  "imageCategories",
+  "promptStrategy",
   "safetyReview",
   "smtp",
   "sms",
@@ -67,7 +70,7 @@ export const CONFIG_TAB_VALUES = [
 ] as const;
 
 export type ConfigTabValue = (typeof CONFIG_TAB_VALUES)[number];
-export type ConfigNavCategoryValue = "overview" | "members" | "content" | "generation" | "system";
+export type ConfigNavCategoryValue = "overview" | "generation" | "prompt" | "content" | "members" | "system";
 export type ConfigNavItem = {
   value: ConfigTabValue;
   label: string;
@@ -75,6 +78,7 @@ export type ConfigNavItem = {
 };
 
 export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
+  { value: "setup", label: "快速设置", Icon: Check },
   { value: "statistics", label: "数据统计", Icon: Activity },
   { value: "users", label: "用户账号", Icon: Users },
   { value: "teams", label: "团队管理", Icon: Shield },
@@ -87,6 +91,8 @@ export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
   { value: "promptOptimizer", label: "模型配置", Icon: WandSparkles },
   { value: "stylePacks", label: "风格包", Icon: Tags },
   { value: "caseLibrary", label: "案例库", Icon: Lightbulb },
+  { value: "imageCategories", label: "图类模板", Icon: ScrollText },
+  { value: "promptStrategy", label: "优化策略", Icon: SlidersHorizontal },
   { value: "safetyReview", label: "安全审核", Icon: ShieldCheck },
   { value: "smtp", label: "邮件配置", Icon: Mail },
   { value: "sms", label: "短信配置", Icon: Smartphone },
@@ -108,10 +114,11 @@ export const CONFIG_NAV_CATEGORIES: Array<{
   label: string;
   items: ConfigTabValue[];
 }> = [
-  { value: "overview", label: "概览", items: ["statistics"] },
-  { value: "members", label: "组织", items: ["users", "teams"] },
+  { value: "overview", label: "概览", items: ["setup", "statistics"] },
+  { value: "generation", label: "模型与渠道", items: ["providers", "promptOptimizer", "imageMode", "safetyReview", "imageAccounts", "cpa"] },
+  { value: "prompt", label: "提示词工程", items: ["stylePacks", "imageCategories", "caseLibrary", "promptStrategy"] },
   { value: "content", label: "内容", items: ["contentCategories", "soundManagement", "assetReviews", "caseReviews", "starterCopy", "changelog"] },
-  { value: "generation", label: "生成", items: ["imageAccounts", "providers", "promptOptimizer", "stylePacks", "caseLibrary", "safetyReview", "imageMode", "cpa"] },
+  { value: "members", label: "组织", items: ["users", "teams"] },
   { value: "system", label: "系统", items: ["branding", "smtp", "sms", "backup", "proxy", "debug", "modelLogs", "requests", "audit"] }
 ];
 
@@ -135,9 +142,9 @@ export function storedConfigTab(): ConfigTabValue {
   try {
     const value = window.localStorage.getItem(CONFIG_TAB_STORAGE_KEY);
     if (value === "file") return "debug";
-    return isConfigTabValue(value) ? value : "statistics";
+    return isConfigTabValue(value) ? value : "setup";
   } catch {
-    return "statistics";
+    return "setup";
   }
 }
 
