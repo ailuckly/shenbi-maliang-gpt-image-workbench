@@ -106,3 +106,16 @@ export function usageSummary(userId: string, days = 7) {
   const { images, optimizes, checks } = history.at(-1)!;
   return { tier, today: { images, optimizes, checks }, limits: { dailyImageLimit: tier.dailyImageLimit, dailyOptimizeLimit: tier.dailyOptimizeLimit, allowedModels: tier.allowedModels, maxQuality: tier.maxQuality }, history };
 }
+
+/**
+ * Counts each saved image once toward the user's daily usage. Completion paths can pass the
+ * same ids again (retries, partial batches), so a small ledger de-duplicates them.
+ */
+export function recordNewImageUsage(userId: string, imageIds: string[]) {
+  appDb.run("create table if not exists user_usage_image_ledger (image_id text primary key, user_id text not null, created_at text not null)");
+  let added = 0;
+  for (const imageId of new Set(imageIds.map((id) => id.trim()).filter(Boolean))) {
+    added += run(appDb, "insert or ignore into user_usage_image_ledger (image_id, user_id, created_at) values (?, ?, ?)", imageId, userId, localTimestamp()).changes;
+  }
+  if (added > 0) recordImageUsage(userId, added);
+}

@@ -3,6 +3,7 @@ import { imageModelsForProvider, providerHasCredentials } from "./imageModelCata
 import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
 import { inferAspectSize } from "./imageAspect";
 import { scheduleImageQualityChecks } from "./imageQualityCheck";
+import { checkGenerationAllowed, recordNewImageUsage } from "./userTiers";
 import type { Hono } from "hono";
 import { applyAssetFieldSuggestionsToImages, ensureAssetFieldSuggestionsForImage } from "./assetSuggestions";
 import { caseMaterialReferenceFromSource, caseMaterialSourcesByIds } from "./caseMaterialSources";
@@ -300,6 +301,7 @@ async function ensureImageEditSuggestionsForImages(
 ) {
   // Every completed generation/edit path passes through here; quality checks run in the background.
   scheduleImageQualityChecks(userId, imageIds);
+  recordNewImageUsage(userId, imageIds);
   const ids = Array.from(new Set(imageIds.map((id) => id.trim()).filter(Boolean)));
   if (ids.length === 0) return;
 
@@ -2374,6 +2376,8 @@ api.post("/images/generate", async (c) => {
     return c.json({ error: `${model} 不支持质量 ${quality}` }, 400);
   }
   const imageCount = resolvePromptImageCount(prompt, body.n ?? body.imageCount);
+  const tierCheck = checkGenerationAllowed(user.id, { model, quality, count: imageCount });
+  if (!tierCheck.ok) return c.json({ error: tierCheck.message, code: tierCheck.code }, 403);
   const imageOptions = normalizedImageRequestOptions(body, false, prompt);
   if (imageOptions.error) return c.json({ error: imageOptions.error }, 400);
   const sessionId = await ensureChatSession(user.id, String(body.sessionId ?? "") || null, prompt, clientRequestId);
@@ -2702,6 +2706,8 @@ api.post("/images/edit", async (c) => {
     editIntent,
     sourceInputCount
   );
+  const tierCheck = checkGenerationAllowed(user.id, { model, quality, count: imageCount });
+  if (!tierCheck.ok) return c.json({ error: tierCheck.message, code: tierCheck.code }, 403);
   const imageOptions = normalizedImageRequestOptions(body, true, prompt);
   if (imageOptions.error) return c.json({ error: imageOptions.error }, 400);
   const sourceImages = sourceImageIds.map((id) =>

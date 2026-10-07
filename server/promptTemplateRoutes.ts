@@ -8,6 +8,7 @@ import { requireUser } from "./auth";
 import { NEGATIVE_PROMPT_SEPARATOR, parseStructuredPrompt, splitPlainPrompt, type StructuredPrompt } from "./promptEngine/schema";
 import { classifyImageCategory, imageCategoryById, imageCategoryGuidance } from "./promptEngine/imageCategory";
 import { referenceCasesForRequest } from "./caseLibrary";
+import { checkOptimizeAllowed, recordOptimizeUsage } from "./userTiers";
 import { renderPromptTemplate, selectPromptTemplate } from "./promptEngine/registry";
 import { composePrompt } from "./promptEngine/compose";
 import { publicStylePack, visibleStylePack } from "./stylePacks";
@@ -3033,6 +3034,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
     candidates.sort((a, b) => a.index - b.index);
     errors.sort((a, b) => a.index - b.index);
     if (!candidates.length) throw new Error(errors[0]?.error || "模型没有返回可用候选");
+    recordOptimizeUsage(userId, candidates.length);
     return { candidates, errors, templateId: template.id, stylePackSnapshot, imageCategory: categoryInfo, providerName: provider.name, model: provider.model };
   };
   if (!provider.stream_enabled) {
@@ -3193,6 +3195,9 @@ export function registerPromptTemplateRoutes(api: Hono) {
     if (!prompt) return c.json({ error: "输入内容为空，请先输入提示词" }, 400);
     const provider = resolveLanguageModelProvider("prompt.optimize");
     if (!provider) return c.json({ error: "请先在配置页启用提示词优化模型" }, 400);
+    const requestedCalls = Math.min(3, Math.max(1, Math.trunc(Number(record.candidates ?? 1)) || 1));
+    const optimizeCheck = checkOptimizeAllowed(user.id, requestedCalls);
+    if (!optimizeCheck.ok) return c.json({ error: optimizeCheck.message, code: optimizeCheck.code }, 403);
     if (["mode", "language", "stylePackId", "candidates", "previousPrompt", "followUp", "templateId", "referenceCount", "referenceSummary"].some(key => record[key] !== undefined)) {
       return promptEngineOptimizeResponse(c, record, prompt, user.id, provider);
     }
@@ -3200,6 +3205,8 @@ export function registerPromptTemplateRoutes(api: Hono) {
     const optimizeStyle = normalizePromptOptimizeStyle(record.optimizeStyle, styleGroups);
     const customInstruction = normalizePromptOptimizeCustomInstruction(record.customInstruction ?? record.optimizeDirection);
     const imageCount = normalizePromptOptimizeImageCount(record.imageCount ?? record.n);
+    // The legacy single-result path counts as one optimization.
+    recordOptimizeUsage(user.id, 1);
     if (provider.stream_enabled) {
       return streamPlainPromptOptimizeResponse({ provider, prompt, optimizeStyle, styleGroups, customInstruction, imageCount, userId: user.id });
     }

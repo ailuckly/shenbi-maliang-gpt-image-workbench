@@ -7,6 +7,7 @@ import { resolveLanguageModelProvider } from "./languageModelAssignments";
 import { imageModelPromptText } from "./promptEngine/schema";
 import { fetchPromptOptimizerWithRetry, promptOptimizerApiKey, promptOptimizerHeaders } from "./promptOptimizerRoutes";
 import { readStoredFile } from "./secureFiles";
+import { recordCheckUsage } from "./userTiers";
 import { normalizePath, now, safeJson } from "./utils";
 
 // After a generation succeeds, a vision-capable text model compares each image with the
@@ -196,6 +197,7 @@ async function checkImage(imageId: string, userId: string) {
     if (!response.ok) throw new Error(`检查模型请求失败 ${response.status}: ${text.slice(0, 200)}`);
     const result = parseQualityCheckContent(chatCompletionText(JSON.parse(text)));
     finish({ status: "done", passed: result.passed, score: result.score, issues: result.issues, suggestion: result.passed ? "" : result.suggestion, model: provider.model });
+    recordCheckUsage(userId, 1);
     logModelRequest({ purpose: "image.quality_check", providerId: provider.id, providerName: provider.name, model: provider.model, endpoint, method: "POST", attemptCount, statusCode, durationMs: Date.now() - startedAt, success: true, userId, jobId: image.job_id ?? "", source: "image.quality_check" });
   } catch (error) {
     finish({ status: "failed", error: error instanceof Error ? error.message.slice(0, 300) : "检查失败", model: provider.model });

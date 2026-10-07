@@ -19,6 +19,8 @@ test("legacy/new optimizer, partial candidates/SSE and generate/edit persist imm
       initAppDb();initConfigDb();
       const stamp=new Date().toISOString();const session=crypto.randomUUID();
       appDb.query('insert into users(id,account,username,password_hash,created_at,updated_at) values(?,?,?,?,?,?)').run('A','test-A','test-A','test-only',stamp,stamp);
+      // This flow tests prompt snapshots, not tier limits: give the user the unrestricted tier.
+      appDb.query("update users set tier_id = 'pro' where id = 'A'").run();
       appDb.query('insert into user_auth_sessions values(?,?,?,?)').run(session,'A',new Date(Date.now()+60000).toISOString(),stamp);
       appDb.query('insert into user_preferences(user_id,prompt_optimize_custom_instruction,updated_at) values(?,?,?)').run('A','Preserve original labels',stamp);
       const image=await sharp({create:{width:8,height:8,channels:3,background:'#eeeeee'}}).png().toBuffer();
