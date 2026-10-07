@@ -34,6 +34,7 @@ import { CaseLibraryPanel } from "../v2/config/CaseLibraryPanel";
 import { ImageCategoriesPanel } from "../v2/config/ImageCategoriesPanel";
 import { PromptStrategyPanel } from "../v2/config/PromptStrategyPanel";
 import { SetupOverviewPanel } from "../v2/config/SetupOverviewPanel";
+import { UserTiersPanel } from "../v2/config/UserTiersPanel";
 import { AccountSearchPanel, TeamAccountPanel } from "./panels/members";
 import { ChangelogPanel, StatisticsPanel } from "./panels/overview";
 import { ImageTaskSoundManagementPanel } from "./panels/sounds";
@@ -53,6 +54,7 @@ export function ConfigDashboard() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<ConfigTabValue>(storedConfigTab);
   const [sideCollapsed, setSideCollapsed] = useState(storedConfigSideCollapsed);
+  const [userTeamFilter, setUserTeamFilter] = useState("");
   const shellRef = useRef<HTMLDivElement>(null);
   const switches = useQuery({ queryKey: ["config-global-switches"], queryFn: configApi.globalSwitches });
   const features = Object.fromEntries((switches.data?.switches ?? []).map(({ type, enabled }) => [type, enabled]));
@@ -164,11 +166,12 @@ export function ConfigDashboard() {
           <StatisticsPanel />
         </Tabs.Content>
         <Tabs.Content value="users">
-          <AccountSearchPanel />
+          <AccountSearchPanel initialTeamId={userTeamFilter} />
         </Tabs.Content>
         <Tabs.Content value="teams">
-          <TeamAccountPanel />
+          <TeamAccountPanel onUsers={teamId => { setUserTeamFilter(teamId); changeActiveTab("users"); }} />
         </Tabs.Content>
+        <Tabs.Content value="userTiers"><UserTiersPanel /></Tabs.Content>
         <Tabs.Content value="contentCategories">
           <ContentCategoryManagementPanel />
         </Tabs.Content>

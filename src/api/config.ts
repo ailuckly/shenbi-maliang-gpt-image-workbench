@@ -50,7 +50,17 @@ type ConfigPageInfo = {
   hasMore: boolean;
 };
 
-type ConfigUser = {
+export type UserTier = {
+  id: string; name: string; description: string; allowedModels: string[];
+  maxQuality: "low" | "medium" | "high" | "xhigh" | "max";
+  dailyImageLimit: number; dailyOptimizeLimit: number; isDefault: boolean;
+  sortOrder: number; createdAt: string; updatedAt: string;
+};
+
+export type ConfigUser = {
+  tierId: string;
+  tier: UserTier;
+  today: { images: number; optimizes: number; checks: number };
   id: string;
   teamId: string;
   teamName: string;
@@ -343,21 +353,26 @@ export const configApi = {
   deleteBackup: (id: string) =>
     request<{ ok: boolean }>(`/api/config/backups/${encodeURIComponent(id)}`, { method: "DELETE" }),
   backupDownloadUrl: (id: string) => `/api/config/backups/${encodeURIComponent(id)}/download`,
-  users: (filters?: { teamId?: string; keyword?: string; status?: string }) => {
+  users: (filters?: { teamId?: string; tierId?: string; keyword?: string; status?: string }) => {
     const params = new URLSearchParams();
+    if (filters?.tierId) params.set("tierId", filters.tierId);
     if (filters?.teamId) params.set("teamId", filters.teamId);
     if (filters?.keyword) params.set("keyword", filters.keyword);
     if (filters?.status) params.set("status", filters.status);
     const suffix = params.toString() ? `?${params.toString()}` : "";
     return request<{ users: ConfigUser[] }>(`/api/config/users${suffix}`);
   },
+  userTiers: () => request<{ tiers: UserTier[] }>("/api/config/user-tiers"),
+  saveUserTier: (tier: Omit<UserTier, "id" | "createdAt" | "updatedAt">, id?: string) =>
+    request<{ tier: UserTier }>(`/api/config/user-tiers${id ? "/" + encodeURIComponent(id) : ""}`, { method: id ? "PATCH" : "POST", body: JSON.stringify(tier) }),
+  deleteUserTier: (id: string) => request<{ ok: boolean }>(`/api/config/user-tiers/${encodeURIComponent(id)}`, { method: "DELETE" }),
   allUsers: () => request<{ users: ConfigUser[] }>("/api/config/users"),
-  createUser: (payload: { account: string; username: string; email?: string; phone?: string; password: string; teamId: string; disabled: boolean; hasConfigAccess: boolean }) =>
+  createUser: (payload: { account: string; username: string; email?: string; phone?: string; password: string; teamId: string; tierId?: string; disabled: boolean; hasConfigAccess: boolean }) =>
     request<{ ok: boolean } | { user: User }>("/api/config/users", {
       method: "POST",
       body: JSON.stringify(payload)
     }),
-  updateUser: (id: string, payload: { account?: string; username?: string; email?: string; phone?: string; teamId?: string; disabled?: boolean; hasConfigAccess?: boolean }) =>
+  updateUser: (id: string, payload: { account?: string; username?: string; email?: string; phone?: string; teamId?: string; tierId?: string; disabled?: boolean; hasConfigAccess?: boolean }) =>
     request<{ ok: boolean }>(`/api/config/users/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload)

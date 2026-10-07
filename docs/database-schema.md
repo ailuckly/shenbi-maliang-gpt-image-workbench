@@ -23,6 +23,36 @@
 | `description` | 团队说明 |
 | `created_at` / `updated_at` | 创建和更新时间 |
 
+### user_tiers
+
+用户等级（与 ChatGPT Web 账号池的订阅套餐无关）。
+
+| 字段 | 说明 |
+| --- | --- |
+| `id` / `name` / `description` | 等级 ID、显示名称、说明 |
+| `allowed_models_json` | 模型 ID 数组；`[]` 允许全部模型；其他 ID 精确匹配。内置 `gpt-image-*` 表示 GPT Image 系列（兼容渠道前缀和 `codex-` 别名），不代表供应商已验证支持 |
+| `max_quality` | `low < medium < high < xhigh < max`；请求 `auto` 视为 `high`；Gemini 的 `max` 为 4K |
+| `daily_image_limit` / `daily_optimize_limit` | 每日生图张数/优化调用次数，非负整数，0 表示不限额 |
+| `is_default` | 默认等级；部分唯一索引确保最多一个默认等级，接口维护至少一个 |
+| `sort_order` | 显示顺序，较小值优先 |
+| `created_at` / `updated_at` | 创建/更新时间 |
+
+启动迁移 `user_tiers_20261007` 仅执行一次：基础 basic（GPT Image、high、20 张/30 次、默认）、高级 advanced（全部模型、high、100 张/200 次）、专业 pro（全部模型、max、不限额）。已有后台权限用户分配 pro，其他分配 basic；之后不因管理权限变化自动升级，不覆盖后台修改或重建已删除等级。新用户未指定等级时跟随当前默认等级。默认等级不可删除；删除其他等级时，在同一事务中将关联用户分配到当前默认等级。
+
+### user_usage_daily
+
+按服务器本地日期统计，主键 `(user_id, day)`。
+
+| 字段 | 说明 |
+| --- | --- |
+| `user_id` | 用户外键，删除用户时级联删除用量 |
+| `day` | 服务器本地日期 `YYYY-MM-DD`，不是 UTC 日期 |
+| `images` / `optimizes` / `checks` | 生图张数、优化模型调用次数、质检模型调用次数；非负整数，默认 0 |
+
+记录使用 SQLite UPSERT 原子累加；`usageSummary(userId, days=7)` 返回当前等级、今日计数、限额、按日期升序的历史（补齐零用量日期，天数 1–366）。查询 `GET /api/me/usage` 使用用户鉴权，只返回本人；`GET /api/config/users/usage?days=7` 和等级 CRUD 使用后台鉴权。创建/编辑用户支持 `tierId`，用户列表可同时按团队/有效等级过滤并返回 `tier` 和 `today`。等级与用户写操作记录审计日志。
+
+**接入边界：**本任务只实现和测试检查/记录模块；生成、优化与质检调用链尚未接入，所以不会自动记账或阻止超额。检查与事后记录不是同一事务，实际接入需处理并发预占、失败/取消与重试去重，明确记账时机。
+
 ### users
 
 普通用户账号。
@@ -31,6 +61,7 @@
 | --- | --- |
 | `id` | 用户 ID |
 | `team_id` | 所属团队 |
+| `tier_id` | 用户等级外键；NULL（接口传空字符串）跟随默认等级 |
 | `account` | 登录账号，唯一 |
 | `username` | 展示名称，唯一 |
 | `email` | 用户邮箱，非空时唯一；自助邮箱注册时同时作为 `account` |
