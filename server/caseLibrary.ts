@@ -170,7 +170,7 @@ function tokens(text: string) {
  * Picks the library cases in the same image category whose prompts share the most terms with
  * the request; used as structure/specificity references by the optimizer.
  */
-export function referenceCasesForRequest(request: string, imageCategoryId: string, limit = 2, modelFamily?: ModelFamily) {
+export function referenceCasesForRequest(request: string, imageCategoryId: string, limit = 2, modelFamily?: ModelFamily, minScore = MIN_REFERENCE_SCORE) {
   const rows = getAll<LibraryCaseRow>(
     appDb,
     "select c.id, c.title, c.prompt, m.model_family from case_items c left join case_library_meta m on m.case_id = c.id where c.id like ? and c.category_id = ?",
@@ -197,7 +197,7 @@ export function referenceCasesForRequest(request: string, imageCategoryId: strin
       const weighted = score > 0 && sameLanguage ? score * 1.2 : score;
       return { row, score: score > 0 && sameFamily ? weighted * 1.3 : weighted };
     })
-    .filter((item) => item.score >= MIN_REFERENCE_SCORE)
+    .filter((item) => item.score >= minScore)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(({ row }) => ({ title: row.title, prompt: row.prompt.slice(0, 1500) }));

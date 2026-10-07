@@ -2930,6 +2930,38 @@ const promptEngineInputSchema = z.object({
   imageModel: z.string().max(256).optional()
 }).passthrough();
 
+/**
+ * Keyword overlap only finds candidates; the text model then picks the (at most 2) cases that
+ * really match the request, or none. Falls back to the keyword order if the model call fails.
+ */
+async function pickReferenceCases(
+  prompt: string, categoryId: string, modelFamily: "gpt" | "gemini" | undefined,
+  provider: PromptOptimizerProviderRow, userId: string
+) {
+  const pool = referenceCasesForRequest(prompt, categoryId, 12, modelFamily, 0.5);
+  if (pool.length === 0) return [];
+  try {
+    const content = await requestPromptModelText({
+      provider,
+      temperature: 0,
+      signal: AbortSignal.timeout(20_000),
+      messages: [
+        { role: "system", content: "You choose reference prompts for an image request. Pick at most 2 candidates whose subject, purpose or visual format is genuinely close to the request; pick none if nothing is close. Reply with JSON only: {\"picks\": [index, ...]}." },
+        { role: "user", content: JSON.stringify({ request: prompt.slice(0, 1500), candidates: pool.map((item, index) => ({ index, title: item.title, preview: item.prompt.slice(0, 240) })) }) }
+      ],
+      logContext: { purpose: "prompt.optimize", userId, source: "prompt-engine:reference-rerank" }
+    });
+    const match = content.match(/\{[\s\S]*\}/);
+    const picks = match ? (JSON.parse(match[0]) as { picks?: unknown }).picks : null;
+    if (!Array.isArray(picks)) throw new Error("bad rerank reply");
+    return [...new Set(picks.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < pool.length))]
+      .slice(0, 2)
+      .map((index) => pool[index]);
+  } catch {
+    return referenceCasesForRequest(prompt, categoryId, 2, modelFamily);
+  }
+}
+
 async function promptEngineOptimizeResponse(c: Context, record: Record<string, unknown>, prompt: string, userId: string, provider: PromptOptimizerProviderRow) {
   const parsed = promptEngineInputSchema.safeParse(record);
   if (!parsed.success || prompt.length > 30000) return c.json({ error: "提示词优化参数无效" }, 400);
@@ -2946,8 +2978,11 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   const stylePackSnapshot = row ? publicStylePack(row) : null;
   const imageCategory = imageCategoryById(input.category) ?? classifyImageCategory([prompt, input.followUp ?? ""].join("\n"));
   const modelFamily = /gemini/i.test(input.imageModel ?? "") ? "gemini" as const : input.imageModel ? "gpt" as const : undefined;
-  const exampleCases = referenceCasesForRequest(prompt, imageCategory.id, 2, modelFamily);
-  const categoryInfo = { id: imageCategory.id, label: imageCategory.label, exampleCount: exampleCases.length };
+  const exampleCases = await pickReferenceCases(prompt, imageCategory.id, modelFamily, provider, userId);
+  const categoryInfo = {
+    id: imageCategory.id, label: imageCategory.label,
+    exampleCount: exampleCases.length, exampleTitles: exampleCases.map((item) => item.title)
+  };
   const preferences = userPreferences(userId);
   const customInstruction = [...new Set([
     preferences.promptOptimizeCustomInstruction,

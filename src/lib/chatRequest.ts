@@ -6,6 +6,7 @@ import type { ImageModelId, ImageQuality } from "./imageModels";
 
 export type SubmitRequest = {
   promptEngine?: Partial<import("../v2/api").PromptGenerationFields>;
+  promptMode?: "direct" | "smart";
   clientRequestId: string;
   pendingScope: string;
   mode: "generation" | "edit";

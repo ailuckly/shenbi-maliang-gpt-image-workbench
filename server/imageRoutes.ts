@@ -50,7 +50,7 @@ import {
 import { boundedPaginationFromQuery, pageInfo } from "./pagination";
 import { invalidateLibraryFacetCache } from "./libraryRoutes";
 import { imageDateSearchConditions } from "./imageSearch";
-import { callProviderChain, defaultProviderSelectionId, enabledProvidersForCurrentMode, providerChainById, providerRequestWasCancelled } from "./providerRuntime";
+import { DIRECT_PROMPT_REQUEST_KEY, callProviderChain, defaultProviderSelectionId, enabledProvidersForCurrentMode, providerChainById, providerRequestWasCancelled } from "./providerRuntime";
 import { providerResponseSnapshot } from "./responseSnapshots";
 import { reviewConversationPrompt } from "./safetyReview";
 import {
@@ -2394,6 +2394,7 @@ api.post("/images/generate", async (c) => {
     quality,
     n: imageCount,
     [IMAGE_COMPLETION_CONCURRENCY_REQUEST_KEY]: generationSettings.multiImageConcurrency,
+    ...(body.promptMode === "direct" ? { [DIRECT_PROMPT_REQUEST_KEY]: true } : {}),
     ...imageOptions.payload,
     ...(webConversationContext ? { webConversationContext } : {})
   };
@@ -2829,6 +2830,7 @@ api.post("/images/edit", async (c) => {
     n: imageCount,
     editIntent,
     [IMAGE_COMPLETION_CONCURRENCY_REQUEST_KEY]: generationSettings.multiImageConcurrency,
+    ...(body.promptMode === "direct" ? { [DIRECT_PROMPT_REQUEST_KEY]: true } : {}),
     images: imageUrls.map((image_url) => ({ image_url })),
     ...(drawingReference ? { [DRAWING_REFERENCE_REQUEST_KEY]: true } : {}),
     ...imageOptions.payload,

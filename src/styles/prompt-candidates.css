@@ -367,3 +367,15 @@
   color: var(--app-text-inverted);
   background: var(--app-text);
 }
+
+.prompt-candidate-actions { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.prompt-candidate-actions .prompt-candidate-use { margin-top: 0; }
+.prompt-candidate-use.is-primary { border-color: var(--app-text); background: var(--app-text); color: var(--app-text-inverted); }
+.prompt-candidate-use.is-primary:hover,
+.prompt-candidate-use.is-primary:focus-visible { opacity: 0.88; background: var(--app-text); }
+
+/* 直出 / 智能 toggle in the composer toolbar. */
+.composer-prompt-mode { display: inline-flex; align-items: center; margin-right: 6px; padding: 2px; border: 1px solid var(--app-border); border-radius: 999px; }
+.composer-prompt-mode-option { min-height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--app-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.composer-prompt-mode-option.is-active { background: var(--app-text); color: var(--app-text-inverted); }
+.composer-prompt-mode-option:focus-visible { outline: 2px solid var(--app-text); outline-offset: 1px; }

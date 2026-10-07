@@ -104,6 +104,16 @@ const MESSAGE_REVEAL_MAX_DELAY_MS = 414;
 const EMPTY_PROMPT_COLOR_SCHEMES: [] = [];
 const EMPTY_STYLE_PACKS: StylePack[] = [];
 const STYLE_PACK_STORAGE_KEY = "shenbi.composer-style-pack";
+const PROMPT_MODE_STORAGE_KEY = "shenbi.composer-prompt-mode";
+type PromptMode2 = "direct" | "smart";
+
+function readStoredPromptMode(): PromptMode2 {
+  try {
+    return window.localStorage.getItem(PROMPT_MODE_STORAGE_KEY) === "direct" ? "direct" : "smart";
+  } catch {
+    return "smart";
+  }
+}
 
 function readStoredStylePackId() {
   try {
@@ -751,6 +761,15 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     queryFn: ({ signal }) => request<{ candidateCount: number }>("/api/prompt-engine/settings", { signal }),
     staleTime: 5 * 60_000
   });
+  const [promptMode, setPromptModeState] = useState<PromptMode2>(readStoredPromptMode);
+  const changePromptMode = useCallback((mode: PromptMode2) => {
+    setPromptModeState(mode);
+    try {
+      window.localStorage.setItem(PROMPT_MODE_STORAGE_KEY, mode);
+    } catch {
+      // Remembering the mode is a convenience only.
+    }
+  }, []);
   const [optimizeRun, setOptimizeRun] = useState<PromptOptimizeRun | null>(null);
   const optimizeAbortRef = useRef<AbortController | null>(null);
   const visibleOptimizeRun = optimizeRun?.scopeKey === composerScopeKey ? optimizeRun : null;
@@ -1001,6 +1020,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           ...(request.revisionRootId ? { revisionRootId: request.revisionRootId } : {}),
           ...(request.editedMessageId ? { editedMessageId: request.editedMessageId } : {}),
           ...(request.promptEngine ?? {}),
+          ...(request.promptMode ? { promptMode: request.promptMode } : {}),
           ...branchFields
           }, { signal: controller.signal });
         }
@@ -1020,6 +1040,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         ...(request.revisionRootId ? { revisionRootId: request.revisionRootId } : {}),
         ...(request.editedMessageId ? { editedMessageId: request.editedMessageId } : {}),
         ...(request.promptEngine ?? {}),
+        ...(request.promptMode ? { promptMode: request.promptMode } : {}),
         ...branchFields
         }, { signal: controller.signal });
       } catch (error) {
@@ -1506,9 +1527,9 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setMaterialPickerOpen(false);
   };
 
-  const submitDraft = () => {
-    if (currentScopeBusy || !draftPrompt.trim()) return;
-    const prompt = draftPrompt.trim();
+  const submitDraft = (options: { prompt?: string; candidate?: PromptCandidate } = {}) => {
+    const prompt = (options.prompt ?? draftPrompt).trim();
+    if (currentScopeBusy || !prompt) return;
     const selectedRequestSize = requestSizeFromSelection(size);
     const backgroundRequestOptions = imageBackgroundRequestOptions(background);
     const caseUsage = draftCaseUsage?.caseItemId ? draftCaseUsage : null;
@@ -1599,10 +1620,11 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     const pendingScope = currentSubmitScope;
     const branchFields = activeChatBranchId !== MAIN_CHAT_BRANCH_ID ? { branchId: activeChatBranchId } : {};
     const resolvedImageCount = resolvePromptImageCount(prompt, imageCount);
-    const appliedCandidate = visibleOptimizeRun && visibleOptimizeRun.appliedIndex !== null
+    const appliedCandidate = options.candidate ?? (visibleOptimizeRun && visibleOptimizeRun.appliedIndex !== null
       ? visibleOptimizeRun.candidates.find((candidate) => candidate.index === visibleOptimizeRun.appliedIndex)
-      : undefined;
-    const promptPack = stylePackAffectsPrompt(selectedStylePack) ? selectedStylePack : null;
+      : undefined);
+    // 直出 sends exactly what was typed: no style pack text is added.
+    const promptPack = promptMode === "smart" && stylePackAffectsPrompt(selectedStylePack) ? selectedStylePack : null;
     // The server composes pack prefix/suffix and negatives; the bubble keeps what the user typed.
     const promptEngine: Partial<PromptGenerationFields> | undefined = promptPack || appliedCandidate
       ? {
@@ -1672,6 +1694,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       providerId,
       prompt,
       ...(promptEngine ? { promptEngine } : {}),
+      promptMode,
       language: resolvedLanguage,
       model: imageModel,
       quality,
@@ -1703,7 +1726,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     optimizeAbortRef.current = null;
     setOptimizeRun(null);
   };
-  const requestPromptOptimize = (source: string, customInstruction: string) => {
+  const requestPromptOptimize = (source: string, customInstruction: string, options: { candidates?: number; confirm?: boolean } = {}) => {
     optimizeAbortRef.current?.abort();
     const controller = new AbortController();
     optimizeAbortRef.current = controller;
@@ -1712,7 +1735,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     // Attachments decide the mode; a follow-up in a conversation with images edits the latest one.
     const mode: PromptMode = referenceCount >= 2 ? "multi" : referenceCount === 1 || continuesImage ? "i2i" : "t2i";
     const runId = Date.now();
-    const expected = Math.min(3, Math.max(1, promptEngineSettings.data?.candidateCount ?? 3));
+    const expected = Math.min(3, Math.max(1, options.candidates ?? promptEngineSettings.data?.candidateCount ?? 3));
     const update = (change: (current: PromptOptimizeRun) => PromptOptimizeRun) => {
       setOptimizeRun((current) => current?.id === runId ? change(current) : current);
     };
@@ -1724,6 +1747,8 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       stylePackName: selectedStylePack && selectedStylePack.id !== DEFAULT_STYLE_PACK_ID ? selectedStylePack.name : "",
       stylePackAddsText: stylePackAffectsPrompt(selectedStylePack),
       categoryLabel: "",
+      exampleTitles: [],
+      confirm: Boolean(options.confirm),
       expected,
       status: "running",
       candidates: [],
@@ -1751,7 +1776,8 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       (failure) => update((current) => ({ ...current, failures: [...current.failures.filter((item) => item.index !== failure.index), failure] })),
       (metadata) => {
         const label = metadata.imageCategory?.label;
-        if (label) update((current) => ({ ...current, categoryLabel: label }));
+        const titles = metadata.imageCategory?.exampleTitles ?? [];
+        if (label) update((current) => ({ ...current, categoryLabel: label, exampleTitles: titles }));
       }
     ).then(() => {
       update((current) => ({ ...current, status: "done" }));
@@ -1773,6 +1799,21 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setDraftPrompt(optimizeRun.source);
     setOptimizeRun((current) => current ? { ...current, appliedIndex: null } : current);
     window.setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+  // 智能: the first send optimizes and waits for confirmation; once a version is chosen,
+  // sending generates it. 直出 always sends straight away.
+  const handleComposerSubmit = () => {
+    const prompt = draftPrompt.trim();
+    if (!prompt || currentScopeBusy) return;
+    const chosen = visibleOptimizeRun && visibleOptimizeRun.appliedIndex !== null;
+    if (promptMode === "smart" && !chosen && stylePackPickerGroups.length) {
+      requestPromptOptimize(prompt, "", { candidates: 1, confirm: true });
+      return;
+    }
+    submitDraft();
+  };
+  const generateFromCandidate = (candidate: PromptCandidate) => {
+    submitDraft({ prompt: candidatePromptText(candidate), candidate });
   };
   const serverMessages = messages.data?.messages ?? [];
   const serverRenderState = useMemo(() => buildChatRenderState(serverMessages, activeBranchId), [activeBranchId, serverMessages]);
@@ -2754,6 +2795,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
             <PromptCandidatesBlock
               run={visibleOptimizeRun}
               onApply={applyPromptCandidate}
+              onGenerate={generateFromCandidate}
               onRestore={restorePromptOptimizeSource}
               onCancel={cancelPromptOptimize}
               onDismiss={dismissPromptOptimize}
@@ -2918,7 +2960,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         onSelectedAssetsChange={setSelectedAssets}
         onSelectedCaseMaterialsChange={setSelectedCaseMaterials}
         onSizeChange={setSize}
-        onSubmit={submitDraft}
+        onSubmit={handleComposerSubmit}
         onToggleAsset={toggleAsset}
         onOpenDrawing={() => {
           setMaterialPickerOpen(false);
@@ -2942,6 +2984,8 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         } : undefined}
         onOptimizeRequest={stylePackPickerGroups.length ? requestPromptOptimize : undefined}
         optimizePending={visibleOptimizeRun?.status === "running"}
+        promptMode={promptMode}
+        onPromptModeChange={changePromptMode}
       />
       <ConfirmDialog
         open={Boolean(restoreConflict)}

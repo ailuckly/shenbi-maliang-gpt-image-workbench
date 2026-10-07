@@ -3279,6 +3279,8 @@ async function callChatGptWebProvider(
 }
 
 export const AUTOMATIC_PROVIDER_ROUTE_ORDER = ["responses", "images_api"] as const;
+/** Set by "直出" requests: send the prompt to the image model as-is (no Responses rewrite). */
+export const DIRECT_PROMPT_REQUEST_KEY = "_directPrompt";
 type AutomaticProviderRoute = typeof AUTOMATIC_PROVIDER_ROUTE_ORDER[number];
 
 export async function executeAutomaticProviderRoutes<T>(
@@ -3355,6 +3357,7 @@ function payloadForProvider(provider: RuntimeProviderRow, payload: Record<string
   if (requestedModel && !imageModelsForProvider(provider).includes(requestedModel)) throw new Error("当前渠道目录不支持请求的图像模型");
   const nextPayload: Record<string, unknown> = {
     ...payload,
+    [DIRECT_PROMPT_REQUEST_KEY]: undefined,
     ...(typeof payload.prompt === "string" ? { prompt: imageModelPromptText(payload.prompt) } : {}),
     model: requestedModel || String(provider.model || "").trim() || DEFAULT_IMAGE_MODEL
   };
@@ -3502,6 +3505,7 @@ export async function callProviderChain<T = undefined>(
   // With several channels enabled, only try the ones whose catalog has the requested model
   // (e.g. a Gemini request skips the GPT Image channel instead of failing on it first).
   const requested = String(payload.model ?? "").trim();
+  const direct = payload[DIRECT_PROMPT_REQUEST_KEY] === true;
   const supporting = requested ? providers.filter((provider) => imageModelsForProvider(provider).includes(requested)) : [];
   for (const provider of supporting.length ? supporting : providers) {
     assertProviderRequestActive(context);
@@ -3532,7 +3536,11 @@ export async function callProviderChain<T = undefined>(
         return { provider, responseJson, result, execution };
       };
       const channel = normalizeProviderChannel(provider.channel || inferChannelFromType(provider.type));
-      if (channel !== "chatgpt_web" && normalizeRouteMode(provider.route_mode) === "auto") {
+      const routeMode = normalizeRouteMode(provider.route_mode);
+      if (channel !== "chatgpt_web" && direct && (routeMode === "auto" || routeMode === "responses")) {
+        return await executeProvider("images_api");
+      }
+      if (channel !== "chatgpt_web" && routeMode === "auto") {
         return await executeAutomaticProviderRoutes(
           executeProvider,
           (error) => providerRequestWasCancelled(error, context.signal)

@@ -127,6 +127,8 @@ export type ImageProvenanceCheckResult = {
 };
 
 export type GenerateImagePayload = Partial<import("../v2/api").PromptGenerationFields> & {
+  /** "direct" skips the Responses rewrite on GPT channels. */
+  promptMode?: "direct" | "smart";
   clientRequestId: string;
   sessionId?: string;
   providerId?: string;

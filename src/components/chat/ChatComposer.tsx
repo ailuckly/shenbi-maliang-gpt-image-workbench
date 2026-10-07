@@ -113,6 +113,9 @@ type ChatComposerProps = {
   /** When set, optimization is handled by the page (candidates shown in the conversation). */
   onOptimizeRequest?: (sourcePrompt: string, customInstruction: string) => void;
   optimizePending?: boolean;
+  /** 直出: prompt goes to the model as typed; 智能: optimize and confirm before generating. */
+  promptMode?: "direct" | "smart";
+  onPromptModeChange?: (mode: "direct" | "smart") => void;
 };
 
 function clampNumber(value: number, min: number, max: number) {
@@ -210,7 +213,9 @@ export function ChatComposer({
   draftCaseUsage,
   stylePacks,
   onOptimizeRequest,
-  optimizePending = false
+  optimizePending = false,
+  promptMode,
+  onPromptModeChange
 }: ChatComposerProps) {
   const [previewState, setPreviewState] = useState<ImageLightboxState | null>(null);
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
@@ -1020,6 +1025,23 @@ export function ChatComposer({
           <span className="composer-prompt-template-action-slot" ref={setPromptTemplateActionSlot}>
             {!promptTemplateOptimizeControlVisible ? (
               <>
+                {promptMode && onPromptModeChange ? (
+                  <div className="composer-prompt-mode" role="radiogroup" aria-label={t("v2.mode.label")}>
+                    {(["direct", "smart"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="radio"
+                        aria-checked={promptMode === mode}
+                        className={cx("composer-prompt-mode-option", promptMode === mode && "is-active")}
+                        onClick={() => onPromptModeChange(mode)}
+                        title={t(`v2.mode.${mode}Hint`)}
+                      >
+                        {t(`v2.mode.${mode}`)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="composer-prompt-template-optimize-control is-default" aria-label={t("composer.optimizeOptions")}>
                   {promptBeforeInputOptimize ? (
                     <button
@@ -1073,7 +1095,7 @@ export function ChatComposer({
                       )}
                       customInstructionSubmitDisabled={optimizeBusy || !draftPrompt.trim()}
                       customInstructionSubmitPending={optimizeBusy}
-                      disabled={promptInputOptimizePending}
+                      disabled={promptInputOptimizePending || promptMode === "direct"}
                       className="composer-prompt-template-style-select"
                       menuClassName="composer-prompt-template-style-menu"
                       menuPlacement="top"

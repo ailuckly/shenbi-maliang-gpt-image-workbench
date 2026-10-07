@@ -12,6 +12,10 @@ export type PromptOptimizeRun = {
   stylePackAddsText: boolean;
   /** Image category the optimizer used (自动识别), e.g. 海报与排版. */
   categoryLabel: string;
+  /** Library cases the optimizer was shown as references. */
+  exampleTitles: string[];
+  /** 智能模式: show 生成 on each card instead of only filling the composer. */
+  confirm: boolean;
   expected: number;
   status: "running" | "done" | "error";
   candidates: PromptCandidate[];
@@ -28,12 +32,13 @@ export function candidatePromptText(candidate: PromptCandidate) {
 type PromptCandidatesBlockProps = {
   run: PromptOptimizeRun;
   onApply: (candidate: PromptCandidate) => void;
+  onGenerate?: (candidate: PromptCandidate) => void;
   onRestore: () => void;
   onCancel: () => void;
   onDismiss: () => void;
 };
 
-export function PromptCandidatesBlock({ run, onApply, onRestore, onCancel, onDismiss }: PromptCandidatesBlockProps) {
+export function PromptCandidatesBlock({ run, onApply, onGenerate, onRestore, onCancel, onDismiss }: PromptCandidatesBlockProps) {
   const { t } = useI18n();
   const running = run.status === "running";
   const slots = Array.from({ length: run.expected }, (_, index) => index);
@@ -43,7 +48,9 @@ export function PromptCandidatesBlock({ run, onApply, onRestore, onCancel, onDis
     <section className="prompt-candidates" aria-live="polite" aria-busy={running}>
       <header className="prompt-candidates-header">
         <WandSparkles size={15} aria-hidden="true" />
-        <span className="prompt-candidates-title">{running ? t("v2.chat.optimizing") : t("v2.chat.candidatesTitle")}</span>
+        <span className="prompt-candidates-title">
+          {running ? t("v2.chat.optimizing") : run.confirm ? t("v2.chat.confirmTitle") : t("v2.chat.candidatesTitle")}
+        </span>
         {run.categoryLabel ? <span className="prompt-candidates-pack">{t("v2.chat.categoryTag", { name: run.categoryLabel })}</span> : null}
         {run.stylePackName ? <span className="prompt-candidates-pack">{run.stylePackName}</span> : null}
         <span className="prompt-candidates-actions">
@@ -88,14 +95,21 @@ export function PromptCandidatesBlock({ run, onApply, onRestore, onCancel, onDis
                       {t("v2.chat.negativeShort", { text: candidate.structured.negative.trim() })}
                     </p>
                   ) : null}
-                  <button
-                    type="button"
-                    className="prompt-candidate-use"
-                    onClick={() => onApply(candidate)}
-                    aria-pressed={applied}
-                  >
-                    {applied ? t("v2.chat.candidateApplied") : t("v2.chat.useCandidate")}
-                  </button>
+                  <span className="prompt-candidate-actions">
+                    {run.confirm && onGenerate ? (
+                      <button type="button" className="prompt-candidate-use is-primary" onClick={() => onGenerate(candidate)}>
+                        {t("v2.chat.generateCandidate")}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="prompt-candidate-use"
+                      onClick={() => onApply(candidate)}
+                      aria-pressed={applied}
+                    >
+                      {applied ? t("v2.chat.candidateApplied") : run.confirm ? t("v2.chat.editCandidate") : t("v2.chat.useCandidate")}
+                    </button>
+                  </span>
                 </article>
               );
             }
@@ -118,6 +132,9 @@ export function PromptCandidatesBlock({ run, onApply, onRestore, onCancel, onDis
           })}
         </div>
       )}
+      {run.exampleTitles.length > 0 ? (
+        <p className="prompt-candidates-note">{t("v2.chat.referencesUsed", { titles: run.exampleTitles.join("、") })}</p>
+      ) : null}
       {run.stylePackAddsText && run.candidates.length > 0 ? (
         <p className="prompt-candidates-note">{t("v2.chat.stylePackNote", { name: run.stylePackName })}</p>
       ) : null}
