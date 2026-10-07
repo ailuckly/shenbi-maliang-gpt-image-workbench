@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { appDb, getAll, getOne, run } from "./db";
@@ -103,6 +103,18 @@ async function syncOne(item: SourceCase, source: typeof CASE_LIBRARY_SOURCES[num
     caseId, source.id, source.modelFamily, JSON.stringify(item.tags), now());
 }
 
+/** A tightened selection rule should also take previously synced cases out of the library. */
+function removeUnselectedCases(sourceId: string, keep: Set<string>) {
+  const stale = getAll<{ case_id: string }>(appDb, "select case_id from case_library_meta where source = ?", sourceId)
+    .map((row) => row.case_id)
+    .filter((caseId) => !keep.has(caseId));
+  for (const caseId of stale) {
+    run(appDb, "delete from case_items where id = ?", caseId);
+    run(appDb, "delete from case_library_meta where case_id = ?", caseId);
+    void unlink(caseLibraryImageFile(caseId)).catch(() => undefined);
+  }
+}
+
 /** Starts a background sync; returns false when one is already running. */
 export function startCaseLibrarySync(sourceId?: string) {
   const sources = sourceId === undefined ? CASE_LIBRARY_SOURCES : CASE_LIBRARY_SOURCES.filter((source) => source.id === sourceId);
@@ -131,6 +143,7 @@ export function startCaseLibrarySync(sourceId?: string) {
             }
           };
           await Promise.all(Array.from({ length: DOWNLOAD_CONCURRENCY }, worker));
+          removeUnselectedCases(source.id, new Set(cases.map((item) => sourceCaseId(source, item))));
         } catch (error) {
           current.error = error instanceof Error ? error.message : String(error);
           status.error = [status.error, `${source.id}: ${current.error}`].filter(Boolean).join("; ");
@@ -179,10 +192,13 @@ export function referenceCasesForRequest(request: string, imageCategoryId: strin
         score += Math.log(rows.length / (documentFrequency.get(term) ?? rows.length));
       }
       const sameLanguage = preferChinese === /[\u4e00-\u9fff]/.test(row.prompt);
-      return { row, score: score > 0 && sameLanguage ? score * 1.2 : score };
+      // Prompts written for the selected model family (GPT Image vs Gemini) transfer better.
+      const sameFamily = Boolean(modelFamily) && row.model_family === modelFamily;
+      const weighted = score > 0 && sameLanguage ? score * 1.2 : score;
+      return { row, score: score > 0 && sameFamily ? weighted * 1.3 : weighted };
     })
     .filter((item) => item.score >= MIN_REFERENCE_SCORE)
-    .sort((a, b) => b.score - a.score || (modelFamily ? Number(b.row.model_family === modelFamily) - Number(a.row.model_family === modelFamily) : 0))
+    .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(({ row }) => ({ title: row.title, prompt: row.prompt.slice(0, 1500) }));
 }

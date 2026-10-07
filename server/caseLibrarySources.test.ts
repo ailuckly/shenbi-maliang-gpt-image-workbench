@@ -47,3 +47,12 @@ test("all mapped tags/categories and source ID prefixes preserve the legacy cont
   expect(CASE_LIBRARY_SOURCES.map((source) => sourceCaseId(source, item))).toEqual(["library-1", "library-nbcn-1", "library-ym-1"]);
   expect(parseGptCases({ cases: [{ id: 42, title: "x", prompt: "y", image: "/images/x.png", category: "Other Use Cases" }] })[0].image).toEndWith("/data/images/x.png");
 });
+
+test("cases that need a user photo or are not generation prompts are filtered out", () => {
+  const base = { id: "1", image: "https://x/1.jpg", category: "", tags: [] };
+  expect(isStandaloneCase({ ...base, title: "基于参考图的电影感夜景人像", prompt: "保持人物一致" })).toBe(false);
+  expect(isStandaloneCase({ ...base, title: "高端美容人像（带参考图）", prompt: "..." })).toBe(false);
+  expect(isStandaloneCase({ ...base, title: "对作品进行评价", prompt: "请评价" })).toBe(false);
+  expect(isStandaloneCase({ ...base, title: "Edit", prompt: "Turn this photo into a watercolor" })).toBe(false);
+  expect(isStandaloneCase({ ...base, title: "极简耳机海报", prompt: "一款黑色耳机，纯白背景" })).toBe(true);
+});

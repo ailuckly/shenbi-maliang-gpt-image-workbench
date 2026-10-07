@@ -1740,6 +1740,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         ...(selectedStylePack ? { stylePackId: selectedStylePack.id } : {}),
         referenceCount: referenceCount || (mode === "i2i" ? 1 : 0),
         imageCount,
+        imageModel,
         ...(customInstruction.trim() ? { customInstruction: customInstruction.trim() } : {})
       },
       controller.signal,

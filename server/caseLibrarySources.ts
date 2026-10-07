@@ -3,7 +3,8 @@ export type SourceCase = { id: string; title: string; image: string; prompt: str
 const GPT_RAW = "https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main";
 const NB_RAW = "https://raw.githubusercontent.com/xianyu110/awesome-nanobananapro-prompts/main/gpt4o-image-prompts-master";
 export const EXCLUDED_NAMES = ["Disney", "迪士尼", "Zootopia", "Zootropolis", "疯狂动物城", "Marvel", "漫威", "Pokemon", "Pokémon", "宝可梦", "Trump", "特朗普", "Musk", "马斯克", "Steve Jobs", "乔布斯", "Taylor Swift", "泰勒·斯威夫特", "Harry Potter", "哈利波特", "Batman", "蝙蝠侠", "Spider-Man", "蜘蛛侠"];
-const REFERENCE_DEPENDENCY = /reference\s+photo|参考照片|上传的照片|保留身份特征|same\s+face\s+as|uploaded\s+image|上传的参考|参考(?:图像|图片|面部)|attached\s+photo|input\s+image|输入图像/i;
+// Cases that only work with a user-supplied photo, or that are not image-generation prompts.
+const REFERENCE_DEPENDENCY = /reference\s+(?:photo|image|picture)|参考照片|参考图|上传的?(?:照片|图片|图像)|保留身份特征|same\s+face\s+as|uploaded\s+(?:image|photo)|attached\s+(?:photo|image)|input\s+image|输入图像|this\s+(?:image|photo|picture)|the\s+(?:image|photo)\s+(?:provided|above)|这张(?:图|照片)|对作品进行评价|评价(?:这|该)?(?:作品|图片)/i;
 export function isStandaloneCase(item: SourceCase) {
   const text = `${item.title} ${item.prompt}`.toLowerCase();
   return Boolean(item.prompt.trim() && item.image.trim()) && !REFERENCE_DEPENDENCY.test(text) && !EXCLUDED_NAMES.some((name) => text.includes(name.toLowerCase()));

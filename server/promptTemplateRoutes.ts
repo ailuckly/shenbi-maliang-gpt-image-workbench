@@ -2926,7 +2926,8 @@ const promptEngineInputSchema = z.object({
   candidates: z.number().int().min(1).max(3).default(1), previousPrompt: z.string().max(30000).optional(),
   followUp: z.string().max(10000).optional(), templateId: z.string().max(128).optional(),
   referenceCount: z.number().int().min(0).max(20).default(0), referenceSummary: z.string().max(3000).optional(),
-  category: z.string().max(40).optional()
+  category: z.string().max(40).optional(),
+  imageModel: z.string().max(256).optional()
 }).passthrough();
 
 async function promptEngineOptimizeResponse(c: Context, record: Record<string, unknown>, prompt: string, userId: string, provider: PromptOptimizerProviderRow) {
@@ -2944,7 +2945,8 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   if (input.stylePackId && (!row || !row.enabled)) return c.json({ error: "风格包不存在、已停用或无权使用" }, 404);
   const stylePackSnapshot = row ? publicStylePack(row) : null;
   const imageCategory = imageCategoryById(input.category) ?? classifyImageCategory([prompt, input.followUp ?? ""].join("\n"));
-  const exampleCases = referenceCasesForRequest(prompt, imageCategory.id);
+  const modelFamily = /gemini/i.test(input.imageModel ?? "") ? "gemini" as const : input.imageModel ? "gpt" as const : undefined;
+  const exampleCases = referenceCasesForRequest(prompt, imageCategory.id, 2, modelFamily);
   const categoryInfo = { id: imageCategory.id, label: imageCategory.label, exampleCount: exampleCases.length };
   const preferences = userPreferences(userId);
   const customInstruction = [...new Set([

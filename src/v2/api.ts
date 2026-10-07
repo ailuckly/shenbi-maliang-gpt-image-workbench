@@ -25,7 +25,7 @@ export function normalizePromptDraft(value:unknown):PromptDraft|undefined {const
 const imageCategorySchema=z.object({id:z.string().max(40),label:z.string().max(40),exampleCount:z.number().int().min(0).max(10).optional()});
 const optimizeMetadataSchema=z.object({templateId:z.string().max(128),stylePackSnapshot:stylePackSchema.nullable(),imageCategory:imageCategorySchema.optional()});
 const optimizeResultSchema=optimizeMetadataSchema.extend({candidates:z.array(candidateSchema).min(1).max(3),errors:z.array(z.object({index:z.number().int().min(0).max(2),error:z.string()})),providerName:z.string(),model:z.string()});
-export type OptimizeRequest = {prompt:string;mode:PromptMode;language:"zh"|"en";candidates:number;stylePackId?:string;previousPrompt?:string;followUp?:string;referenceCount:number;referenceSummary?:string;imageCount:number;customInstruction?:string};
+export type OptimizeRequest = {prompt:string;mode:PromptMode;language:"zh"|"en";candidates:number;stylePackId?:string;previousPrompt?:string;followUp?:string;referenceCount:number;referenceSummary?:string;imageCount:number;customInstruction?:string;imageModel?:string};
 export type OptimizeResult = {candidates:PromptCandidate[];errors:{index:number;error:string}[];templateId:string;stylePackSnapshot:StylePack|null;imageCategory?:{id:string;label:string};providerName:string;model:string};
 
 export const stylePackApi = {
