@@ -19,6 +19,15 @@ import { makeId, now, safeJson, utcNow } from "./utils";
 import { currentUser, futureDate, requireUser } from "./auth";
 import { pageInfo, paginationFromQuery } from "./pagination";
 import { fallbackChineseUsername, fallbackChineseUsernameCount, generateChineseUsername, generateChineseUsernameCandidates } from "./promptTitle";
+import {
+  LOGIN_POLICIES,
+  clearLoginFailures,
+  loginClientAddress,
+  loginFailureDelay,
+  loginLockRemaining,
+  loginLockedMessage,
+  recordLoginFailure
+} from "./loginRateLimit";
 import { REGISTRATION_DISABLED_MESSAGE, selfRegistrationEnabled, registrationSettings } from "./registrationSettings";
 import { sendVerificationEmail } from "./smtp";
 import { normalizePhone as normalizeSmsPhone, sendVerificationSms, validMainlandPhone } from "./sms";
@@ -539,17 +548,37 @@ api.post("/auth/password-reset/phone", async (c) => {
   return c.json({ ok: true });
 });
 
+let dummyPasswordHashPromise: Promise<string> | null = null;
+function dummyPasswordHash() {
+  dummyPasswordHashPromise ??= Bun.password.hash(crypto.randomUUID());
+  return dummyPasswordHashPromise;
+}
+
 api.post("/auth/login", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const account = String(body.account ?? body.username ?? "").trim();
   const password = String(body.password ?? "");
   if (!account || !password) return c.json({ error: "请输入账号和密码" }, 400);
 
+  const ipKey = `user-ip:${loginClientAddress(c)}`;
+  const accountKey = `user-account:${account.toLowerCase()}`;
+  const locked = Math.max(
+    loginLockRemaining(ipKey, LOGIN_POLICIES.userIp),
+    loginLockRemaining(accountKey, LOGIN_POLICIES.userAccount)
+  );
+  if (locked) return c.json({ error: loginLockedMessage(locked) }, 429);
+
   const user = findUserByLogin(account);
-  if (!user) return c.json({ error: "账号不存在" }, 401);
+  // Same message and similar cost whether or not the account exists, so logins can't enumerate accounts.
+  const ok = await Bun.password.verify(password, user?.password_hash ?? await dummyPasswordHash());
+  if (!user || !ok) {
+    recordLoginFailure(ipKey, LOGIN_POLICIES.userIp);
+    recordLoginFailure(accountKey, LOGIN_POLICIES.userAccount);
+    await loginFailureDelay();
+    return c.json({ error: "账号或密码错误" }, 401);
+  }
+  clearLoginFailures(accountKey);
   if (user.disabled) return c.json({ error: "账号已被禁用" }, 403);
-  const ok = await Bun.password.verify(password, user.password_hash);
-  if (!ok) return c.json({ error: "密码不正确" }, 401);
 
   createUserSession(c, user);
   return c.json({ user: publicUser(user) });
@@ -589,8 +618,16 @@ api.post("/auth/change-password", async (c) => {
   const currentPassword = String(body.currentPassword ?? "");
   const newPassword = String(body.newPassword ?? "");
   if (!currentPassword || !newPassword) return c.json({ error: "请填写当前密码和新密码" }, 400);
+  const changeKey = `user-account:${user.id}:change-password`;
+  const locked = loginLockRemaining(changeKey, LOGIN_POLICIES.userAccount);
+  if (locked) return c.json({ error: loginLockedMessage(locked) }, 429);
   const ok = await Bun.password.verify(currentPassword, user.password_hash);
-  if (!ok) return c.json({ error: "当前密码不正确" }, 401);
+  if (!ok) {
+    recordLoginFailure(changeKey, LOGIN_POLICIES.userAccount);
+    await loginFailureDelay();
+    return c.json({ error: "当前密码不正确" }, 401);
+  }
+  clearLoginFailures(changeKey);
   run(
     appDb,
     "update users set password_hash = ?, updated_at = ? where id = ?",

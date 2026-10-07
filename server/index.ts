@@ -125,6 +125,15 @@ import { registerStarterCopyRoutes, startStarterCopyScheduler } from "./starterC
 import { registerUserRoutes } from "./userRoutes";
 import { registerSnakeProgressRoutes } from "./snakeProgressRoutes";
 import { migrateExistingFilesToSecureStorage } from "./secureFiles";
+import {
+  LOGIN_POLICIES,
+  clearLoginFailures,
+  loginClientAddress,
+  loginFailureDelay,
+  loginLockRemaining,
+  loginLockedMessage,
+  recordLoginFailure
+} from "./loginRateLimit";
 import { saveSmtpSettings, sendSmtpTestEmail, smtpSettings } from "./smtp";
 import { normalizePhone as normalizeSmsPhone, saveSmsSettings, sendSmsTest, smsSettings, validMainlandPhone } from "./sms";
 import { validateUsername } from "./usernamePolicy";
@@ -433,8 +442,22 @@ api.post("/config/auth/login", async (c) => {
   const password = String(body.password ?? "");
   const admin = getOne<{ password_hash: string }>(configDb, "select password_hash from config_admin limit 1");
   if (!admin) return c.json({ error: "请先初始化配置密码" }, 400);
+  const clientAddress = loginClientAddress(c);
+  const ipKey = `config-ip:${clientAddress}`;
+  const locked = Math.max(
+    loginLockRemaining(ipKey, LOGIN_POLICIES.configIp),
+    loginLockRemaining("config-global", LOGIN_POLICIES.configGlobal)
+  );
+  if (locked) return c.json({ error: loginLockedMessage(locked) }, 429);
   const ok = await Bun.password.verify(password, admin.password_hash);
-  if (!ok) return c.json({ error: "配置密码不正确" }, 401);
+  if (!ok) {
+    recordLoginFailure(ipKey, LOGIN_POLICIES.configIp);
+    recordLoginFailure("config-global", LOGIN_POLICIES.configGlobal);
+    audit("config.login_failed", { clientAddress });
+    await loginFailureDelay();
+    return c.json({ error: "配置密码不正确" }, 401);
+  }
+  clearLoginFailures(ipKey);
   const sessionId = makeId("cfgsess");
   run(
     configDb,
