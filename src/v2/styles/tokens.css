@@ -48,50 +48,6 @@ html[data-appearance="dark"] {
   --sb-success: #85d9b1;
   --sb-overlay: rgb(0 0 0 / 55%);
 }
-:root, html[data-appearance] {
-  font-family: var(--sb-font);
-  --app-bg: var(--sb-bg);
-  --app-chat-scrollbar-gutter-bg: var(--sb-bg);
-  --app-surface: var(--sb-surface);
-  --app-surface-muted: var(--sb-soft);
-  --app-surface-soft: var(--sb-soft);
-  --app-surface-raised: var(--sb-surface);
-  --app-sidebar-bg: var(--sb-bg);
-  --app-card-bg: var(--sb-surface);
-  --app-menu-bg: var(--sb-surface);
-  --app-select-menu-bg: var(--sb-surface);
-  --app-input-bg: var(--sb-surface);
-  --app-preview-bg: var(--sb-soft);
-  --app-bubble-bg: var(--sb-soft);
-  --app-text: var(--sb-text);
-  --app-text-inverted: var(--sb-surface);
-  --app-muted: var(--sb-muted);
-  --app-subtle: var(--sb-muted);
-  --app-label: var(--sb-text);
-  --app-body-text: var(--sb-text);
-  --app-link: var(--sb-accent);
-  --app-activity-color: var(--sb-accent);
-  --app-border: var(--sb-border);
-  --app-border-soft: var(--sb-border);
-  --app-border-strong: var(--sb-control-border);
-  --app-border-muted: var(--sb-control-border);
-  --app-hover-bg: var(--sb-soft);
-  --app-active-bg: var(--sb-soft);
-  --app-selected-bg: var(--sb-soft);
-  --app-selected-soft-bg: var(--sb-soft);
-  --app-overlay-bg: var(--sb-overlay);
-  --app-overlay-soft-bg: var(--sb-overlay);
-  --app-danger: var(--sb-danger);
-  --app-danger-bg: var(--sb-danger-soft);
-  --button-default-bg: var(--sb-surface);
-  --button-default-hover-bg: var(--sb-soft);
-  --button-default-border: var(--sb-control-border);
-  --button-primary-bg: var(--sb-accent);
-  --button-primary-hover-bg: var(--sb-accent-hover);
-  --button-primary-text: var(--sb-on-accent);
-  --control-focus-border: var(--sb-accent);
-  --control-selected-border: var(--sb-accent);
-}
 .v2-page, .v2-dialog, .v2-menu { color: var(--sb-text); font: var(--sb-text-sm)/1.6 var(--sb-font); }
 .v2-page { background: var(--sb-bg); padding: var(--sb-space-8); min-height: 100%; }
 .v2-page h1 { font-size: var(--sb-text-xl); letter-spacing: -0.02em; line-height: 1.3; }
@@ -141,7 +97,6 @@ html[data-appearance="dark"] {
 .v2-tab[data-state="active"] { color: var(--sb-accent); border-bottom-color: var(--sb-accent); }.v2-tab-panel { padding-top: 16px; }
 .v2-gallery { max-width: 800px; margin-inline: auto; }.v2-gallery-header { margin-bottom: 24px; }
 .v2-gallery-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }.v2-gallery-wide { grid-column: 1 / -1; }
-.page-loading-mark, .page-loading-logo { animation: none; }
 @media (max-width: 767px) { .v2-page { padding: 16px; }.v2-page:has(.v2-gallery) { padding-top: 64px; }.v2-gallery-fields { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { :root { --sb-motion: 0ms; }.v2-page *, .v2-dialog *, .v2-menu * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 /* Existing admin layouts adopt the same theme; their structure stays intact. */
@@ -161,12 +116,3 @@ html .config-card p,html .config-card small {color:var(--sb-muted)}
 html .config-shell .config-side-toggle {color:var(--sb-text);background:var(--sb-soft);border-radius:6px}
 html .config-shell.config-side-collapsed .config-language-select .custom-select-trigger,html .config-shell.config-side-collapsed .config-logout-btn {background:var(--sb-surface);color:var(--sb-text);border-radius:6px;border-color:var(--sb-control-border)}
 html .config-shell button:focus-visible {outline:2px solid var(--sb-accent);outline-offset:2px}
-/* The retained share view must not cover the v2 mobile header or fade reading text. */
-.v2-shell :is(.message-enter-row,.message-enter-thread>.message-thread>.message-version-turn,.message-enter-thread>.message-thread>.message){animation:none;opacity:1;transform:none}
-.v2-shell .shared-conversation-page{display:block}
-.v2-shell .shared-conversation-topbar{position:static;top:auto;left:auto;right:auto;padding:24px 32px;min-height:0;pointer-events:auto}
-.v2-shell .shared-message-area{padding-top:16px}
-.v2-shell .shared-conversation-heading h1{max-width:100%}
-html .image-editor-shell,html .image-editor-topbar,html .image-editor-composer{background:var(--sb-surface);color:var(--sb-text);border-color:var(--sb-border)}
-html .image-editor-stage{background:var(--sb-soft)}
-@media(max-width:767px){.v2-shell .shared-conversation-topbar{padding:24px 16px}}

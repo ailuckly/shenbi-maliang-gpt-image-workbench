@@ -3,7 +3,7 @@ import type { CSSProperties, FocusEvent, FormEvent, MouseEvent, PointerEvent as 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
-import { Camera, ChevronRight, CircleHelp, FolderOpen, Images, Lightbulb, LogOut, MessageCircle, MessageCirclePlus, PanelLeft, Pin, PinOff, RotateCcw, Search, Settings, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Camera, ChevronRight, CircleHelp, Code2, FolderOpen, Images, Lightbulb, LogOut, MessageCircle, MessageCirclePlus, PanelLeft, Pin, PinOff, RotateCcw, Search, Settings, ShieldCheck, Sparkles, X } from "lucide-react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { DEFAULT_SOURCE_CODE_URL } from "../lib/sourceCode";
 import { api } from "../api";
@@ -23,8 +23,6 @@ const ImageProvenancePage = lazy(() => import("../pages/ImageProvenancePage").th
 const PromptTemplatesPage = lazy(() => import("../pages/PromptTemplatesPage").then(module => ({default:module.PromptTemplatesPage})));
 const PromptTemplateEditorPage = lazy(() => import("../pages/PromptTemplatesPage").then(module => ({default:module.PromptTemplateEditorPage})));
 import { PageLoading } from "./PageLoading";
-import { WorkbenchLayout, HistoryDialog } from "../v2/shell/WorkbenchLayout";
-import { DEFAULT_SITE_NAME } from "../lib/branding";
 const ComponentGallery = import.meta.env.DEV ? lazy(() => import("../v2/ui/ComponentGallery").then(module => ({default:module.ComponentGallery}))) : null;
 const SharedConversationPage = lazy(() => import("../pages/SharedConversationPage").then(module => ({default: module.SharedConversationPage})));
 import { useWorkbench } from "../store/workbench";
@@ -443,7 +441,6 @@ export function WorkbenchShell({ user }: { user: User }) {
   const clearSessionGenerationStatus = useWorkbench((state) => state.clearSessionGenerationStatus);
   const clearSessionGenerationStatuses = useWorkbench((state) => state.clearSessionGenerationStatuses);
   const [searchOpen, setSearchOpen] = useState(false);
-  const historyReturnFocusRef = useRef<HTMLElement | null>(null);
   const [userCardOpen, setUserCardOpen] = useState(false);
   const [userCardClosing, setUserCardClosing] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -1494,7 +1491,6 @@ export function WorkbenchShell({ user }: { user: User }) {
 
       if (!event.shiftKey && key === "k") {
         event.preventDefault();
-        historyReturnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setSearchOpen(true);
         setMobileMenuOpen(false);
         return;
@@ -1701,235 +1697,7 @@ export function WorkbenchShell({ user }: { user: User }) {
       );
     });
 
-  const renderDialogs = () => <>
-      {searchOpen ? <HistoryDialog returnFocus={historyReturnFocusRef} sessions={activeSessions} onClose={() => setSearchOpen(false)} /> : null}
-      {passwordDialogOpen ? (
-        <ChangePasswordDialog
-          pending={changePassword.isPending}
-          error={changePassword.error instanceof Error ? changePassword.error.message : ""}
-          onClose={() => setPasswordDialogOpen(false)}
-          onSubmit={(payload) => {
-            changePassword.reset();
-            changePassword.mutate(payload);
-          }}
-        />
-      ) : null}
-      {editProfileDialogOpen ? (
-        <EditProfileDialog
-          currentUsername={user.username}
-          account={user.account}
-          avatarUrl={user.avatarUrl}
-          pending={saveProfile.isPending}
-          error={saveProfile.error instanceof Error ? saveProfile.error.message : ""}
-          onClose={() => setEditProfileDialogOpen(false)}
-          onSubmit={(payload) => {
-            saveProfile.reset();
-            saveProfile.mutate(payload);
-          }}
-        />
-      ) : null}
-      <AppSettingsDialog
-        open={settingsOpen}
-        user={user}
-        activeSessionCount={activeSessionTotal}
-        archivedSessionCount={archivedSessionTotal}
-        archiveAllPending={archiveAllChats.isPending}
-        deleteAllPending={deleteAllChats.isPending}
-        deleteAccountPending={deleteAccount.isPending}
-        preferencesSaving={saveUserPreferences.isPending}
-        imageTaskSounds={imageTaskSounds}
-        imageTaskSoundsLoading={imageTaskSoundCatalog.isLoading}
-        onClose={() => setSettingsOpen(false)}
-        onChangePassword={openPasswordDialog}
-        onEditProfile={openEditProfileDialog}
-        onDeleteAccount={requestDeleteAccount}
-        onAppearanceModeChange={(mode: AppearanceMode) => saveAppearanceMode.mutate(mode)}
-        onPreferencesChange={(preferences) => saveUserPreferences.mutate(preferences)}
-        onOpenArchivedChats={() => {
-          setArchivedChatsOpen(true);
-          archivedSessions.refetch();
-        }}
-        onArchiveAllChats={() => setArchiveAllConfirmOpen(true)}
-        onDeleteAllChats={() => setDeleteAllConfirmOpen(true)}
-      />
-      <ArchivedChatsDialog
-        open={archivedChatsOpen}
-        sessions={archivedChatSessions}
-        loading={archivedSessions.isLoading || archivedSessions.isFetching}
-        actionPending={archiveChat.isPending || deleteChat.isPending}
-        restoreAllPending={unarchiveAllChats.isPending}
-        onClose={() => setArchivedChatsOpen(false)}
-        onRestore={(session) => archiveChat.mutate({ sessionId: session.id, archived: false })}
-        onRestoreAll={() => {
-          if (!unarchiveAllChats.isPending) unarchiveAllChats.mutate();
-        }}
-        onDelete={(session) => requestDeleteSession(session, "archived")}
-      />
-      <ConfirmDialog
-        open={logoutConfirmOpen}
-        title={t("dialog.logout.title")}
-        description={t("dialog.logout.description")}
-        confirmText={t("dialog.logout.confirm")}
-        cancelText={t("common.cancel")}
-        destructive
-        onConfirm={confirmLogout}
-        onCancel={() => setLogoutConfirmOpen(false)}
-      />
-      <ConfirmDialog
-        open={deleteAccountConfirmOpen}
-        title={t("dialog.deleteAccount.title")}
-        description={t("dialog.deleteAccount.description")}
-        confirmText={deleteAccount.isPending ? t("common.deleting") : t("settings.account.delete")}
-        cancelText={t("common.cancel")}
-        confirmationText={deleteAccountConfirmationText}
-        confirmationLabel={t("dialog.deleteAccount.confirmationLabel", { confirmation: deleteAccountConfirmationText })}
-        confirmationDelaySeconds={5}
-        confirmationDelayLabel={(seconds) => t("dialog.deleteChat.countdown", { seconds })}
-        destructive
-        className="delete-chat-confirm-dialog"
-        backdropClassName="modal-backdrop-top"
-        onConfirm={confirmDeleteAccount}
-        onCancel={() => {
-          if (deleteAccount.isPending) return;
-          setDeleteAccountConfirmOpen(false);
-        }}
-      />
-      <ConfirmDialog
-        open={Boolean(deleteSessionTarget)}
-        title={t("dialog.deleteChat.title")}
-        description={
-          <div className="delete-chat-summary">
-            <p>{t("dialog.deleteChat.impactIntro")}</p>
-            <ol className="delete-chat-impact-list">
-              <li>{t("dialog.deleteChat.impactChat")}</li>
-              <li>{t("dialog.deleteChat.impactImages")}</li>
-              <li>{t("dialog.deleteChat.impactDerived")}</li>
-            </ol>
-          </div>
-        }
-        confirmText={t("common.delete")}
-        cancelText={t("common.cancel")}
-        confirmationText={t("common.confirm")}
-        confirmationLabel={t("dialog.deleteChat.confirmationLabel", { confirmation: t("common.confirm") })}
-        confirmationDelaySeconds={5}
-        confirmationDelayLabel={(seconds) => t("dialog.deleteChat.countdown", { seconds })}
-        destructive
-        className="delete-chat-confirm-dialog"
-        backdropClassName={deleteSessionTarget?.source === "archived" ? "modal-backdrop-top" : undefined}
-        onConfirm={() => {
-          if (!deleteSessionTarget || deleteChat.isPending) return;
-          const target = deleteSessionTarget;
-          setDeleteSessionTarget(null);
-          deleteChat.mutate(target.id);
-        }}
-        onCancel={() => setDeleteSessionTarget(null)}
-      />
-      <ConfirmDialog
-        open={archiveAllConfirmOpen}
-        title={t("dialog.archiveAll.title")}
-        description={t("dialog.archiveAll.description", { count: activeSessionTotal })}
-        confirmText={t("dialog.archiveAll.confirm")}
-        cancelText={t("common.cancel")}
-        backdropClassName="modal-backdrop-top"
-        onConfirm={() => {
-          if (archiveAllChats.isPending) return;
-          setArchiveAllConfirmOpen(false);
-          archiveAllChats.mutate();
-        }}
-        onCancel={() => setArchiveAllConfirmOpen(false)}
-      />
-      <ConfirmDialog
-        open={deleteAllConfirmOpen}
-        title={t("dialog.deleteAllChats.title")}
-        description={
-          <div className="delete-chat-summary">
-            <p>{t("dialog.deleteChat.impactIntro")}</p>
-            <ol className="delete-chat-impact-list">
-              <li>{t("dialog.deleteAllChats.impactChat")}</li>
-              <li>{t("dialog.deleteAllChats.impactImages")}</li>
-              <li>{t("dialog.deleteAllChats.impactDerived")}</li>
-            </ol>
-          </div>
-        }
-        confirmText={t("settings.data.deleteAllAction")}
-        cancelText={t("common.cancel")}
-        confirmationText={t("common.confirm")}
-        confirmationLabel={t("dialog.deleteChat.confirmationLabel", { confirmation: t("common.confirm") })}
-        confirmationDelaySeconds={5}
-        confirmationDelayLabel={(seconds) => t("dialog.deleteChat.countdown", { seconds })}
-        destructive
-        className="delete-chat-confirm-dialog"
-        backdropClassName="modal-backdrop-top"
-        onConfirm={() => {
-          if (deleteAllChats.isPending) return;
-          setDeleteAllConfirmOpen(false);
-          deleteAllChats.mutate();
-        }}
-        onCancel={() => setDeleteAllConfirmOpen(false)}
-      />
-  </>;
-  const renderContent = () => (
-      <main className="content">
-        <div className="page-route-stage">
-          <Suspense fallback={<PageLoading />}><Routes>
-            {ComponentGallery ? <Route path="/__v2-components" element={<ComponentGallery />} /> : null}
-            <Route path="/" element={<ChatPage user={user} />} />
-            <Route path="/chat/:sessionId" element={<ChatPage user={user} sessionActions={chatPageSessionActions} />} />
-            <Route
-              path="/cases"
-              element={branding.isPending ? null : features.inspiration_entry ? (
-                <PageRouteTransition key="cases">
-                  <CasesPage
-                    imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
-                    imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
-                  />
-                </PageRouteTransition>
-              ) : <Navigate to="/" replace />}
-            />
-            <Route path="/cases/barrage" element={branding.isPending ? null : features.inspiration_barrage_entry ? <PageRouteTransition key="cases-barrage"><InspirationBarragePage /></PageRouteTransition> : <Navigate to="/" replace />} />
-            <Route path="/image-provenance" element={branding.isPending ? null : features.image_provenance_entry ? <PageRouteTransition key="image-provenance"><ImageProvenancePage /></PageRouteTransition> : <Navigate to="/" replace />} />
-            <Route path="/style-packs" element={<StylePacksPage />} />
-            <Route path="/prompt-templates" element={<PageRouteTransition key="prompt-templates"><PromptTemplatesPage /></PageRouteTransition>} />
-            <Route path="/prompt-templates/:templateId/edit" element={<PageRouteTransition key="prompt-template-editor"><PromptTemplateEditorPage /></PageRouteTransition>} />
-            <Route
-              path="/assets"
-              element={(
-                <PageRouteTransition key="assets">
-                  <AssetsPage
-                    imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
-                    imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
-                  />
-                </PageRouteTransition>
-              )}
-            />
-            <Route
-              path="/images/*"
-              element={(
-                <PageRouteTransition key="images">
-                  <ImagesPage
-                    imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
-                    imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
-                  />
-                </PageRouteTransition>
-              )}
-            />
-            <Route
-              path="/help"
-              element={(
-                <Suspense fallback={<div className="settings-empty">{t("common.loading")}</div>}>
-                  <PageRouteTransition key="help"><HelpCenterPage user={user} /></PageRouteTransition>
-                </Suspense>
-              )}
-            />
-            <Route path="/share/:token" element={<SharedConversationPage authenticated />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes></Suspense>
-        </div>
-      </main>
-  );
-
-  // Retain the original layout for one version cycle; no active route uses it.
-  const renderLegacyLayout = () => (
+  return (
     <div className={cx("app-shell", location.pathname === "/images/compare" && "image-compare-route", sidebarCollapsed && "sidebar-collapsed", `sidebar-motion-${sidebarMotionState}`)}>
       <ActionTooltip key={location.pathname} container={typeof document === "undefined" ? null : document.body} selector="[data-library-tooltip]" hidden={location.pathname === "/images/compare"} />
       <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)} aria-label={t("sidebar.openMenu")}>
@@ -2219,6 +1987,18 @@ export function WorkbenchShell({ user }: { user: User }) {
                 <CircleHelp size={16} />
                 <span>{t("sidebar.help")}</span>
               </button>
+              {(branding.data?.showGithubEntry ?? true) ? (
+                <a
+                  className="user-info-action"
+                  href={branding.data?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={closeUserCard}
+                >
+                  <Code2 size={16} />
+                  <span>{t("common.sourceCode")}</span>
+                </a>
+              ) : null}
               <div className="user-info-action-divider" aria-hidden="true" />
               <button
                 className="user-info-action user-info-logout"
@@ -2299,33 +2079,230 @@ export function WorkbenchShell({ user }: { user: User }) {
           )
         : null}
       {mobileMenuOpen ? <div className="scrim" onClick={() => setMobileMenuOpen(false)} /> : null}
-      {renderDialogs()}
-      {renderContent()}
-
+      {searchOpen ? <SearchChatModal sessions={activeSessions} onClose={() => setSearchOpen(false)} /> : null}
+      {passwordDialogOpen ? (
+        <ChangePasswordDialog
+          pending={changePassword.isPending}
+          error={changePassword.error instanceof Error ? changePassword.error.message : ""}
+          onClose={() => setPasswordDialogOpen(false)}
+          onSubmit={(payload) => {
+            changePassword.reset();
+            changePassword.mutate(payload);
+          }}
+        />
+      ) : null}
+      {editProfileDialogOpen ? (
+        <EditProfileDialog
+          currentUsername={user.username}
+          account={user.account}
+          avatarUrl={user.avatarUrl}
+          pending={saveProfile.isPending}
+          error={saveProfile.error instanceof Error ? saveProfile.error.message : ""}
+          onClose={() => setEditProfileDialogOpen(false)}
+          onSubmit={(payload) => {
+            saveProfile.reset();
+            saveProfile.mutate(payload);
+          }}
+        />
+      ) : null}
+      <AppSettingsDialog
+        open={settingsOpen}
+        user={user}
+        activeSessionCount={activeSessionTotal}
+        archivedSessionCount={archivedSessionTotal}
+        archiveAllPending={archiveAllChats.isPending}
+        deleteAllPending={deleteAllChats.isPending}
+        deleteAccountPending={deleteAccount.isPending}
+        preferencesSaving={saveUserPreferences.isPending}
+        imageTaskSounds={imageTaskSounds}
+        imageTaskSoundsLoading={imageTaskSoundCatalog.isLoading}
+        onClose={() => setSettingsOpen(false)}
+        onChangePassword={openPasswordDialog}
+        onEditProfile={openEditProfileDialog}
+        onDeleteAccount={requestDeleteAccount}
+        onAppearanceModeChange={(mode: AppearanceMode) => saveAppearanceMode.mutate(mode)}
+        onPreferencesChange={(preferences) => saveUserPreferences.mutate(preferences)}
+        onOpenArchivedChats={() => {
+          setArchivedChatsOpen(true);
+          archivedSessions.refetch();
+        }}
+        onArchiveAllChats={() => setArchiveAllConfirmOpen(true)}
+        onDeleteAllChats={() => setDeleteAllConfirmOpen(true)}
+      />
+      <ArchivedChatsDialog
+        open={archivedChatsOpen}
+        sessions={archivedChatSessions}
+        loading={archivedSessions.isLoading || archivedSessions.isFetching}
+        actionPending={archiveChat.isPending || deleteChat.isPending}
+        restoreAllPending={unarchiveAllChats.isPending}
+        onClose={() => setArchivedChatsOpen(false)}
+        onRestore={(session) => archiveChat.mutate({ sessionId: session.id, archived: false })}
+        onRestoreAll={() => {
+          if (!unarchiveAllChats.isPending) unarchiveAllChats.mutate();
+        }}
+        onDelete={(session) => requestDeleteSession(session, "archived")}
+      />
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        title={t("dialog.logout.title")}
+        description={t("dialog.logout.description")}
+        confirmText={t("dialog.logout.confirm")}
+        cancelText={t("common.cancel")}
+        destructive
+        onConfirm={confirmLogout}
+        onCancel={() => setLogoutConfirmOpen(false)}
+      />
+      <ConfirmDialog
+        open={deleteAccountConfirmOpen}
+        title={t("dialog.deleteAccount.title")}
+        description={t("dialog.deleteAccount.description")}
+        confirmText={deleteAccount.isPending ? t("common.deleting") : t("settings.account.delete")}
+        cancelText={t("common.cancel")}
+        confirmationText={deleteAccountConfirmationText}
+        confirmationLabel={t("dialog.deleteAccount.confirmationLabel", { confirmation: deleteAccountConfirmationText })}
+        confirmationDelaySeconds={5}
+        confirmationDelayLabel={(seconds) => t("dialog.deleteChat.countdown", { seconds })}
+        destructive
+        className="delete-chat-confirm-dialog"
+        backdropClassName="modal-backdrop-top"
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => {
+          if (deleteAccount.isPending) return;
+          setDeleteAccountConfirmOpen(false);
+        }}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteSessionTarget)}
+        title={t("dialog.deleteChat.title")}
+        description={
+          <div className="delete-chat-summary">
+            <p>{t("dialog.deleteChat.impactIntro")}</p>
+            <ol className="delete-chat-impact-list">
+              <li>{t("dialog.deleteChat.impactChat")}</li>
+              <li>{t("dialog.deleteChat.impactImages")}</li>
+              <li>{t("dialog.deleteChat.impactDerived")}</li>
+            </ol>
+          </div>
+        }
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
+        confirmationText={t("common.confirm")}
+        confirmationLabel={t("dialog.deleteChat.confirmationLabel", { confirmation: t("common.confirm") })}
+        confirmationDelaySeconds={5}
+        confirmationDelayLabel={(seconds) => t("dialog.deleteChat.countdown", { seconds })}
+        destructive
+        className="delete-chat-confirm-dialog"
+        backdropClassName={deleteSessionTarget?.source === "archived" ? "modal-backdrop-top" : undefined}
+        onConfirm={() => {
+          if (!deleteSessionTarget || deleteChat.isPending) return;
+          const target = deleteSessionTarget;
+          setDeleteSessionTarget(null);
+          deleteChat.mutate(target.id);
+        }}
+        onCancel={() => setDeleteSessionTarget(null)}
+      />
+      <ConfirmDialog
+        open={archiveAllConfirmOpen}
+        title={t("dialog.archiveAll.title")}
+        description={t("dialog.archiveAll.description", { count: activeSessionTotal })}
+        confirmText={t("dialog.archiveAll.confirm")}
+        cancelText={t("common.cancel")}
+        backdropClassName="modal-backdrop-top"
+        onConfirm={() => {
+          if (archiveAllChats.isPending) return;
+          setArchiveAllConfirmOpen(false);
+          archiveAllChats.mutate();
+        }}
+        onCancel={() => setArchiveAllConfirmOpen(false)}
+      />
+      <ConfirmDialog
+        open={deleteAllConfirmOpen}
+        title={t("dialog.deleteAllChats.title")}
+        description={
+          <div className="delete-chat-summary">
+            <p>{t("dialog.deleteChat.impactIntro")}</p>
+            <ol className="delete-chat-impact-list">
+              <li>{t("dialog.deleteAllChats.impactChat")}</li>
+              <li>{t("dialog.deleteAllChats.impactImages")}</li>
+              <li>{t("dialog.deleteAllChats.impactDerived")}</li>
+            </ol>
+          </div>
+        }
+        confirmText={t("settings.data.deleteAllAction")}
+        cancelText={t("common.cancel")}
+        confirmationText={t("common.confirm")}
+        confirmationLabel={t("dialog.deleteChat.confirmationLabel", { confirmation: t("common.confirm") })}
+        confirmationDelaySeconds={5}
+        confirmationDelayLabel={(seconds) => t("dialog.deleteChat.countdown", { seconds })}
+        destructive
+        className="delete-chat-confirm-dialog"
+        backdropClassName="modal-backdrop-top"
+        onConfirm={() => {
+          if (deleteAllChats.isPending) return;
+          setDeleteAllConfirmOpen(false);
+          deleteAllChats.mutate();
+        }}
+        onCancel={() => setDeleteAllConfirmOpen(false)}
+      />
+      <main className="content">
+        <div className="page-route-stage" ref={routeTransitionStageRef}>
+          <Suspense fallback={<PageLoading />}><Routes>
+            {ComponentGallery ? <Route path="/__v2-components" element={<ComponentGallery />} /> : null}
+            <Route path="/" element={<ChatPage user={user} />} />
+            <Route path="/chat/:sessionId" element={<ChatPage user={user} sessionActions={chatPageSessionActions} />} />
+            <Route
+              path="/cases"
+              element={branding.isPending ? null : features.inspiration_entry ? (
+                <PageRouteTransition key="cases">
+                  <CasesPage
+                    imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
+                    imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
+                  />
+                </PageRouteTransition>
+              ) : <Navigate to="/" replace />}
+            />
+            <Route path="/cases/barrage" element={branding.isPending ? null : features.inspiration_barrage_entry ? <PageRouteTransition key="cases-barrage"><InspirationBarragePage /></PageRouteTransition> : <Navigate to="/" replace />} />
+            <Route path="/image-provenance" element={branding.isPending ? null : features.image_provenance_entry ? <PageRouteTransition key="image-provenance"><ImageProvenancePage /></PageRouteTransition> : <Navigate to="/" replace />} />
+            <Route path="/style-packs" element={<StylePacksPage />} />
+            <Route path="/prompt-templates" element={<PageRouteTransition key="prompt-templates"><PromptTemplatesPage /></PageRouteTransition>} />
+            <Route path="/prompt-templates/:templateId/edit" element={<PageRouteTransition key="prompt-template-editor"><PromptTemplateEditorPage /></PageRouteTransition>} />
+            <Route
+              path="/assets"
+              element={(
+                <PageRouteTransition key="assets">
+                  <AssetsPage
+                    imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
+                    imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
+                  />
+                </PageRouteTransition>
+              )}
+            />
+            <Route
+              path="/images/*"
+              element={(
+                <PageRouteTransition key="images">
+                  <ImagesPage
+                    imagePreviewWheelMode={user.preferences?.imagePreviewWheelMode ?? "pan"}
+                    imagePreviewOpenMode={user.preferences?.imagePreviewOpenMode ?? "contain"}
+                  />
+                </PageRouteTransition>
+              )}
+            />
+            <Route
+              path="/help"
+              element={(
+                <Suspense fallback={<div className="settings-empty">{t("common.loading")}</div>}>
+                  <PageRouteTransition key="help"><HelpCenterPage user={user} /></PageRouteTransition>
+                </Suspense>
+              )}
+            />
+            <Route path="/share/:token" element={<SharedConversationPage authenticated />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes></Suspense>
+        </div>
+      </main>
     </div>
   );
-
-  return <WorkbenchLayout
-    user={user} siteName={branding.data?.siteName || DEFAULT_SITE_NAME}
-    sourceCodeUrl={(branding.data?.showGithubEntry ?? true) ? branding.data?.sourceCodeUrl || DEFAULT_SOURCE_CODE_URL : undefined}
-    mobileOpen={mobileMenuOpen} onMobileOpenChange={setMobileMenuOpen}
-    sessions={activeSessions} loading={showInitialSessionSkeleton} error={sessions.error?.message}
-    hasMore={Boolean(sessions.hasNextPage)} loadingMore={sessions.isFetchingNextPage} sentinel={sessionListSentinelRef}
-    pending={globalSessionActionPending || pinChat.isPending}
-    onLoadMore={() => { if (sessions.error) void sessions.refetch(); else void sessions.fetchNextPage(); }}
-    onNew={openCurrentOrNewChat} onSearch={trigger => { historyReturnFocusRef.current=trigger; setSearchOpen(true); }} onSettings={openSettingsDialog} onLogout={requestLogout}
-    preferencesSaving={saveUserPreferences.isPending || saveAppearanceMode.isPending}
-    onTheme={mode => saveAppearanceMode.mutate(mode)} onLanguage={language => saveUserPreferences.mutate({language})}
-    onRename={(session,title) => renameChat.mutate({sessionId:session.id,title})}
-    onPin={session => pinChat.mutate({sessionId:session.id,pinned:!session.pinnedAt})}
-    onArchive={session => archiveChat.mutate({sessionId:session.id,archived:true})}
-    onDelete={session => requestDeleteSession(session,"active")}
-    onSessionOpen={session => { pauseRenderingBeforeChatNavigation(session.id); if(sessionGenerationStates[session.id]?.state === "completed") clearSessionGenerationStatus(session.id); }}
-    onNavigate={handleMainRouteNavigation}
-  >
-    <ActionTooltip key={location.pathname} container={typeof document === "undefined" ? null : document.body} selector="[data-library-tooltip]" hidden={location.pathname === "/images/compare"} />
-    {renderDialogs()}{renderContent()}
-  </WorkbenchLayout>;
 }
 
 function ChangePasswordDialog({

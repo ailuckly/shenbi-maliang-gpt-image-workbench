@@ -8,15 +8,14 @@ import { AddAssetFromImageModal } from "../components/AddAssetFromImageModal";
 import { AiClientInstallDialog } from "../components/AiClientInstallDialog";
 import { CaseMaterialPickerModal } from "../components/CaseMaterialPickerModal";
 import { ChatBranchSwitch } from "../components/chat/ChatBranchSwitch";
-import { Results, imageVersionIndex } from "../v2/conversation/Results";
-import { Composer } from "../v2/composer/Composer";
-import type { PromptDraft, PromptGenerationFields } from "../v2/api";
+import { ChatComposer } from "../components/chat/ChatComposer";
 import { ConversationView } from "../components/chat/ConversationView";
 import { DrawingCanvasDialog } from "../components/DrawingCanvasDialog";
 import { FeatureIntroModal } from "../components/FeatureIntroModal";
 import { ImageEditWorkspace } from "../components/ImageEditWorkspace";
 import { PromptStarter } from "../components/PromptStarter";
 import { RenderingErrorMessage, RenderingMessage } from "../components/RenderingMessage";
+import { ScrollJumpButton } from "../components/ScrollJumpButton";
 import { absoluteShareUrl, ShareConversationDialog } from "../components/ShareConversationDialog";
 import { SessionActionsMenu } from "../components/sidebar/SessionActionsMenu";
 import {
@@ -69,6 +68,7 @@ import { normalizePromptOptimizeStyle, sanitizePromptOptimizeStyleGroups } from 
 import { getTimeGreetingKey } from "../lib/timeGreeting";
 import { workImageFromLibraryCard, workImageFromMessage } from "../lib/workImages";
 import { useComposerPasteAsset } from "../hooks/useComposerPasteAsset";
+import { useChatScrollJump } from "../hooks/useChatScrollJump";
 import { useChatViewState } from "../hooks/useChatViewState";
 import { GUIDE_KEYS, useGuideSeen } from "../hooks/useGuideSeen";
 import { useImageProviderSelection } from "../hooks/useImageProviderSelection";
@@ -115,7 +115,6 @@ type SubmittedDraftSnapshot = {
   promptColorSchemeInjection: string;
   promptTemplate: ComposerSessionDraft["promptTemplate"];
   activeBranchId: string;
-  promptEngine?: PromptDraft;
 };
 
 type ActiveSubmitCancellation = {
@@ -695,27 +694,20 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
   const providerOptions = providers.data?.providers ?? [];
   const assetCategoryList = assetCategories.data?.categories ?? [];
   const assetReviewEnabled = assetCategories.data?.reviewEnabled ?? true;
-  const { currentProvider, providerId, setSize, size, sizeOptions } = useImageProviderSelection(providerOptions);
+  const { providerId, setSize, size, sizeOptions } = useImageProviderSelection(providerOptions);
   const modelCatalog = useQuery({ queryKey: ["image-models", providerId], queryFn: () => api.imageModels(providerId) });
   useEffect(() => {
     const models = modelCatalog.data?.models ?? [];
     if (models.length && !models.includes(imageModel)) setImageModel(models[0]);
   }, [modelCatalog.data, imageModel]);
-  const qualityOptions = useMemo(() => imageModelQualities(imageModel).length ? buildQualityOptions(imageModelQualities(imageModel)).filter(option=>currentProvider?.qualities.includes(option.value) && isImageQualitySupported(imageModel,option.value)) : [], [imageModel, currentProvider]);
+  const qualityOptions = useMemo(() => imageModelQualities(imageModel).length ? buildQualityOptions(imageModelQualities(imageModel)) : [], [imageModel]);
   const selectImageModel = useCallback((nextModel: ImageModelId) => {
     setImageModel(nextModel);
     setQuality((current) => isImageQualitySupported(nextModel, current) ? current : DEFAULT_IMAGE_QUALITY);
   }, []);
   const composerScopeKey = sessionId ? `session:${sessionId}` : COMPOSER_NEW_DRAFT_SCOPE_KEY;
   const composerInstanceKey = sessionId ? composerScopeKey : `${COMPOSER_NEW_DRAFT_SCOPE_KEY}:${newChatResetKey}`;
-  const [readyComposerInstance, setReadyComposerInstance] = useState("");
   const currentComposerDraft = composerDrafts[composerScopeKey] ?? null;
-  const promptEngineDraft = composerDrafts[composerScopeKey]?.promptEngine ?? {};
-  const imageVersions = useMemo(()=>imageVersionIndex(messages.data?.messages || []),[messages.data]);
-  const continuationMessage = promptEngineDraft.continuationImageId ? messages.data?.messages.find(message=>message.role==="assistant" && message.imageId===promptEngineDraft.continuationImageId) : undefined;
-  const continuationImage = continuationMessage ? workImageFromMessage(continuationMessage,sessionId || null) : null;
-  const composerSourceImage = editImage || continuationImage;
-  const handlePromptEngineDraftChange = (promptEngine: PromptDraft) => upsertComposerDraft(composerScopeKey, { promptEngine });
   const currentPromptTemplateDraft = composerDrafts[composerScopeKey]?.promptTemplate ?? null;
   const promptColorSchemeList = promptColorSchemes.data?.schemes ?? EMPTY_PROMPT_COLOR_SCHEMES;
   const currentPromptInputOptimizeStyle = normalizePromptOptimizeStyle(
@@ -895,7 +887,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       request.model,
       request.mode === "edit" ? DEFAULT_EDIT_IMAGE_MODEL : DEFAULT_GENERATION_IMAGE_MODEL
     );
-    if (request.promptEngine) upsertComposerDraft(`session:${result.session.id}`, { ...useWorkbench.getState().composerDrafts[COMPOSER_NEW_DRAFT_SCOPE_KEY], draftPrompt:request.promptEngine.originalRequest });
     upsertComposerDraft(`session:${result.session.id}`, {
       imageModel: submittedImageModel,
       quality: normalizeImageQuality(submittedImageModel, request.quality)
@@ -928,7 +919,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       const activeSessionId = activeSession.sessionId;
       const controller = new AbortController();
       submitAbortControllersRef.current.set(request.clientRequestId, controller);
-      const promptFields = request.promptEngine ?? {};
       const branchFields = {
         ...(request.branchId ? { branchId: request.branchId } : {}),
         ...(request.parentBranchId ? { parentBranchId: request.parentBranchId } : {}),
@@ -964,7 +954,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           ...(request.caseItemId ? { caseItemId: request.caseItemId } : {}),
           ...(request.revisionRootId ? { revisionRootId: request.revisionRootId } : {}),
           ...(request.editedMessageId ? { editedMessageId: request.editedMessageId } : {}),
-          ...branchFields, ...promptFields
+          ...branchFields
           }, { signal: controller.signal });
         }
         return await api.generate({
@@ -982,7 +972,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         ...(request.caseItemId ? { caseItemId: request.caseItemId } : {}),
         ...(request.revisionRootId ? { revisionRootId: request.revisionRootId } : {}),
         ...(request.editedMessageId ? { editedMessageId: request.editedMessageId } : {}),
-        ...branchFields, ...promptFields
+        ...branchFields
         }, { signal: controller.signal });
       } catch (error) {
         throw error;
@@ -1089,7 +1079,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     promptColorSchemeInjection: currentPromptColorSchemeInjection,
     promptTemplate: currentPromptTemplateDraft,
     activeBranchId: activeBranchId ?? MAIN_CHAT_BRANCH_ID,
-    promptEngine: promptEngineDraft,
     ...overrides
   });
   const restoreSubmittedDraft = (snapshot: SubmittedDraftSnapshot, targetScopeKey = composerScopeKey) => {
@@ -1118,8 +1107,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       promptColorSchemeIds: snapshot.promptColorSchemeIds,
       promptColorSchemeId: snapshot.promptColorSchemeIds[0] ?? "",
       promptColorSchemeInjection: snapshot.promptColorSchemeInjection,
-      promptTemplate: snapshot.promptTemplate,
-      promptEngine: snapshot.promptEngine
+      promptTemplate: snapshot.promptTemplate
     });
     if (snapshot.editorReturn) {
       setEditorImageRequest(snapshot.editorReturn);
@@ -1323,10 +1311,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setPendingEditorCancellationReturn(null);
   }, [imageJobs, pendingEditorCancellationReturn, setPendingEditorCancellationReturn]);
   const hasDraftCreatedWhileRunning = (snapshot: SubmittedDraftSnapshot) => {
-    if (snapshot.promptEngine && draftPrompt === snapshot.prompt && JSON.stringify(promptEngineDraft) === JSON.stringify(snapshot.promptEngine)
-      && editImage?.id === snapshot.editImage?.id && selectedAssets.map(item=>item.id).join() === snapshot.selectedAssets.map(item=>item.id).join()
-      && selectedCaseMaterials.map(item=>item.caseItemId).join() === snapshot.selectedCaseMaterials.map(item=>item.caseItemId).join()
-      && imageCount===snapshot.imageCount && size===snapshot.size && background===snapshot.background && imageModel===snapshot.imageModel && quality===snapshot.quality) return false;
     const backgroundChanged = snapshot.editorReturn
       ? background !== snapshot.background
       : background !== "auto";
@@ -1442,7 +1426,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       }
     });
   };
-  const { addComposerImage, handleComposerPaste, isPastingAsset } = useComposerPasteAsset({ autoUploadPastedAssets, selectedAssets, setSelectedAssets, showToast });
+  const { addComposerImage, handleComposerPaste } = useComposerPasteAsset({ autoUploadPastedAssets, selectedAssets, setSelectedAssets, showToast });
   const pickCasePrompt = (item: Pick<CaseCategory["items"][number], "id" | "groupId" | "prompt">) => {
     const caseItemId = item.groupId || item.id;
     setDraftPrompt(item.prompt, caseItemId && !isDefaultCaseItemId(caseItemId) ? { caseItemId, prompt: item.prompt } : null);
@@ -1474,35 +1458,33 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setMaterialPickerOpen(false);
   };
 
-  const submitDraft = (promptEngine?: PromptGenerationFields) => {
+  const submitDraft = () => {
     if (currentScopeBusy || !draftPrompt.trim()) return;
-    const prompt = promptEngine?.finalPrompt.trim() || draftPrompt.trim();
+    const prompt = draftPrompt.trim();
     const selectedRequestSize = requestSizeFromSelection(size);
     const backgroundRequestOptions = imageBackgroundRequestOptions(background);
     const caseUsage = draftCaseUsage?.caseItemId ? draftCaseUsage : null;
     const latestAssistantImage = [...visibleBranchMessages]
       .reverse()
       .find((message) => message.role === "assistant" && message.imageUrl && message.imageId);
-    const continuityImage = promptEngineDraft.continuationImageId ? continuationImage : latestAssistantImage ? workImageFromMessage(latestAssistantImage, sessionId ?? null) : null;
-    const sourceImage = promptEngine?.optimizeMode === "t2i" ? null : composerSourceImage;
-    const referenceAssets = promptEngine?.optimizeMode === "t2i" ? [] : selectedAssets;
-    const referenceCases = promptEngine?.optimizeMode === "t2i" ? [] : selectedCaseMaterials;
-    const selectedCaseReferences = referenceCases.map(sourceReferenceFromCaseMaterial);
+    const continuityImage = latestAssistantImage ? workImageFromMessage(latestAssistantImage, sessionId ?? null) : null;
+    const sourceImage = editImage;
+    const selectedCaseReferences = selectedCaseMaterials.map(sourceReferenceFromCaseMaterial);
     const hasSelectedCaseMaterials = selectedCaseReferences.length > 0;
-    const hasDrawingReference = referenceAssets.some((asset) => (
+    const hasDrawingReference = selectedAssets.some((asset) => (
       Boolean(drawingDocuments[asset.id]) || isDrawingReferenceName(asset.name)
     ));
-    const requestSourceImage = promptEngine?.optimizeMode === "t2i" ? null : sourceImage ?? (referenceAssets.length || hasSelectedCaseMaterials || hasDrawingReference ? null : continuityImage);
-    const useHiddenContinuityImage = !promptEngine && !sourceImage && referenceAssets.length === 0 && !hasSelectedCaseMaterials && Boolean(continuityImage);
-    const mode: SubmitRequest["mode"] = promptEngine?.optimizeMode === "t2i" ? "generation" : requestSourceImage || referenceAssets.length > 0 || hasSelectedCaseMaterials ? "edit" : "generation";
-    const sourceAsset = referenceAssets[0];
-    const sourceAssetIds = assetIdsForRequest(referenceAssets);
-    const sourceInlineImages = inlineImagesForRequest(referenceAssets);
-    const referenceAsset = persistableAssets(referenceAssets)[0] ?? null;
-    const sourceReferenceImages = [...selectedCaseReferences, ...referenceAssets.map(sourceReferenceFromAsset)];
+    const requestSourceImage = sourceImage ?? (hasSelectedCaseMaterials || hasDrawingReference ? null : continuityImage);
+    const useHiddenContinuityImage = !sourceImage && selectedAssets.length === 0 && !hasSelectedCaseMaterials && Boolean(continuityImage);
+    const mode: SubmitRequest["mode"] = requestSourceImage || selectedAssets.length > 0 || hasSelectedCaseMaterials ? "edit" : "generation";
+    const sourceAsset = selectedAssets[0];
+    const sourceAssetIds = assetIdsForRequest(selectedAssets);
+    const sourceInlineImages = inlineImagesForRequest(selectedAssets);
+    const referenceAsset = persistableAssets(selectedAssets)[0] ?? null;
+    const sourceReferenceImages = [...selectedCaseReferences, ...selectedAssets.map(sourceReferenceFromAsset)];
     const primaryMaterialReference = selectedCaseReferences[0] ?? (sourceAsset ? sourceReferenceFromAsset(sourceAsset) : null);
-    const selectedCaseItemIds = referenceCases.map((item) => item.caseItemId);
-    const requestCaseItemId = caseUsage?.caseItemId ?? referenceCases[0]?.caseItemId;
+    const selectedCaseItemIds = selectedCaseMaterials.map((item) => item.caseItemId);
+    const requestCaseItemId = caseUsage?.caseItemId ?? selectedCaseMaterials[0]?.caseItemId;
     const sourcePreview = sourceImage
       ? {
           imageId: sourceImage.id,
@@ -1569,7 +1551,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     const pendingScope = currentSubmitScope;
     const branchFields = activeChatBranchId !== MAIN_CHAT_BRANCH_ID ? { branchId: activeChatBranchId } : {};
     const resolvedImageCount = resolvePromptImageCount(prompt, imageCount);
-    const submittedSnapshot = captureSubmittedDraft({ prompt: draftPrompt, activeBranchId: activeChatBranchId });
+    const submittedSnapshot = captureSubmittedDraft({ prompt, activeBranchId: activeChatBranchId });
     addSubmittingScope(pendingScope);
     setPendingScope(pendingScope);
     setPendingChatSubmit({
@@ -1593,7 +1575,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           ...(referenceAsset ? { referenceAssetId: referenceAsset.id } : {}),
           ...(useHiddenContinuityImage ? { hideReference: true, autoReference: true } : {}),
           ...branchFields,
-          ...(promptEngine || {}),
           size: selectedRequestSize,
           model: imageModel,
           quality,
@@ -1604,6 +1585,16 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         ...sourcePreview
       }
     });
+    setDraftPrompt("");
+    setImageCount(1);
+    setEditImage(null);
+    setSelectedAssets([]);
+    setSelectedCaseMaterials([]);
+    setMaterialPickerOpen(false);
+    setSize("");
+    setBackground("auto");
+    resetPromptInputOptimizeStyle();
+    resetPromptColorScheme();
     startTrackedSubmit({
       clientRequestId,
       pendingScope,
@@ -1611,7 +1602,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       sessionId,
       providerId,
       prompt,
-      promptEngine,
       language: resolvedLanguage,
       model: imageModel,
       quality,
@@ -1759,7 +1749,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     });
   };
   const latestEditSuggestionImage = useMemo(() => {
-    if (imageEditor) return null;
+    if (currentScopeBusy || imageEditor) return null;
     const latestAssistantImage = [...visibleBranchMessages]
       .reverse()
       .find((message) => message.role === "assistant" && message.imageUrl && message.imageId);
@@ -1879,7 +1869,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setMaterialPickerOpen(false);
     setCasePickerOpen(false);
     setError("");
-    setReadyComposerInstance(composerInstanceKey);
     if (!sessionId) {
       setPendingScope(null);
       if (imageEditor && !editorImageRequest?.persistAcrossSessionChange) closePagedImageEditor();
@@ -2372,15 +2361,15 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     }, submittedSnapshot);
   };
   const composerPreviews = [
-    ...(composerSourceImage
+    ...(editImage
       ? [
           {
-            id: `edit-${composerSourceImage.id}`,
-            url: composerSourceImage.thumbnailUrl || composerSourceImage.previewUrl || composerSourceImage.url,
-            previewUrl: composerSourceImage.previewUrl || composerSourceImage.originalUrl || composerSourceImage.url,
-            name: imageVersions.get(composerSourceImage.id) ? t("v2.result.basedOn",{number:imageVersions.get(composerSourceImage.id)!}) : t("chat.editor.pendingImage"),
-            title: composerSourceImage.prompt,
-            onRemove: () => {setEditImage(null);handlePromptEngineDraftChange({...promptEngineDraft,continuationImageId:undefined,mode:"t2i"});}
+            id: `edit-${editImage.id}`,
+            url: editImage.thumbnailUrl || editImage.previewUrl || editImage.url,
+            previewUrl: editImage.previewUrl || editImage.originalUrl || editImage.url,
+            name: t("chat.editor.pendingImage"),
+            title: editImage.prompt,
+            onRemove: () => setEditImage(null)
           }
         ]
       : []),
@@ -2446,8 +2435,16 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       };
     });
   }, [renderItems]);
-  const loadingMessageRef=useRef<HTMLDivElement|null>(null);
-  const messageEndRef=useRef<HTMLDivElement|null>(null);
+  const { jumpToLoadingOrScrollEdge, loadingMessageRef, messageEndRef, scrollJump } = useChatScrollJump({
+    composerPreviewCount: composerPreviews.length,
+    imageEditorOpen: Boolean(imageEditor),
+    loadingTitle,
+    messageListLength: messageList.length,
+    renderItemCount: renderItems.length,
+    sessionId,
+    showStarter,
+    visiblePendingMessageId: visiblePendingUserMessage?.id
+  });
   const handleRunningImageJobsSettled = useCallback(() => {
     if (sessionId) clearSessionGenerationStatus(sessionId);
   }, [clearSessionGenerationStatus, sessionId]);
@@ -2470,23 +2467,6 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     createShareLink.isPending && createShareLink.variables?.sessionId === sessionId
   );
 
-  const renderLegacyJobStatus = () => (visibleLoadingMode && !multiImageLoading ? (
-          <div ref={loadingMessageRef} className="message-enter-row loading-message-anchor" style={messageRevealStyle(renderItems.length)}>
-            <RenderingMessage mode={visibleLoadingMode} />
-          </div>
-        ) : latestVisibleFailedJob ? (
-          <div className="message-enter-row" style={messageRevealStyle(renderItems.length)}>
-            <RenderingErrorMessage
-              mode={latestVisibleFailedJob.type}
-              message={latestVisibleFailedJob.error ?? t("chat.failedJob")}
-              canRetry={true}
-              retrying={retryImageJob.isPending}
-              onRetry={() => {
-                triggerRetryImageJob(latestVisibleFailedJob.id);
-              }}
-            />
-          </div>
-        ) : null);
   return (
     <section
       className={cx(
@@ -2547,10 +2527,24 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         </div>
       ) : null}
       <div className={cx("message-area", showStarter && "message-area-empty")}>
-        {showStarter ? <div className="v2-creation-heading"><h1>{t("v2.composer.heading")}</h1><p>{t("v2.composer.description")}</p></div> : null}
+        {showStarter ? (
+          <PromptStarter
+            showInspiration={branding.data?.featureFlags?.inspiration_entry === true}
+            caseCategories={starterCaseCategories}
+            caseCategoriesLoaded={starterCases.isFetched}
+            dailyHeadlineIdeas={starterCopies.data?.copies}
+            headlineIdeasLoaded={starterCopies.isFetched}
+            headlinePromptPending={Boolean(starterPromptOptimizeRequest)}
+            user={user}
+            onOpenAiClientInstall={aiClientInstallEnabled ? () => setAiClientInstallOpen(true) : undefined}
+            onOpenIntro={() => setChatIntroOpen(true)}
+            onRefreshCases={refreshStarterCases}
+            onUseHeadlinePrompt={useStarterHeadlinePrompt}
+            onPickPrompt={pickCasePrompt}
+          />
+        ) : null}
         {showMessageSkeleton ? <ChatMessageSkeleton /> : null}
         <ConversationView
-          renderResults={revision=><Results revision={revision} job={imageJobs.find(job=>job.id===revision.user.metadata.jobId)} versions={imageVersions} sessionId={sessionId} isSubmitting={currentScopeBusy} retryingJobId={retryingJobId} onRetry={triggerRetryImageJob} onOpenEditor={openImageEditor} onAddAsset={openAssetModal} onContinue={image=>{setEditImage(null);setSelectedAssets([]);setSelectedCaseMaterials([]);setDraftPrompt("");handlePromptEngineDraftChange({mode:"i2i",continuationImageId:image.id,stylePackSnapshot:promptEngineDraft.stylePackSnapshot || null});window.requestAnimationFrame(()=>{textareaRef.current?.focus();textareaRef.current?.scrollIntoView({block:"center",behavior:"auto"});});}}/>}
           items={renderItems}
           sessionId={sessionId}
           downloadBaseName={sessionActions?.title}
@@ -2571,6 +2565,23 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
             })
           }
         />
+        {visibleLoadingMode && !multiImageLoading ? (
+          <div ref={loadingMessageRef} className="message-enter-row loading-message-anchor" style={messageRevealStyle(renderItems.length)}>
+            <RenderingMessage mode={visibleLoadingMode} />
+          </div>
+        ) : latestVisibleFailedJob ? (
+          <div className="message-enter-row" style={messageRevealStyle(renderItems.length)}>
+            <RenderingErrorMessage
+              mode={latestVisibleFailedJob.type}
+              message={latestVisibleFailedJob.error ?? t("chat.failedJob")}
+              canRetry={true}
+              retrying={retryImageJob.isPending}
+              onRetry={() => {
+                triggerRetryImageJob(latestVisibleFailedJob.id);
+              }}
+            />
+          </div>
+        ) : null}
         <div ref={messageEndRef} className="message-scroll-anchor" aria-hidden="true" />
       </div>
       {imageEditor ? (
@@ -2624,6 +2635,12 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           }
         />
       ) : null}
+      <ScrollJumpButton
+        scrollJump={scrollJump}
+        loading={Boolean(visibleLoadingMode)}
+        onClick={jumpToLoadingOrScrollEdge}
+        hidden={materialPickerOpen}
+      />
       {assetTarget ? (
         <AddAssetFromImageModal
           image={assetTarget.item}
@@ -2679,16 +2696,67 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           });
         }}
       />
-      {readyComposerInstance === composerInstanceKey && (!sessionId || !messages.isLoading) ? <Composer key={composerInstanceKey} draftPrompt={draftPrompt} onDraftPromptChange={setDraftPrompt}
-        draft={promptEngineDraft} onDraftChange={handlePromptEngineDraftChange} previews={composerPreviews}
-        continuityPreview={!composerPreviews.length && !promptEngineDraft.continuationImageId && promptEngineDraft.mode!=="t2i" && latestEditSuggestionImage ? {id:latestEditSuggestionImage.id,url:latestEditSuggestionImage.thumbnailUrl || latestEditSuggestionImage.url,previewUrl:latestEditSuggestionImage.originalUrl || latestEditSuggestionImage.url,name:imageVersions.get(latestEditSuggestionImage.id) ? t("v2.result.basedOn",{number:imageVersions.get(latestEditSuggestionImage.id)!}) : t("v2.composer.lastImage"),title:latestEditSuggestionImage.prompt,onRemove:()=>handlePromptEngineDraftChange({...promptEngineDraft,mode:"t2i"})} : undefined}
-        busy={currentScopeBusy || cancelPending} cancelPending={cancelPending} onCancel={currentCancelTarget ? cancelCurrentSubmit : undefined}
-        error={latestVisibleFailedJob ? "" : error} onSubmit={submitDraft} imageModel={imageModel} imageModels={modelCatalog.data?.models || []} onImageModelChange={selectImageModel}
-        size={size} sizeOptions={modelCatalog.data?.configured && currentProvider?.sizes.length ? sizeOptions : []} onSizeChange={setSize} quality={quality} qualityOptions={modelCatalog.data?.configured ? qualityOptions : []} onQualityChange={value=>setQuality(normalizeImageQuality(imageModel,value))}
-        imageCount={imageCount} onImageCountChange={setImageCount} textareaRef={textareaRef}
-        uploadPending={isPastingAsset} onUpload={async files=>{for(const file of files)await addComposerImage(file,"pasted");}} onPaste={handleComposerPaste}
-        selectedAssets={selectedAssets} onSelectedAssetsChange={setSelectedAssets} onToggleAsset={toggleAsset}
-      /> : <ChatMessageSkeleton />}
+      <ChatComposer
+        key={composerInstanceKey}
+        autoOptimizePromptRequest={sessionId ? null : starterPromptOptimizeRequest}
+        busy={currentScopeBusy || cancelPending}
+        cancelPending={cancelPending}
+        composerInstanceKey={composerInstanceKey}
+        draftPrompt={draftPrompt}
+        draftCaseUsage={draftCaseUsage}
+        editSuggestions={composerEditSuggestions}
+        editSuggestionsLoading={composerEditSuggestionsLoading}
+        error={latestVisibleFailedJob ? "" : error}
+        materialPickerOpen={materialPickerOpen && !imageEditor}
+        placeholder={composerPlaceholder}
+        previews={composerPreviews}
+        imageCount={imageCount}
+        imageModels={modelCatalog.data?.models ?? []}
+        imageModel={imageModel}
+        quality={quality}
+        qualityOptions={qualityOptions}
+        background={background}
+        promptColorSchemes={promptColorSchemeList}
+        promptColorSchemeIds={currentPromptColorSchemeIds}
+        promptColorSchemeInjection={currentPromptColorSchemeInjection}
+        promptInputOptimizeStyle={currentPromptInputOptimizeStyle}
+        promptOptimizeCustomInstruction={promptOptimizeCustomInstruction}
+        promptOptimizeStyleGroups={promptOptimizeStyleGroups}
+        promptTemplateDraft={currentPromptTemplateDraft}
+        selectedAssets={selectedAssets}
+        selectedCaseMaterials={selectedCaseMaterials}
+        size={size}
+        sizeOptions={sizeOptions}
+        textareaRef={textareaRef}
+        onApplyEditSuggestion={applyEditSuggestion}
+        onAutoOptimizePromptRequestHandled={handleStarterPromptOptimizeRequestHandled}
+        onBackgroundChange={setBackground}
+        onCancel={currentCancelTarget ? cancelCurrentSubmit : undefined}
+        onDraftPromptChange={setDraftPrompt}
+        onImageCountChange={setImageCount}
+        onImageModelChange={selectImageModel}
+        onQualityChange={(nextQuality) => setQuality(normalizeImageQuality(imageModel, nextQuality))}
+        onPaste={handleComposerPaste}
+        onSelectedAssetsChange={setSelectedAssets}
+        onSelectedCaseMaterialsChange={setSelectedCaseMaterials}
+        onSizeChange={setSize}
+        onSubmit={submitDraft}
+        onToggleAsset={toggleAsset}
+        onOpenDrawing={() => {
+          setMaterialPickerOpen(false);
+          setCasePickerOpen(false);
+          setDrawingEditor({ assetId: null, elements: [] });
+        }}
+        onOpenCasePicker={() => {
+          setMaterialPickerOpen(false);
+          setCasePickerOpen(true);
+        }}
+        onPromptColorSchemeChange={handlePromptColorSchemeChange}
+        onPromptInputOptimizeStyleChange={handlePromptInputOptimizeStyleChange}
+        onPromptOptimizeCustomInstructionChange={schedulePromptOptimizeCustomInstructionSave}
+        onPromptTemplateDraftChange={handlePromptTemplateDraftChange}
+        onToggleMaterialPicker={() => setMaterialPickerOpen(!materialPickerOpen)}
+      />
       <ConfirmDialog
         open={Boolean(restoreConflict)}
         title={t("dialog.cancelGeneration.restoreTitle")}
@@ -2713,7 +2781,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         }}
       />
       <FeatureIntroModal
-        open={false}
+        open={showStarter && (!appIntroGuide.seen || chatIntroOpen)}
         welcomeText={t("chat.introWelcome", { name: guideDisplayName, greeting: guideGreeting })}
         finishLabel={t("common.startUsing")}
         slides={appIntroSlides}
