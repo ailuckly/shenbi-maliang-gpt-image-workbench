@@ -2952,8 +2952,9 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   const run = async (emit?: (event: string, data: unknown) => void) => {
     const candidates: { index: number; structured: StructuredPrompt; finalPrompt: string; negative: string }[] = [];
     const errors: { index: number; error: string }[] = [];
-    for (let index = 0; index < input.candidates; index++) {
-      if (signal.aborted) { errors.push({ index, error: "提示词优化已取消或超时" }); break; }
+    // Candidates are independent requests; run them together so 3 candidates fit the same timeout as 1.
+    await Promise.all(Array.from({ length: input.candidates }, async (_, index) => {
+      if (signal.aborted) { errors.push({ index, error: "提示词优化已取消或超时" }); return; }
       try {
         const preview = { text: "" };
         const content = await requestPromptModelText({
@@ -2978,9 +2979,10 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
       } catch (error) {
         const failure = { index, error: signal.aborted ? "提示词优化已取消或超时" : error instanceof Error ? redactProviderSecrets(error.message) : "候选优化失败" };
         errors.push(failure); emit?.("candidate-error", failure);
-        if (signal.aborted) break;
       }
-    }
+    }));
+    candidates.sort((a, b) => a.index - b.index);
+    errors.sort((a, b) => a.index - b.index);
     if (!candidates.length) throw new Error(errors[0]?.error || "模型没有返回可用候选");
     return { candidates, errors, templateId: template.id, stylePackSnapshot, providerName: provider.name, model: provider.model };
   };

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useI18n } from "../../i18n";
 import { messageThreadRenderKey, type ChatRenderItem, type MessageRevision } from "../../lib/chatRender";
-import { formatImageAnnotationMessageDisplayText } from "../../lib/imageAnnotations";
+import { userPromptDisplay } from "../../lib/promptDisplay";
 import type { ImageJob, Message, WorkImage } from "../../types";
 import { ChatMessage, ChatMessageThread } from "./ChatMessages";
 import { ImageCompareResultsContext } from "./ImageCompareButton";
@@ -50,7 +50,7 @@ function selectedUserMessage(item: ChatRenderItem) {
 }
 
 function navigatorMessagePreview(message: Message) {
-  const content = formatImageAnnotationMessageDisplayText(message.content, message.metadata);
+  const content = userPromptDisplay(message.content, message.metadata).text;
   return content.replace(/\s+/g, " ").trim();
 }
 

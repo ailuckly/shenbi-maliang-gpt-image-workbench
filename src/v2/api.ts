@@ -24,7 +24,7 @@ export const promptDraftSchema = z.object({continuationImageId:z.string().min(1)
 export function normalizePromptDraft(value:unknown):PromptDraft|undefined {const parsed=promptDraftSchema.safeParse(value);return parsed.success ? parsed.data : undefined;}
 const optimizeMetadataSchema=z.object({templateId:z.string().max(128),stylePackSnapshot:stylePackSchema.nullable()});
 const optimizeResultSchema=optimizeMetadataSchema.extend({candidates:z.array(candidateSchema).min(1).max(3),errors:z.array(z.object({index:z.number().int().min(0).max(2),error:z.string()})),providerName:z.string(),model:z.string()});
-export type OptimizeRequest = {prompt:string;mode:PromptMode;language:"zh"|"en";candidates:number;stylePackId?:string;previousPrompt?:string;followUp?:string;referenceCount:number;referenceSummary?:string;imageCount:number};
+export type OptimizeRequest = {prompt:string;mode:PromptMode;language:"zh"|"en";candidates:number;stylePackId?:string;previousPrompt?:string;followUp?:string;referenceCount:number;referenceSummary?:string;imageCount:number;customInstruction?:string};
 export type OptimizeResult = {candidates:PromptCandidate[];errors:{index:number;error:string}[];templateId:string;stylePackSnapshot:StylePack|null;providerName:string;model:string};
 
 export const stylePackApi = {

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, ChevronRight, RotateCw, WandSparkles, X } from "lucide-react";
 import { useI18n } from "../i18n";
@@ -28,6 +28,8 @@ type PromptOptimizeStyleSelectProps = {
   menuPlacement?: "top" | "bottom";
   menuWidth?: number;
   submenuWidth?: number;
+  /** Extra row at the bottom of the menu; receives a callback that closes the menu. */
+  footer?: (close: () => void) => ReactNode;
 };
 
 export function PromptOptimizeStyleSelect({
@@ -44,7 +46,8 @@ export function PromptOptimizeStyleSelect({
   menuClassName,
   menuPlacement = "top",
   menuWidth = 260,
-  submenuWidth = 260
+  submenuWidth = 260,
+  footer
 }: PromptOptimizeStyleSelectProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -343,6 +346,11 @@ export function PromptOptimizeStyleSelect({
                       ) : null}
                     </span>
                   </label>
+                </div>
+              ) : null}
+              {footer ? (
+                <div className="prompt-style-picker-footer" onMouseEnter={() => setActiveGroup("")}>
+                  {footer(() => setOpen(false))}
                 </div>
               ) : null}
             </div>,

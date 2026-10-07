@@ -10,6 +10,7 @@ import { CaseMaterialPickerModal } from "../components/CaseMaterialPickerModal";
 import { ChatBranchSwitch } from "../components/chat/ChatBranchSwitch";
 import { ChatComposer } from "../components/chat/ChatComposer";
 import { ConversationView } from "../components/chat/ConversationView";
+import { candidatePromptText, PromptCandidatesBlock, type PromptOptimizeRun } from "../components/chat/PromptCandidatesBlock";
 import { DrawingCanvasDialog } from "../components/DrawingCanvasDialog";
 import { FeatureIntroModal } from "../components/FeatureIntroModal";
 import { ImageEditWorkspace } from "../components/ImageEditWorkspace";
@@ -66,6 +67,8 @@ import { normalizePromptColorSchemeIds } from "../lib/promptColorSchemes";
 import type { DrawingElement } from "../lib/drawingCanvas";
 import { normalizePromptOptimizeStyle, sanitizePromptOptimizeStyleGroups } from "../lib/promptOptimizeStyles";
 import { getTimeGreetingKey } from "../lib/timeGreeting";
+import { DEFAULT_STYLE_PACK_ID, stylePackAffectsPrompt, stylePackGroups } from "../lib/stylePackGroups";
+import { optimizePrompt, stylePackApi, type PromptCandidate, type PromptGenerationFields, type PromptMode, type StylePack } from "../v2/api";
 import { workImageFromLibraryCard, workImageFromMessage } from "../lib/workImages";
 import { useComposerPasteAsset } from "../hooks/useComposerPasteAsset";
 import { useChatScrollJump } from "../hooks/useChatScrollJump";
@@ -97,6 +100,24 @@ const PROMPT_INPUT_OPTIMIZE_STYLE_STORAGE_KEY = "gpt-image.prompt-input-optimize
 const MESSAGE_REVEAL_STAGGER_MS = 46;
 const MESSAGE_REVEAL_MAX_DELAY_MS = 414;
 const EMPTY_PROMPT_COLOR_SCHEMES: [] = [];
+const EMPTY_STYLE_PACKS: StylePack[] = [];
+const STYLE_PACK_STORAGE_KEY = "shenbi.composer-style-pack";
+
+function readStoredStylePackId() {
+  try {
+    return window.localStorage.getItem(STYLE_PACK_STORAGE_KEY) || DEFAULT_STYLE_PACK_ID;
+  } catch {
+    return DEFAULT_STYLE_PACK_ID;
+  }
+}
+
+function writeStoredStylePackId(id: string) {
+  try {
+    window.localStorage.setItem(STYLE_PACK_STORAGE_KEY, id);
+  } catch {
+    // Storage is a convenience; the selection still applies for this page.
+  }
+}
 
 type SubmittedDraftSnapshot = {
   prompt: string;
@@ -708,6 +729,24 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
   const composerScopeKey = sessionId ? `session:${sessionId}` : COMPOSER_NEW_DRAFT_SCOPE_KEY;
   const composerInstanceKey = sessionId ? composerScopeKey : `${COMPOSER_NEW_DRAFT_SCOPE_KEY}:${newChatResetKey}`;
   const currentComposerDraft = composerDrafts[composerScopeKey] ?? null;
+  const stylePacksQuery = useQuery({
+    queryKey: ["style-packs"],
+    queryFn: ({ signal }) => stylePackApi.list(false, signal),
+    staleTime: 60_000
+  });
+  const stylePackList = stylePacksQuery.data?.stylePacks ?? EMPTY_STYLE_PACKS;
+  const stylePackPickerGroups = useMemo(() => stylePackGroups(stylePackList), [stylePackList]);
+  const [stylePackId, setStylePackIdState] = useState(readStoredStylePackId);
+  const selectedStylePack = stylePackList.find((pack) => pack.id === stylePackId && pack.enabled)
+    ?? stylePackList.find((pack) => pack.id === DEFAULT_STYLE_PACK_ID && pack.enabled)
+    ?? null;
+  const selectStylePack = useCallback((id: string) => {
+    setStylePackIdState(id);
+    writeStoredStylePackId(id);
+  }, []);
+  const [optimizeRun, setOptimizeRun] = useState<PromptOptimizeRun | null>(null);
+  const optimizeAbortRef = useRef<AbortController | null>(null);
+  const visibleOptimizeRun = optimizeRun?.scopeKey === composerScopeKey ? optimizeRun : null;
   const currentPromptTemplateDraft = composerDrafts[composerScopeKey]?.promptTemplate ?? null;
   const promptColorSchemeList = promptColorSchemes.data?.schemes ?? EMPTY_PROMPT_COLOR_SCHEMES;
   const currentPromptInputOptimizeStyle = normalizePromptOptimizeStyle(
@@ -954,6 +993,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           ...(request.caseItemId ? { caseItemId: request.caseItemId } : {}),
           ...(request.revisionRootId ? { revisionRootId: request.revisionRootId } : {}),
           ...(request.editedMessageId ? { editedMessageId: request.editedMessageId } : {}),
+          ...(request.promptEngine ?? {}),
           ...branchFields
           }, { signal: controller.signal });
         }
@@ -972,6 +1012,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         ...(request.caseItemId ? { caseItemId: request.caseItemId } : {}),
         ...(request.revisionRootId ? { revisionRootId: request.revisionRootId } : {}),
         ...(request.editedMessageId ? { editedMessageId: request.editedMessageId } : {}),
+        ...(request.promptEngine ?? {}),
         ...branchFields
         }, { signal: controller.signal });
       } catch (error) {
@@ -1551,6 +1592,25 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     const pendingScope = currentSubmitScope;
     const branchFields = activeChatBranchId !== MAIN_CHAT_BRANCH_ID ? { branchId: activeChatBranchId } : {};
     const resolvedImageCount = resolvePromptImageCount(prompt, imageCount);
+    const appliedCandidate = visibleOptimizeRun && visibleOptimizeRun.appliedIndex !== null
+      ? visibleOptimizeRun.candidates.find((candidate) => candidate.index === visibleOptimizeRun.appliedIndex)
+      : undefined;
+    const promptPack = stylePackAffectsPrompt(selectedStylePack) ? selectedStylePack : null;
+    // The server composes pack prefix/suffix and negatives; the bubble keeps what the user typed.
+    const promptEngine: Partial<PromptGenerationFields> | undefined = promptPack || appliedCandidate
+      ? {
+          originalRequest: prompt,
+          optimizeMode: visibleOptimizeRun?.mode ?? (mode === "edit" ? "i2i" : "t2i"),
+          stylePackSnapshot: promptPack,
+          ...(appliedCandidate && visibleOptimizeRun
+            ? {
+                negativePrompt: appliedCandidate.structured.negative.trim(),
+                promptCandidates: visibleOptimizeRun.candidates,
+                selectedCandidateIndex: appliedCandidate.index
+              }
+            : {})
+        }
+      : undefined;
     const submittedSnapshot = captureSubmittedDraft({ prompt, activeBranchId: activeChatBranchId });
     addSubmittingScope(pendingScope);
     setPendingScope(pendingScope);
@@ -1579,7 +1639,8 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
           model: imageModel,
           quality,
           ...backgroundRequestOptions,
-          n: resolvedImageCount
+          n: resolvedImageCount,
+          ...(promptEngine ?? {})
         },
         createdAt: new Date().toISOString(),
         ...sourcePreview
@@ -1595,6 +1656,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     setBackground("auto");
     resetPromptInputOptimizeStyle();
     resetPromptColorScheme();
+    dismissPromptOptimize();
     startTrackedSubmit({
       clientRequestId,
       pendingScope,
@@ -1602,6 +1664,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       sessionId,
       providerId,
       prompt,
+      ...(promptEngine ? { promptEngine } : {}),
       language: resolvedLanguage,
       model: imageModel,
       quality,
@@ -1621,6 +1684,83 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     }, submittedSnapshot);
   };
 
+  const cancelPromptOptimize = () => {
+    optimizeAbortRef.current?.abort();
+    optimizeAbortRef.current = null;
+    setOptimizeRun((current) => current && current.status === "running"
+      ? { ...current, status: current.candidates.length ? "done" : "error", error: t("v2.chat.optimizeStopped") }
+      : current);
+  };
+  const dismissPromptOptimize = () => {
+    optimizeAbortRef.current?.abort();
+    optimizeAbortRef.current = null;
+    setOptimizeRun(null);
+  };
+  const requestPromptOptimize = (source: string, customInstruction: string) => {
+    optimizeAbortRef.current?.abort();
+    const controller = new AbortController();
+    optimizeAbortRef.current = controller;
+    const referenceCount = (editImage ? 1 : 0) + selectedAssets.length + selectedCaseMaterials.length;
+    const continuesImage = (messages.data?.messages ?? []).some((message) => message.role === "assistant" && Boolean(message.imageId));
+    // Attachments decide the mode; a follow-up in a conversation with images edits the latest one.
+    const mode: PromptMode = referenceCount >= 2 ? "multi" : referenceCount === 1 || continuesImage ? "i2i" : "t2i";
+    const runId = Date.now();
+    const expected = 3;
+    const update = (change: (current: PromptOptimizeRun) => PromptOptimizeRun) => {
+      setOptimizeRun((current) => current?.id === runId ? change(current) : current);
+    };
+    setOptimizeRun({
+      id: runId,
+      scopeKey: composerScopeKey,
+      source,
+      mode,
+      stylePackName: selectedStylePack && selectedStylePack.id !== DEFAULT_STYLE_PACK_ID ? selectedStylePack.name : "",
+      stylePackAddsText: stylePackAffectsPrompt(selectedStylePack),
+      expected,
+      status: "running",
+      candidates: [],
+      failures: [],
+      error: "",
+      appliedIndex: null
+    });
+    void optimizePrompt(
+      {
+        prompt: source,
+        mode,
+        language: /[一-鿿]/.test(source) ? "zh" : "en",
+        candidates: expected,
+        ...(selectedStylePack ? { stylePackId: selectedStylePack.id } : {}),
+        referenceCount: referenceCount || (mode === "i2i" ? 1 : 0),
+        imageCount,
+        ...(customInstruction.trim() ? { customInstruction: customInstruction.trim() } : {})
+      },
+      controller.signal,
+      (candidate) => update((current) => ({
+        ...current,
+        candidates: [...current.candidates.filter((item) => item.index !== candidate.index), candidate].sort((a, b) => a.index - b.index)
+      })),
+      (failure) => update((current) => ({ ...current, failures: [...current.failures.filter((item) => item.index !== failure.index), failure] }))
+    ).then(() => {
+      update((current) => ({ ...current, status: "done" }));
+    }).catch((reason: unknown) => {
+      if (controller.signal.aborted) return;
+      const message = reason instanceof Error ? reason.message : t("v2.chat.optimizeFailed");
+      update((current) => ({ ...current, status: current.candidates.length ? "done" : "error", error: message }));
+    }).finally(() => {
+      if (optimizeAbortRef.current === controller) optimizeAbortRef.current = null;
+    });
+  };
+  const applyPromptCandidate = (candidate: PromptCandidate) => {
+    setDraftPrompt(candidatePromptText(candidate));
+    setOptimizeRun((current) => current ? { ...current, appliedIndex: candidate.index } : current);
+    window.setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+  const restorePromptOptimizeSource = () => {
+    if (!optimizeRun) return;
+    setDraftPrompt(optimizeRun.source);
+    setOptimizeRun((current) => current ? { ...current, appliedIndex: null } : current);
+    window.setTimeout(() => textareaRef.current?.focus(), 0);
+  };
   const serverMessages = messages.data?.messages ?? [];
   const serverRenderState = useMemo(() => buildChatRenderState(serverMessages, activeBranchId), [activeBranchId, serverMessages]);
   const shareableMessageIds = useMemo(() => serverRenderState.visibleMessages.map((message) => message.id), [serverRenderState.visibleMessages]);
@@ -2582,6 +2722,17 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
             />
           </div>
         ) : null}
+        {visibleOptimizeRun ? (
+          <div className="message-enter-row prompt-candidates-row">
+            <PromptCandidatesBlock
+              run={visibleOptimizeRun}
+              onApply={applyPromptCandidate}
+              onRestore={restorePromptOptimizeSource}
+              onCancel={cancelPromptOptimize}
+              onDismiss={dismissPromptOptimize}
+            />
+          </div>
+        ) : null}
         <div ref={messageEndRef} className="message-scroll-anchor" aria-hidden="true" />
       </div>
       {imageEditor ? (
@@ -2756,6 +2907,14 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         onPromptOptimizeCustomInstructionChange={schedulePromptOptimizeCustomInstructionSave}
         onPromptTemplateDraftChange={handlePromptTemplateDraftChange}
         onToggleMaterialPicker={() => setMaterialPickerOpen(!materialPickerOpen)}
+        stylePacks={stylePackPickerGroups.length ? {
+          groups: stylePackPickerGroups,
+          value: selectedStylePack?.id ?? stylePackId,
+          onChange: selectStylePack,
+          onManage: () => navigate("/style-packs")
+        } : undefined}
+        onOptimizeRequest={stylePackPickerGroups.length ? requestPromptOptimize : undefined}
+        optimizePending={visibleOptimizeRun?.status === "running"}
       />
       <ConfirmDialog
         open={Boolean(restoreConflict)}

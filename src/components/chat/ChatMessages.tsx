@@ -15,6 +15,7 @@ import { sourceSnapshotFromMessage } from "../../lib/chatRequest";
 import { type MessageRevision } from "../../lib/chatRender";
 import { cx } from "../../lib/cx";
 import { formatImageAnnotationMessageDisplayText } from "../../lib/imageAnnotations";
+import { userPromptDisplay } from "../../lib/promptDisplay";
 import { imageResultPlaceholderState } from "../../lib/imageResultPlaceholder";
 import { imageModelDisplayName, isImageModelId } from "../../lib/imageModels";
 import { workImageFromMessage } from "../../lib/workImages";
@@ -495,7 +496,7 @@ export function ChatMessageThread({
 
   if (!revision) return null;
 
-  const editableContent = formatImageAnnotationMessageDisplayText(revision.user.content, revision.user.metadata);
+  const editableContent = userPromptDisplay(revision.user.content, revision.user.metadata).text;
 
   const copyMessage = async () => {
     const copied = await copyTextToClipboard(editableContent);
@@ -1108,9 +1109,8 @@ export function ChatMessage({
   const imageExecution = message.role === "assistant" ? imageExecutionDetails(message) : null;
   const image = workImageFromMessage(message, sessionId ?? null);
   const capabilities = resolveChatMessageCapabilities(mode, capabilityOverrides);
-  const displayContent = message.role === "user"
-    ? formatImageAnnotationMessageDisplayText(message.content, message.metadata)
-    : message.content;
+  const userPrompt = message.role === "user" ? userPromptDisplay(message.content, message.metadata) : null;
+  const displayContent = userPrompt ? userPrompt.text : message.content;
   const canOpenEditor = capabilities.editImage && Boolean(image && onOpenEditor);
   const hideReference = message.metadata?.hideReference === true;
   const referenceImageUrl = message.referenceImageUrl ?? (message.role === "user" ? message.imageUrl : null);
@@ -1207,6 +1207,22 @@ export function ChatMessage({
           <span>{userTextCollapsed ? t("common.expand") : t("common.collapse")}</span>
           {userTextCollapsed ? <ChevronDown size={14} strokeWidth={2.2} /> : <ChevronUp size={14} strokeWidth={2.2} />}
         </button>
+      ) : null}
+      {userPrompt && (userPrompt.actualPrompt || userPrompt.negative) ? (
+        <details className="user-message-actual-prompt">
+          <summary>
+            {t("v2.chat.actualPrompt")}
+            {userPrompt.stylePackName ? <span className="user-message-actual-prompt-pack">{userPrompt.stylePackName}</span> : null}
+            <ChevronDown size={12} strokeWidth={2.2} className="user-message-actual-prompt-chevron" aria-hidden="true" />
+          </summary>
+          {userPrompt.actualPrompt ? <p>{userPrompt.actualPrompt}</p> : null}
+          {userPrompt.negative ? (
+            <>
+              <strong>{t("v2.chat.negativePrompt")}</strong>
+              <p>{userPrompt.negative}</p>
+            </>
+          ) : null}
+        </details>
       ) : null}
     </>
   );

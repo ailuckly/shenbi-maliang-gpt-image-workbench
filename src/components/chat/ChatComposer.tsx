@@ -103,6 +103,16 @@ type ChatComposerProps = {
   onPromptOptimizeCustomInstructionChange?: (value: string) => void;
   onPromptTemplateDraftChange?: (draft: ComposerPromptTemplateDraft | null) => void;
   draftCaseUsage?: { caseItemId: string; prompt: string } | null;
+  /** When set, the style picker lists style packs instead of the legacy optimize styles. */
+  stylePacks?: {
+    groups: PromptOptimizeStyleGroup[];
+    value: string;
+    onChange: (id: string) => void;
+    onManage: () => void;
+  };
+  /** When set, optimization is handled by the page (candidates shown in the conversation). */
+  onOptimizeRequest?: (sourcePrompt: string, customInstruction: string) => void;
+  optimizePending?: boolean;
 };
 
 function clampNumber(value: number, min: number, max: number) {
@@ -197,7 +207,10 @@ export function ChatComposer({
   onPromptInputOptimizeStyleChange,
   onPromptOptimizeCustomInstructionChange,
   onPromptTemplateDraftChange,
-  draftCaseUsage
+  draftCaseUsage,
+  stylePacks,
+  onOptimizeRequest,
+  optimizePending = false
 }: ChatComposerProps) {
   const [previewState, setPreviewState] = useState<ImageLightboxState | null>(null);
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
@@ -234,7 +247,10 @@ export function ChatComposer({
   const lastDraftCaseUsageKeyRef = useRef(draftCaseUsageKey);
   const promptOptimizationLoading = promptTemplateLoading || promptInputOptimizePending;
   const promptTextareaLoading = (promptTemplateLoading && !promptTemplateStreaming) || (promptInputOptimizePending && !promptInputOptimizeStreaming);
-  const optimizeStyleOption = promptOptimizeStyleOption(promptInputOptimizeStyle, promptOptimizeStyleGroups);
+  const optimizeStyleOption = stylePacks
+    ? promptOptimizeStyleOption(stylePacks.value, stylePacks.groups)
+    : promptOptimizeStyleOption(promptInputOptimizeStyle, promptOptimizeStyleGroups);
+  const optimizeBusy = promptInputOptimizePending || optimizePending;
   const normalizedPromptColorSchemeIds = normalizePromptColorSchemeIds(promptColorSchemeIds, promptColorSchemes).slice(0, 1);
   const promptColorSchemeCustomHex = normalizedPromptColorSchemeIds.length === 0
     ? promptCustomColorSchemeHexFromInjection(promptColorSchemeInjection)
@@ -604,7 +620,11 @@ export function ChatComposer({
   ) {
     const originalPrompt = currentPromptOptimizeSource(sourceOverride);
     const sourcePrompt = originalPrompt.trim();
-    if (!sourcePrompt || promptInputOptimizePending) return;
+    if (!sourcePrompt || optimizeBusy) return;
+    if (onOptimizeRequest) {
+      onOptimizeRequest(sourcePrompt, customInstructionOverride);
+      return;
+    }
     const optimizeImageCount = imageCountOverride ?? imageCount;
     const previousUndoPrompt = promptBeforeInputOptimize;
     stopPromptTemplateTyping();
@@ -1017,20 +1037,32 @@ export function ChatComposer({
                     <button
                       type="button"
                       className="secondary-btn icon-only-btn composer-prompt-template-optimize-submit"
-                      disabled={promptInputOptimizePending || !draftPrompt.trim()}
+                      disabled={optimizeBusy || !draftPrompt.trim()}
                       onClick={() => optimizeCurrentPrompt()}
                       aria-label={draftPrompt.trim() ? t("composer.optimizeInput", { style: optimizeStyleOption.label }) : t("composer.optimizeDisabled")}
                       title={draftPrompt.trim() ? t("composer.optimizeInput", { style: optimizeStyleOption.label }) : t("composer.optimizeDisabled")}
                       data-tooltip={t("composer.optimizeTooltip")}
                     >
-                      {promptInputOptimizePending ? <RotateCw size={15} className="spin" /> : <WandSparkles size={15} />}
+                      {optimizeBusy ? <RotateCw size={15} className="spin" /> : <WandSparkles size={15} />}
                     </button>
                   )}
                   <span className="composer-prompt-template-style-tooltip" data-tooltip={t("settings.personalization.promptStyles.title")}>
                     <PromptOptimizeStyleSelect
-                      value={promptInputOptimizeStyle}
-                      onChange={updatePromptOptimizeStyle}
-                      groups={promptOptimizeStyleGroups}
+                      value={stylePacks ? stylePacks.value : promptInputOptimizeStyle}
+                      onChange={stylePacks ? stylePacks.onChange : updatePromptOptimizeStyle}
+                      groups={stylePacks ? stylePacks.groups : promptOptimizeStyleGroups}
+                      footer={stylePacks ? (close) => (
+                        <button
+                          type="button"
+                          className="prompt-style-picker-manage"
+                          onClick={() => {
+                            close();
+                            stylePacks.onManage();
+                          }}
+                        >
+                          {t("v2.chat.manageStylePacks")}
+                        </button>
+                      ) : undefined}
                       customInstruction={promptInputCustomInstruction}
                       onCustomInstructionChange={updatePromptOptimizeCustomInstruction}
                       onCustomInstructionSubmit={() => optimizeCurrentPrompt(
@@ -1039,8 +1071,8 @@ export function ChatComposer({
                         undefined,
                         promptInputCustomInstruction
                       )}
-                      customInstructionSubmitDisabled={promptInputOptimizePending || !draftPrompt.trim()}
-                      customInstructionSubmitPending={promptInputOptimizePending}
+                      customInstructionSubmitDisabled={optimizeBusy || !draftPrompt.trim()}
+                      customInstructionSubmitPending={optimizeBusy}
                       disabled={promptInputOptimizePending}
                       className="composer-prompt-template-style-select"
                       menuClassName="composer-prompt-template-style-menu"

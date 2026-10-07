@@ -32,6 +32,7 @@ import "./styles/responsive.css";
 import "./styles/appearance.css";
 import "./styles/rtl.css";
 import "./styles/app-update.css";
+import "./styles/prompt-candidates.css";
 import "./v2/styles/tokens.css";
 
 clearPromptTemplateFormDraftCache();

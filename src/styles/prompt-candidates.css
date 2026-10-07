@@ -1,0 +1,266 @@
+/* Prompt suggestions appear as an assistant-side message in the conversation. */
+.prompt-candidates {
+  display: grid;
+  gap: 10px;
+  width: min(760px, 100%);
+  margin: 4px 0 8px;
+  color: var(--app-text);
+}
+
+.prompt-candidates-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  color: var(--app-muted);
+  font-size: 14px;
+}
+
+.prompt-candidates-title {
+  color: var(--app-text);
+  font-weight: 600;
+}
+
+.prompt-candidates-pack {
+  padding: 1px 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.prompt-candidates-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.prompt-candidates-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.prompt-candidates-action.icon-only {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+.prompt-candidates-action:hover,
+.prompt-candidates-action:focus-visible {
+  background: var(--app-hover-bg);
+  color: var(--app-text);
+}
+
+.prompt-candidates-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.prompt-candidate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+}
+
+.prompt-candidate.is-applied {
+  border-color: var(--app-text);
+}
+
+.prompt-candidate.is-failed {
+  color: var(--app-muted);
+}
+
+.prompt-candidate-label {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.prompt-candidate-text {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8;
+}
+
+.prompt-candidate-negative {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.prompt-candidate-use {
+  align-self: flex-start;
+  margin-top: auto;
+  min-height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--app-border-strong, var(--app-border));
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.prompt-candidate-use:hover,
+.prompt-candidate-use:focus-visible {
+  background: var(--app-hover-bg);
+}
+
+.prompt-candidate.is-applied .prompt-candidate-use {
+  border-color: var(--app-text);
+  background: var(--app-text);
+  color: var(--app-text-inverted);
+}
+
+.prompt-candidate-skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--app-hover-bg);
+  animation: promptCandidatePulse 1.4s ease-in-out infinite;
+}
+
+.prompt-candidate-skeleton.short {
+  width: 60%;
+}
+
+.prompt-candidates-error {
+  margin: 0;
+  color: var(--app-danger, #b42318);
+  font-size: 14px;
+}
+
+.prompt-candidates-note {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+@keyframes promptCandidatePulse {
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-candidate-skeleton { animation: none; }
+}
+
+/* "Actual prompt" disclosure under a sent user message. */
+.user-message-actual-prompt {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.user-message-actual-prompt summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.user-message-actual-prompt summary::-webkit-details-marker {
+  display: none;
+}
+
+.user-message-actual-prompt-chevron {
+  transition: transform 150ms ease;
+}
+
+.user-message-actual-prompt[open] .user-message-actual-prompt-chevron {
+  transform: rotate(180deg);
+}
+
+.user-message-actual-prompt-pack {
+  padding: 0 6px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+}
+
+.user-message-actual-prompt p {
+  margin: 6px 0 0;
+  color: var(--app-text);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.user-message-actual-prompt strong {
+  display: block;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.prompt-style-picker-footer {
+  border-top: 1px solid var(--app-border-soft);
+  margin-top: 4px;
+  padding: 6px 4px 2px;
+}
+
+.prompt-style-picker-manage {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prompt-style-picker-manage:hover,
+.prompt-style-picker-manage:focus-visible {
+  background: var(--app-hover-bg);
+  color: var(--app-text);
+}
+
+/* Bubbles are single-row flex boxes; let the disclosure drop onto its own line. */
+.user-message:has(> .user-message-actual-prompt),
+.user-message-content-bubble:has(> .user-message-actual-prompt) {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  border-radius: 22px;
+}
+
+.user-message-actual-prompt {
+  flex-basis: 100%;
+  width: 100%;
+  padding-top: 6px;
+  border-top: 1px solid var(--app-border-soft, var(--app-border));
+}
+
+/* The welcome screen centers its children; suggestions still need the full column. */
+.prompt-candidates-row {
+  width: min(760px, 100%);
+  justify-self: center;
+}

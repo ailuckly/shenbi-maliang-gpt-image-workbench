@@ -15,7 +15,7 @@ Read [docs/project/README.md](docs/project/README.md) and [docs/project/CURRENT-
 ## Established decisions
 
 - Product name: ShenBi. Restrained, professional UI (no gradients, glass, decorative animation). Homepage reference is `docs/assets-library/shenbi/homepage-v3/design.png` with the changes listed in CODEX-EXECUTION.md P3-2; it is a design reference, not an implemented page.
-- Reuse existing authentication, image jobs, optimizer, editor, asset library and config APIs. Rewrite only the UIs listed in GOAL-ROADMAP (new code under `src/v2/`); other pages only adopt design tokens. Hide unrelated upstream modules via switches instead of deleting them.
+- Reuse existing authentication, image jobs, optimizer, editor, asset library and config APIs. Keep the ChatGPT-style conversation UI (ChatComposer, ChatMessages, ConversationView, ChatPage, WorkbenchShell sidebar): add features only as toolbar controls, popovers or in-conversation message cards, never as page forms — see "聊天界面约束" in CODEX-EXECUTION.md. `src/v2/` tokens must not restyle legacy pages. Hide unrelated upstream modules via switches instead of deleting them.
 - Prompt engine may adapt linshenkx/prompt-optimizer (AGPL-3.0-only, reference commit 92c5aaa); every adapted template must record its source path and commit.
 - License is AGPL-3.0-only; keep the upstream MIT notice (LICENSES/MIT-upstream.txt), NOTICE.md attribution, and compatibility identifiers such as `maliang` MCP tool names/headers; display branding and protocol identifiers have different purposes.
 - Keep credentials, runtime databases and private user files out of Git and documentation. File encryption keys live in config.db; backups need both DBs and files together.
