@@ -15,8 +15,6 @@ ShenBi AI Image Studio 是一个面向团队内部私有部署的 AI 图片生�
 
 本项目基于 [Xiongdaxz/shenbi-maliang-gpt-image-workbench](https://github.com/Xiongdaxz/shenbi-maliang-gpt-image-workbench) 二次开发，以 AGPL-3.0-only 发布；上游 MIT 许可证与版权声明保留在 [LICENSES/MIT-upstream.txt](LICENSES/MIT-upstream.txt)，归属说明见 [NOTICE.md](NOTICE.md)。
 
-当前 Fork 的开发基线与规划：[项目知识库](docs/project/README.md) · [完整目标与路线](docs/project/GOAL-ROADMAP.md) · [备用设计素材](docs/assets-library/README.md)。
-
 ## ✨ 亮点功能
 
 - 🖼️ AI 图片生成与图片编辑工作台，面向真实团队创作流程。

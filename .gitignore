@@ -44,6 +44,7 @@ Thumbs.db
 dist-next/
 dist.old/
 
-# Local verification screenshots and logs (may show private data; never publish)
-docs/project/evidence/
+# Fork working docs (plans, progress, deployment records, design archive) stay local only
+docs/project/
+docs/assets-library/
 /*-preview.png

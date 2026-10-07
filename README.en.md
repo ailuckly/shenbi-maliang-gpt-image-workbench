@@ -13,8 +13,6 @@
 
 ShenBi AI Image Studio is an AI image generation and image editing workbench designed for private team deployments. It supports ChatGPT subscription accounts, OpenAI-compatible APIs, CPA proxies, and other channels, and can route work across ChatGPT Web quota, Codex quota, and other image-generation paths.
 
-Fork development baseline: [Project knowledge base](docs/project/README.md) · [Goal and roadmap](docs/project/GOAL-ROADMAP.md) · [Design asset archive](docs/assets-library/README.md) (Chinese).
-
 ## ✨ Highlights
 
 - 🖼️ AI image generation and editing workbench for real team workflows.
