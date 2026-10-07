@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { imageModelPromptText } from "./promptEngine/schema";
+import { buildChatImageRequest, chatImageEndpointPath, chatImageResponseToImages } from "./providers/chatImage";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { request as httpsRequest } from "node:https";
@@ -1635,6 +1636,28 @@ async function callImagesApiProvider(
   return attachProviderRouteExecution(responseJson, {
     actualLanguageModel: "",
     actualRouteMode: "images_api"
+  });
+}
+
+// Gemini-style image models served on /chat/completions (see server/providers/chatImage.ts).
+async function callChatImageProvider(
+  provider: ProviderRow,
+  mode: "generation" | "edit",
+  payload: Record<string, unknown>,
+  context: ProviderRequestContext = {}
+) {
+  const endpoint = normalizePath(provider.base_url, chatImageEndpointPath(provider.generation_path));
+  const body = buildChatImageRequest({
+    model: String(payload.model ?? provider.model ?? "").trim(),
+    prompt: String(payload.prompt ?? "").trim(),
+    images: mode === "edit" ? responsesInputImages(payload) : [],
+    size: String(payload.size ?? ""),
+    quality: String(payload.quality ?? "")
+  });
+  const responseJson = await executeProviderJsonRequest(provider, mode, "chat_completions", endpoint, body, "application/json", context);
+  return attachProviderRouteExecution(chatImageResponseToImages(responseJson), {
+    actualLanguageModel: "",
+    actualRouteMode: "chat_completions"
   });
 }
 
@@ -3304,6 +3327,9 @@ export async function callProvider(
   if (channel === "chatgpt_web") {
     return callChatGptWebProvider(provider, mode, payload, context);
   }
+  if (routeMode === "chat_completions") {
+    return callChatImageProvider(provider, mode, payload, context);
+  }
   if (routeMode === "responses") {
     return callResponsesProviderWithCompatFallback(provider, mode, payload, undefined, context);
   }
@@ -3473,7 +3499,11 @@ export async function callProviderChain<T = undefined>(
   onProviderResponse?: ProviderChainResponseHandler<T>
 ) {
   const errors: string[] = [];
-  for (const provider of providers) {
+  // With several channels enabled, only try the ones whose catalog has the requested model
+  // (e.g. a Gemini request skips the GPT Image channel instead of failing on it first).
+  const requested = String(payload.model ?? "").trim();
+  const supporting = requested ? providers.filter((provider) => imageModelsForProvider(provider).includes(requested)) : [];
+  for (const provider of supporting.length ? supporting : providers) {
     assertProviderRequestActive(context);
     try {
       const providerPayload = payloadForProvider(provider, payload);

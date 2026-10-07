@@ -151,7 +151,7 @@ export type ProviderConfig = {
   baseUrl: string;
   apiKeyEnv: string;
   apiKeyValue: string;
-  routeMode: "images_api" | "responses" | "auto";
+  routeMode: "images_api" | "responses" | "auto" | "chat_completions";
   generationPath: string;
   editPath: string;
   responsesPath: string;

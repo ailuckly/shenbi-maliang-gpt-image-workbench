@@ -6,6 +6,10 @@ import { normalizeIdList } from "./utils";
 import type { ProviderRow } from "./types";
 
 export function imageModelsForProvider(provider: ProviderRow, db: Database = configDb) {
+  // Chat-route channels (Gemini) serve exactly their configured model; never claim GPT Image ids.
+  if (String(provider.route_mode ?? "").trim().toLowerCase() === "chat_completions") {
+    return provider.model ? [provider.model] : [];
+  }
   const hasCatalogTable = db.query("select name from sqlite_master where type = 'table' and name = 'provider_model_catalogs'").get();
   const catalog = hasCatalogTable ? readProviderModelCatalogCache(db, provider) : null;
   if (catalog) {

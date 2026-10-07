@@ -200,7 +200,7 @@ export function normalizeImageGenerationMode(value: string | null | undefined): 
 
 export function normalizeRouteMode(value: string | null | undefined) {
   const normalized = String(value ?? "").trim().toLowerCase();
-  if (normalized === "responses" || normalized === "auto") return normalized;
+  if (normalized === "responses" || normalized === "auto" || normalized === "chat_completions") return normalized;
   return "images_api";
 }
 

@@ -258,5 +258,6 @@ export const channelLabels: Record<ProviderConfig["channel"], string> = {
 export const routeModeLabels: Record<ProviderConfig["routeMode"], string> = {
   images_api: "图片接口直连",
   responses: "Responses 接口",
-  auto: "自动切换（Responses 优先）"
+  auto: "自动切换（Responses 优先）",
+  chat_completions: "Chat 生图（Gemini 等）"
 };

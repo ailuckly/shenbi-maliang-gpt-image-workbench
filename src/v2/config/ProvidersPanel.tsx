@@ -563,7 +563,7 @@ function ProviderSettings({ text }: { text: boolean }) {
                       })
                     }
                   >
-                    {["auto", "images_api", "responses"].map((value) => (
+                    {["auto", "images_api", "responses", "chat_completions"].map((value) => (
                       <option key={value} value={value}>
                         {t("v2.admin.routeOption." + value)}
                       </option>

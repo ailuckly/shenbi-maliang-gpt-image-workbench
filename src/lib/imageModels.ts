@@ -24,7 +24,16 @@ export type ImageModelOption = {
   shortLabelKey: string;
 };
 
+/** Gemini image models (chat route): low/high/max map to 1K/2K/4K output. */
+export function isGeminiImageModel(model: unknown) {
+  const normalized = String(model ?? "").trim().toLowerCase();
+  return normalized.includes("gemini") && normalized.includes("image");
+}
+
 export function imageModelDisplayName(model: ImageModelId) {
+  if (isGeminiImageModel(model)) {
+    return model.replace(/^.*\//, "").split("-").map((part) => (/^\d/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1))).join(" ");
+  }
   if (model === "gpt-image-2.5-flare") return "GPT Image 2.5 Flare";
   if (model === "gpt-image-2.5-sunburst") return "GPT Image 2.5 Sunburst";
   return model === "gpt-image-2" ? "GPT Image 2" : model;
@@ -68,7 +77,10 @@ export function isGptImage25Model(value: unknown): value is Extract<BuiltinImage
   return value === "gpt-image-2.5-flare" || value === "gpt-image-2.5-sunburst";
 }
 
+export const GEMINI_IMAGE_QUALITIES = ["low", "high", "max"] as const;
+
 export function imageModelQualities(model: ImageModelId): ImageQuality[] {
+  if (isGeminiImageModel(model)) return [...GEMINI_IMAGE_QUALITIES];
   return isImageModelId(model) ? [...(isGptImage25Model(model) ? GPT_IMAGE_25_QUALITIES : GPT_IMAGE_2_QUALITIES)] : [];
 }
 
