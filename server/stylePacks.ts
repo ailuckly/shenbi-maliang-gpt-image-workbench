@@ -6,6 +6,7 @@ import {
   sanitizePromptOptimizeStyleGroups
 } from "../src/lib/promptOptimizeStyles";
 import { promptOptimizeStyleConfigs, promptOptimizeSubStyleConfigs } from "./promptEngine/legacyStyleConfigs";
+import { STYLE_PACK_PRESETS } from "./promptEngine/stylePackPresets";
 import { now } from "./utils";
 
 export type StylePackRow = {
@@ -96,6 +97,23 @@ export function migrateStylePacks(db: Database, timestamp = now()) {
           "", "", "", "迁移自 user_preferences.prompt_optimize_styles_json；原条目 " + item.value,
           Number(enabled), order, timestamp, timestamp);
       });
+    }
+    db.query("insert into app_migrations (id, created_at) values (?, ?)").run(migration, timestamp);
+  })();
+  upgradeSystemStylePackText(db, timestamp);
+}
+
+// v1 seeded keyword prefixes ("commercial product photography"); replace untouched rows with
+// descriptive suffixes. Rows an admin already edited keep their text.
+function upgradeSystemStylePackText(db: Database, timestamp: string) {
+  const migration = "style_packs_presets_v2";
+  db.transaction(() => {
+    if (db.query("select id from app_migrations where id = ?").get(migration)) return;
+    const update = db.query(`update style_packs set prompt_prefix = '', prompt_suffix = ?,
+      negative_prompt = case when negative_prompt = '' then ? else negative_prompt end, updated_at = ?
+      where id = ? and scope = 'system' and prompt_prefix = ? and prompt_suffix = ''`);
+    for (const [id, preset] of Object.entries(STYLE_PACK_PRESETS)) {
+      update.run(preset.suffix, preset.negative ?? "", timestamp, id, preset.legacyPrefix);
     }
     db.query("insert into app_migrations (id, created_at) values (?, ?)").run(migration, timestamp);
   })();

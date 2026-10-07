@@ -22,7 +22,8 @@ test("empty style table seeds every group and child once without overwriting adm
     const product = visibleStylePack(db, "A", "system:realistic:commercial-product")!;
     expect(product.optimize_instruction).toContain("使用写实风格");
     expect(product.optimize_instruction).toContain("商业产品摄影");
-    expect(product.prompt_prefix).toBe("commercial product photography");
+    expect(product.prompt_prefix).toBe("");
+    expect(product.prompt_suffix).toContain("高端商业产品摄影");
     db.query("update style_packs set name = 'Edited', enabled = 0 where id = ?").run(product.id);
     migrateStylePacks(db, "second");
     expect(visibleStylePack(db, "A", product.id)).toBeNull();
@@ -56,6 +57,22 @@ test("legacy customizations migrate once, preserve preferences and remain privat
     expect(visibleStylePacks(db,"A").filter(pack => pack.scope === "user")).toHaveLength(a.length - 1);
     db.exec("delete from users where id = 'B'");
     expect(visibleStylePacks(db,"B").filter(pack => pack.scope === "user")).toHaveLength(0);
+  } finally { db.close(); }
+});
+
+test("v1 keyword prefixes upgrade once and keep admin-edited packs", () => {
+  const db = database();
+  try {
+    migrateStylePacks(db, "first");
+    // Simulate a v1 database: keyword prefixes, upgrade not yet applied, one pack edited by an admin.
+    db.exec(`update style_packs set prompt_prefix = 'cyberpunk', prompt_suffix = '' where id = 'system:cinematic:cyberpunk';
+      update style_packs set prompt_prefix = 'my own prefix', prompt_suffix = '' where id = 'system:artistic:pop-art';
+      delete from app_migrations where id = 'style_packs_presets_v2';`);
+    migrateStylePacks(db, "second");
+    const cyberpunk = visibleStylePack(db, "A", "system:cinematic:cyberpunk")!;
+    expect(cyberpunk.prompt_prefix).toBe("");
+    expect(cyberpunk.prompt_suffix).toContain("赛博朋克");
+    expect(visibleStylePack(db, "A", "system:artistic:pop-art")!.prompt_prefix).toBe("my own prefix");
   } finally { db.close(); }
 });
 

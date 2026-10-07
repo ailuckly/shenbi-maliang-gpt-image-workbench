@@ -59,3 +59,31 @@ export function parseStructuredPrompt(content: string): StructuredPrompt {
     finalPrompt: plain.prompt
   };
 }
+
+const NEGATIVE_LINE_PATTERN = /^\s*(?:反向提示词|负面提示词|负面词|negative prompt)\s*[:：]\s*(.*)$/im;
+
+/**
+ * GPT image models have no negative-prompt parameter; a literal separator line is read as
+ * part of the scene. Rewrite it (and "反向提示词：" lines) as one natural avoid sentence.
+ */
+export function imageModelPromptText(value: string) {
+  let text = value.replace(/\r\n/g, "\n");
+  let negative = "";
+  const separatorIndex = text.toUpperCase().indexOf(NEGATIVE_PROMPT_SEPARATOR);
+  if (separatorIndex >= 0) {
+    negative = text.slice(separatorIndex + NEGATIVE_PROMPT_SEPARATOR.length).trim();
+    text = text.slice(0, separatorIndex);
+  }
+  const line = text.match(NEGATIVE_LINE_PATTERN);
+  if (line) {
+    negative = [line[1].trim(), negative].filter(Boolean).join("，");
+    text = text.replace(NEGATIVE_LINE_PATTERN, "");
+  }
+  text = text.trim();
+  const items = [...new Set(negative.split(/[,，;；、\n]+/).map(item => item.trim()).filter(Boolean))];
+  if (!items.length) return text;
+  const chinese = /[一-鿿]/.test(text + items.join(""));
+  return chinese
+    ? `${text}\n\n画面中避免：${items.join("、")}。`
+    : `${text}\n\nAvoid: ${items.join(", ")}.`;
+}

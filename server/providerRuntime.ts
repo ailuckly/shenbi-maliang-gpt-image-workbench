@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { imageModelPromptText } from "./promptEngine/schema";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { request as httpsRequest } from "node:https";
@@ -3328,6 +3329,7 @@ function payloadForProvider(provider: RuntimeProviderRow, payload: Record<string
   if (requestedModel && !imageModelsForProvider(provider).includes(requestedModel)) throw new Error("当前渠道目录不支持请求的图像模型");
   const nextPayload: Record<string, unknown> = {
     ...payload,
+    ...(typeof payload.prompt === "string" ? { prompt: imageModelPromptText(payload.prompt) } : {}),
     model: requestedModel || String(provider.model || "").trim() || DEFAULT_IMAGE_MODEL
   };
   const inheritedSourceBackground = nextPayload[INHERITED_SOURCE_BACKGROUND_REQUEST_KEY] === true;
