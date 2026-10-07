@@ -2,7 +2,12 @@ import type { Messages } from "./types";
 export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
   "zh-CN": {
     "config.nav.setup":"快速设置",
-    "config.nav.generation":"模型与渠道",
+    "config.nav.generation":"模型与账户资源",
+    "config.nav.members":"用户与权限",
+    "config.nav.content":"内容与审核",
+    "config.nav.system":"项目设置",
+    "config.nav.logs":"日志与审计",
+    "config.nav.imageAccounts":"账号池（ChatGPT 账号）",
     "config.nav.prompt":"提示词工程",
     "config.nav.caseLibrary":"案例库",
     "config.nav.imageCategories":"图类模板",
@@ -273,7 +278,12 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
   },
   "en-US": {
     "config.nav.setup":"Quick setup",
-    "config.nav.generation":"Models & channels",
+    "config.nav.generation":"Models & accounts",
+    "config.nav.members":"Users & access",
+    "config.nav.content":"Content & review",
+    "config.nav.system":"Project settings",
+    "config.nav.logs":"Logs & audit",
+    "config.nav.imageAccounts":"Account pool (ChatGPT)",
     "config.nav.prompt":"Prompt engineering",
     "config.nav.caseLibrary":"Case library",
     "config.nav.imageCategories":"Image categories",

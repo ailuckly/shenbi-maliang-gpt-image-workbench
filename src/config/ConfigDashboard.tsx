@@ -34,6 +34,7 @@ import { CaseLibraryPanel } from "../v2/config/CaseLibraryPanel";
 import { ImageCategoriesPanel } from "../v2/config/ImageCategoriesPanel";
 import { PromptStrategyPanel } from "../v2/config/PromptStrategyPanel";
 import { SetupOverviewPanel } from "../v2/config/SetupOverviewPanel";
+import "../v2/config/admin-theme.css";
 import { UserTiersPanel } from "../v2/config/UserTiersPanel";
 import { AccountSearchPanel, TeamAccountPanel } from "./panels/members";
 import { ChangelogPanel, StatisticsPanel } from "./panels/overview";

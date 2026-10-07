@@ -1,0 +1,108 @@
+/* Admin dark theme bridge. Older panels hard-code white surfaces; in dark mode map them onto
+   the shared tokens so every page reads as one product. Scoped to the config shell only. */
+html[data-appearance="dark"] .config-shell :is(
+  .switch-row, .statistics-section, .statistics-card, .statistics-bar-list, .light-chart,
+  .table-wrap, .provider-form, .branding-section, .branding-preview-panel, .branding-preview-sidebar,
+  .branding-preview-login, .branding-asset-card, .branding-asset-preview, .starter-copy-preview,
+  .starter-copy-copy, .backup-auto-control, .backup-panel-toolbar, .runtime-log-boundary-note,
+  .runtime-log-health, .config-file-actions, .account-list-actions, .asset-review-search, .mode-card-count
+) {
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  border-color: var(--sb-border);
+}
+
+html[data-appearance="dark"] .config-shell .config-main :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  background: var(--sb-soft);
+  color: var(--sb-text);
+  border-color: var(--sb-control-border);
+}
+
+html[data-appearance="dark"] .config-shell .config-main :is(input, textarea)::placeholder {
+  color: var(--sb-muted);
+}
+
+html[data-appearance="dark"] .config-shell .config-main :is(.secondary-btn, .ghost-btn, .account-list-actions button, .asset-review-search button) {
+  background: var(--sb-soft);
+  color: var(--sb-text);
+  border-color: var(--sb-border);
+}
+
+html[data-appearance="dark"] .config-shell .config-main :is(h1, h2, h3, h4, th, strong) {
+  color: var(--sb-text);
+}
+
+html[data-appearance="dark"] .config-shell .config-main :is(label, small, p, td, .switch-row-copy small) {
+  color: var(--sb-muted);
+}
+
+html[data-appearance="dark"] .config-shell .config-main :is(label > span, .switch-row-copy span, td strong, td) {
+  color: var(--sb-text);
+}
+
+html[data-appearance="dark"] .config-shell .config-main table tr {
+  border-color: var(--sb-border);
+}
+
+/* Section headings in the side navigation: a little more presence in both themes. */
+.config-shell .config-nav-heading {
+  letter-spacing: 0.04em;
+}
+
+html[data-appearance="dark"] .config-shell .config-main button:not([class]),
+html[data-appearance="dark"] .config-shell .config-main .mode-card button {
+  background: var(--sb-soft);
+  color: var(--sb-text);
+  border-color: var(--sb-border);
+}
+
+/* Switch state text ("已开启 / 已关闭") and v2 buttons inside older panels. */
+html[data-appearance="dark"] .config-shell .switch-label {
+  color: var(--sb-muted);
+}
+
+html[data-appearance="dark"] .config-shell .switch-control.checked .switch-label {
+  color: var(--sb-text);
+}
+
+html[data-appearance="dark"] .config-shell .config-main .v2-button:not(.primary):not(.danger) {
+  background: var(--sb-soft);
+  color: var(--sb-text);
+  border-color: var(--sb-border);
+}
+
+html[data-appearance="dark"] .config-shell .config-main .v2-button.danger {
+  background: transparent;
+  color: var(--sb-danger);
+  border-color: var(--sb-border);
+}
+
+/* Users page: filters on one row with the create button at the end; table cells stay on one line. */
+.config-shell .filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.config-shell .filter-bar > :first-child {
+  flex: 1 1 260px;
+}
+
+.config-shell .filter-bar > .secondary-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.config-shell .config-main .table-wrap th,
+.config-shell .config-main .table-wrap td {
+  white-space: nowrap;
+}
+
+.config-shell .config-main .table-wrap {
+  overflow-x: auto;
+}
+
+.config-shell .filter-bar > .custom-select {
+  flex: 0 0 170px;
+}

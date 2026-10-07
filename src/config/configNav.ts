@@ -71,7 +71,7 @@ export const CONFIG_TAB_VALUES = [
 ] as const;
 
 export type ConfigTabValue = (typeof CONFIG_TAB_VALUES)[number];
-export type ConfigNavCategoryValue = "overview" | "generation" | "prompt" | "content" | "members" | "system";
+export type ConfigNavCategoryValue = "overview" | "generation" | "prompt" | "members" | "content" | "system" | "logs";
 export type ConfigNavItem = {
   value: ConfigTabValue;
   label: string;
@@ -117,11 +117,12 @@ export const CONFIG_NAV_CATEGORIES: Array<{
   items: ConfigTabValue[];
 }> = [
   { value: "overview", label: "概览", items: ["setup", "statistics"] },
-  { value: "generation", label: "模型与渠道", items: ["providers", "promptOptimizer", "imageMode", "safetyReview", "imageAccounts", "cpa"] },
+  { value: "generation", label: "模型与账户资源", items: ["providers", "promptOptimizer", "imageAccounts", "cpa", "imageMode"] },
   { value: "prompt", label: "提示词工程", items: ["stylePacks", "imageCategories", "caseLibrary", "promptStrategy"] },
-  { value: "content", label: "内容", items: ["contentCategories", "soundManagement", "assetReviews", "caseReviews", "starterCopy", "changelog"] },
-  { value: "members", label: "组织", items: ["users", "teams", "userTiers"] },
-  { value: "system", label: "系统", items: ["branding", "smtp", "sms", "backup", "proxy", "debug", "modelLogs", "requests", "audit"] }
+  { value: "members", label: "用户与权限", items: ["users", "teams", "userTiers"] },
+  { value: "content", label: "内容与审核", items: ["contentCategories", "assetReviews", "caseReviews", "safetyReview", "starterCopy", "changelog", "soundManagement"] },
+  { value: "system", label: "项目设置", items: ["branding", "smtp", "sms", "proxy", "backup", "debug"] },
+  { value: "logs", label: "日志与审计", items: ["modelLogs", "requests", "audit"] }
 ];
 
 export function isConfigTabValue(value: string | null | undefined): value is ConfigTabValue {
