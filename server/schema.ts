@@ -1906,7 +1906,8 @@ export function initAppDb() {
        ))
      where user_id is null or (image_id is null and asset_id is null)`
   );
-  run(appDb, "delete from case_items where user_id is null or (image_id is null and asset_id is null)");
+  // Case-library items (library-*) are system cases backed by local files, not by a user image.
+  run(appDb, "delete from case_items where id not like 'library-%' and (user_id is null or (image_id is null and asset_id is null))");
   const legacyCaseRows = getAll<{
     id: string;
     user_id: string | null;

@@ -7,6 +7,7 @@ import { appDb, configDb, getAll, getOne, run } from "./db";
 import { requireUser } from "./auth";
 import { NEGATIVE_PROMPT_SEPARATOR, parseStructuredPrompt, splitPlainPrompt, type StructuredPrompt } from "./promptEngine/schema";
 import { classifyImageCategory, imageCategoryById, imageCategoryGuidance } from "./promptEngine/imageCategory";
+import { referenceCasesForRequest } from "./caseLibrary";
 import { renderPromptTemplate, selectPromptTemplate } from "./promptEngine/registry";
 import { composePrompt } from "./promptEngine/compose";
 import { publicStylePack, visibleStylePack } from "./stylePacks";
@@ -2943,7 +2944,8 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
   if (input.stylePackId && (!row || !row.enabled)) return c.json({ error: "风格包不存在、已停用或无权使用" }, 404);
   const stylePackSnapshot = row ? publicStylePack(row) : null;
   const imageCategory = imageCategoryById(input.category) ?? classifyImageCategory([prompt, input.followUp ?? ""].join("\n"));
-  const categoryInfo = { id: imageCategory.id, label: imageCategory.label };
+  const exampleCases = referenceCasesForRequest(prompt, imageCategory.id);
+  const categoryInfo = { id: imageCategory.id, label: imageCategory.label, exampleCount: exampleCases.length };
   const preferences = userPreferences(userId);
   const customInstruction = [...new Set([
     preferences.promptOptimizeCustomInstruction,
@@ -2967,6 +2969,11 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
             { role: "user", content: rendered.user + "\n" + JSON.stringify({
               styleInstruction: stylePackSnapshot?.optimizeInstruction || "", customInstruction,
               imageCategory: imageCategoryGuidance(imageCategory),
+              ...(exampleCases.length ? {
+                referenceExamples: exampleCases,
+                referenceExamplesUse: "Proven prompts from the same category. Learn their structure, level of detail and visual vocabulary; "
+                  + "do not copy their subjects, text, brands or people into this request."
+              } : {}),
               priority: "Explicit request and follow-up constraints take priority over style additions.",
               imageCount: normalizePromptOptimizeImageCount(record.imageCount ?? record.n)
             }) + "\nCandidate: " + (index + 1) }

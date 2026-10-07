@@ -1,6 +1,18 @@
 import type { Messages } from "./types";
 export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
   "zh-CN": {
+    "v2.caseLibrary.title":"案例库",
+    "v2.caseLibrary.description":"从社区提示词案例库同步约 540 个带完整提示词的生图案例，按图类归入灵感空间。图片压缩后保存在本地数据目录，不会提交到代码仓库。",
+    "v2.caseLibrary.count":"已同步 {count} 个案例",
+    "v2.caseLibrary.sync":"开始同步",
+    "v2.caseLibrary.resync":"重新同步（只补新增和缺失的图片）",
+    "v2.caseLibrary.syncing":"同步中…",
+    "v2.caseLibrary.started":"已开始同步，可以离开此页",
+    "v2.caseLibrary.failed":"案例库操作失败",
+    "v2.caseLibrary.progress":"进度 {processed} / {total}，失败 {failed}",
+    "v2.caseLibrary.lastResult":"上次同步处理 {processed} 个，失败 {failed} 个",
+    "v2.caseLibrary.lastError":"上次同步失败：{error}",
+    "v2.caseLibrary.usage":"用途：1）用户可在「灵感空间」浏览并一键复用；2）提示词优化时会自动挑选同图类、内容最相近的 2 个案例给优化模型参考结构与细节写法。",
     "v2.admin.routeOption.auto":"自动（推荐）：先走 Responses，失败再走图片接口",
     "v2.admin.routeOption.images_api":"仅图片接口：提示词原样出图",
     "v2.admin.routeOption.responses":"仅 Responses：文本模型改写后出图",
@@ -147,6 +159,18 @@ export const v2Messages: Record<"zh-CN" | "en-US", Messages> = {
     "v2.gallery.menu":"菜单", "v2.gallery.dialog":"打开对话框", "v2.gallery.dialogDescription":"Tab 保持在对话框中；Escape 关闭并返回打开按钮。"
   },
   "en-US": {
+    "v2.caseLibrary.title":"Case library",
+    "v2.caseLibrary.description":"Sync about 540 community image cases with full prompts into the inspiration space, grouped by image category. Images are compressed and stored in the local data directory, never committed.",
+    "v2.caseLibrary.count":"{count} cases synced",
+    "v2.caseLibrary.sync":"Start sync",
+    "v2.caseLibrary.resync":"Sync again (adds new and missing images only)",
+    "v2.caseLibrary.syncing":"Syncing…",
+    "v2.caseLibrary.started":"Sync started; you can leave this page",
+    "v2.caseLibrary.failed":"Case library request failed",
+    "v2.caseLibrary.progress":"Progress {processed} / {total}, failed {failed}",
+    "v2.caseLibrary.lastResult":"Last sync processed {processed}, failed {failed}",
+    "v2.caseLibrary.lastError":"Last sync failed: {error}",
+    "v2.caseLibrary.usage":"Used for: 1) browsing and reusing in the inspiration space; 2) prompt optimization picks the 2 closest cases of the same category as references for structure and detail.",
     "v2.admin.routeOption.auto":"Auto (recommended): Responses first, then Images API",
     "v2.admin.routeOption.images_api":"Images API only: prompt sent as-is",
     "v2.admin.routeOption.responses":"Responses only: text model rewrites, then generates",

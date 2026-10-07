@@ -49,6 +49,7 @@ export const CONFIG_TAB_VALUES = [
   "providers",
   "promptOptimizer",
   "stylePacks",
+  "caseLibrary",
   "safetyReview",
   "smtp",
   "sms",
@@ -85,6 +86,7 @@ export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
   { value: "providers", label: "渠道配置", Icon: KeyRound },
   { value: "promptOptimizer", label: "模型配置", Icon: WandSparkles },
   { value: "stylePacks", label: "风格包", Icon: Tags },
+  { value: "caseLibrary", label: "案例库", Icon: Lightbulb },
   { value: "safetyReview", label: "安全审核", Icon: ShieldCheck },
   { value: "smtp", label: "邮件配置", Icon: Mail },
   { value: "sms", label: "短信配置", Icon: Smartphone },
@@ -109,7 +111,7 @@ export const CONFIG_NAV_CATEGORIES: Array<{
   { value: "overview", label: "概览", items: ["statistics"] },
   { value: "members", label: "组织", items: ["users", "teams"] },
   { value: "content", label: "内容", items: ["contentCategories", "soundManagement", "assetReviews", "caseReviews", "starterCopy", "changelog"] },
-  { value: "generation", label: "生成", items: ["imageAccounts", "providers", "promptOptimizer", "stylePacks", "safetyReview", "imageMode", "cpa"] },
+  { value: "generation", label: "生成", items: ["imageAccounts", "providers", "promptOptimizer", "stylePacks", "caseLibrary", "safetyReview", "imageMode", "cpa"] },
   { value: "system", label: "系统", items: ["branding", "smtp", "sms", "backup", "proxy", "debug", "modelLogs", "requests", "audit"] }
 ];
 

@@ -30,6 +30,7 @@ import { AssetReviewPanel, CaseReviewPanel, ContentCategoryManagementPanel, Star
 import { CpaPanel, ImageAccountPoolPanel, ImageModePanel, SafetyReviewPanel } from "./panels/generation";
 import { ProvidersPanel, PromptOptimizerPanel } from "../v2/config/ProvidersPanel";
 import { StylePacksPage } from "../v2/pages/StylePacksPage";
+import { CaseLibraryPanel } from "../v2/config/CaseLibraryPanel";
 import { AccountSearchPanel, TeamAccountPanel } from "./panels/members";
 import { ChangelogPanel, StatisticsPanel } from "./panels/overview";
 import { ImageTaskSoundManagementPanel } from "./panels/sounds";
@@ -184,6 +185,7 @@ export function ConfigDashboard() {
           <PromptOptimizerPanel />
         </Tabs.Content>
         <Tabs.Content value="stylePacks"><StylePacksPage admin /></Tabs.Content>
+        <Tabs.Content value="caseLibrary"><CaseLibraryPanel /></Tabs.Content>
         <Tabs.Content value="safetyReview">
           <SafetyReviewPanel />
         </Tabs.Content>
