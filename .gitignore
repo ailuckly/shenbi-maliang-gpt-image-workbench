@@ -43,3 +43,7 @@ Thumbs.db
 # Deploy build staging (scripts/deploy/install-server.sh)
 dist-next/
 dist.old/
+
+# Local verification screenshots and logs (may show private data; never publish)
+docs/project/evidence/
+/*-preview.png

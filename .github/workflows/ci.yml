@@ -17,6 +17,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
+      # Blocks machine paths, keys and the private values listed in the PRIVACY_DENYLIST secret.
+      - name: Privacy check
+        env:
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: bun scripts/check-privacy.ts
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -72,7 +78,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           for i in $(seq 1 20); do
-            if curl -fsS "http://$DEPLOY_HOST/api/health"; then exit 0; fi
+            if curl -fsSL "http://$DEPLOY_HOST/api/health"; then exit 0; fi
             sleep 3
           done
           echo "Production health check failed" >&2
