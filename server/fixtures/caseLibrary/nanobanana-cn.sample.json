@@ -1,0 +1,146 @@
+{
+ "generatedAt": "2025-11-30T10:45:31.014Z",
+ "total": 5,
+ "items": [
+  {
+   "id": 627,
+   "slug": "prompt-627",
+   "title": "MacBook Pro 笔记本电脑拆解",
+   "source": {
+    "name": "@songguoxiansen",
+    "url": "https://x.com/songguoxiansen/status/1994671420480356417"
+   },
+   "model": "Nano banana pro",
+   "images": [
+    "images/627.jpeg"
+   ],
+   "prompts": [
+    "MacBook Pro 笔记本电脑的极致拆解，左右分屏构图。左侧 1/3 展示合盖或半开状态的完整银色MacBook；右侧 2/3 展示极其复杂的内部构造，M系列芯片主板、风扇、铝合金外壳和键盘组件，按Knolling网格整齐平铺。纯白背景，商业产品摄影，高透光感，--ar 16:9"
+   ],
+   "examples": [],
+   "notes": [],
+   "originFile": "README.md",
+   "description": "",
+   "tags": [
+    "photography",
+    "product"
+   ],
+   "coverImage": "images/627.jpeg"
+  },
+  {
+   "id": 624,
+   "slug": "prompt-624",
+   "title": "手绘美颜科普图",
+   "source": {
+    "name": "@cnyzgkc",
+    "url": "https://x.com/cnyzgkc/status/1994954677579125124"
+   },
+   "model": "Nano banana pro",
+   "images": [
+    "images/624.jpeg"
+   ],
+   "prompts": [
+    "Hand-drawn watercolor infographic, warm soft watercolor texture, pink tone, cute and clean design, 4:5 ratio, 1080x1350.\n\n角色：一位专精医学保健的插画家兼医生，亲切微笑，手持水彩笔，风格卡通可爱。\n\n主标题（上方）：缺什么营养素会变丑？医生的维生素美颜配方！\n\n图表结构（下方开始）：\n六个可爱人物，呈现六种“变丑症状”，搭配对应的卡通营养素图标。\n\n示例内容（AI 可自由重绘，不要写实）：\n1. 皮肤暗沉 → 维生素C（Vitamin C 卡通形象）\n2. 眼睛干涩 → 维生素A（Vitamin A 卡通形象）\n3. 掉发 → 维生素B、维生素D（B群、D 卡通形象）\n4. （可继续根据文案自动生成更多症状与营养素）\n\n风格要求：\n手绘水彩感、粉色主调、柔和自然、轻松舒服的氛围。\n人物要可爱、圆润、友好。\n营养素图标为卡通拟人风格。\n文字为清晰易读的手写笔记感字体。\n整体排版简洁、资讯图表形式。\n\nLighting: soft, diffuse watercolor lighting.\nAvoid: 照片感、真实皮肤纹理、过度写实、油画风、金属光泽。\n\nbest quality, high-res, clean edges, masterpiece."
+   ],
+   "examples": [],
+   "notes": [],
+   "originFile": "README.md",
+   "description": "",
+   "tags": [
+    "cartoon",
+    "character",
+    "illustration",
+    "infographic",
+    "nature",
+    "portrait",
+    "typography"
+   ],
+   "coverImage": "images/624.jpeg"
+  },
+  {
+   "id": 629,
+   "slug": "prompt-629",
+   "title": "一张图片生成9个不同景别的镜头",
+   "source": {
+    "name": "@songguoxiansen",
+    "url": "https://x.com/songguoxiansen/status/1994783047825473774"
+   },
+   "model": "Nano banana pro",
+   "images": [
+    "images/629.jpeg",
+    "images/629-2.jpeg"
+   ],
+   "prompts": [
+    "<instruction> (指令)\n分析输入图像的整个构图。识别所有存在的关键主体（无论是单人、群体/情侣、车辆还是特定物体）及其空间关系/互动。\n生成一个连贯的 3x3 网格“电影印样（Contact Sheet）”，展示在同一环境中完全是这些主体的 9 个不同镜头。\n你必须调整标准的电影镜头类型以适应内容（例如，如果是群体，保持群体在一起；如果是物体，构图包含整个物体）：\n第 1 行（建立背景）：\n大远景 (ELS)： 主体在广阔的环境中显得很小。\n全景 (LS)： 完整的主体或群体从上到下可见（从头到脚 / 从车轮到车顶）。\n中远景 (美式镜头/四分之三)： 构图从膝盖以上（针对人物）或 3/4 视角（针对物体）。\n第 2 行（核心覆盖）：\n4. 中景 (MS)： 构图从腰部以上（或物体的中心核心）。聚焦于互动/动作。\n5. 中特写 (MCU)： 构图从胸部以上。主要主体的亲密构图。\n6. 特写 (CU)： 紧凑构图于脸部或物体的“正面”。\n第 3 行（细节与角度）：\n7. 大特写 (ECU)： 强烈聚焦于关键特征（眼睛、手、标志、纹理）的微距细节。\n8. 低角度镜头 (仰视/虫眼)： 从地面仰望主体（壮观/英雄感）。\n9. 高角度镜头 (俯视/鸟瞰)： 从上方俯瞰主体。\n确保严格的一致性：所有 9 个面板中是相同的人物/物体、相同的衣服和相同的光照。景深应逼真地变化（特写镜头中的背景虚化）。\n</instruction>\n一个包含 9 个面板的专业 3x3 电影故事板网格。\n该网格以全面的焦距范围展示输入图像中的特定主体/场景。\n顶行： 宽广环境镜头，全视图，3/4 剪辑（膝上景）。\n中间行： 腰部以上视图，胸部以上视图，脸部/正面特写。\n底行： 微距细节，低角度，高角度。\n所有帧均具有照片般逼真的纹理，一致的电影级调色，以及针对所分析的主体或物体特定数量的正确构图。"
+   ],
+   "examples": [],
+   "notes": [],
+   "originFile": "README.md",
+   "description": "",
+   "tags": [
+    "landscape",
+    "logo",
+    "portrait",
+    "vehicle"
+   ],
+   "coverImage": "images/629.jpeg"
+  },
+  {
+   "id": 563,
+   "slug": "prompt-563",
+   "title": "西游记师徒四人组成了一个摇滚乐队",
+   "source": {
+    "name": "@songguoxiansen",
+    "url": "https://x.com/songguoxiansen/status/1993235709914915307"
+   },
+   "model": "Nano banana pro",
+   "images": [
+    "images/563.jpeg"
+   ],
+   "prompts": [
+    "A traditional Chinese Gongbi-style ink painting. The scene humorously depicts a grand concert taking place on a giant, floating lotus leaf amidst a sea of clouds. At the center, Tang Sanzang wears cool aviator sunglasses and acts as a DJ, scratching on a turntable made of ancient millstones. Beside him, Sun Wukong is in mid-air performing a heavy metal jump, shredding on a flaming electric guitar styled like a Pipa. Zhu Bajie sits on a subwoofer drum set, enthusiastically banging the drums with two rake-shaped drumsticks, sweat flying. Sha Wujing stands calmly at the back, holding a microphone stand, crooning a jazz ballad with a saxophone hanging from his neck. Traditional Chinese calligraphy lyrics float in the air, accompanied by a classic red artist’s seal inscribed \"魔音穿耳\".",
+    "这是一幅传统的工笔水墨画。画面生动地描绘了一场盛大的音乐会，地点设在一片巨大的漂浮荷叶之上，云海环绕。唐三藏戴着酷炫的飞行员墨镜，扮演着DJ的角色，用一块古老的磨盘打碟。在他身旁，孙悟空在空中表演着重金属跳跃，弹奏着一把形似琵琶的火焰电吉他。猪八戒坐在低音鼓上，挥舞着两根耙状鼓槌，汗流浃背地热情地敲击着鼓面。沙悟净则镇定地站在后方，手持麦克风架，脖子上挂着萨克斯，低吟着爵士情歌。传统的中国书法歌词在空中飘荡，旁边还钤着一枚经典的红色艺术家印章，上面写着“魔音穿耳”。"
+   ],
+   "examples": [],
+   "notes": [],
+   "originFile": "README.md",
+   "description": "",
+   "tags": [
+    "character"
+   ],
+   "coverImage": "images/563.jpeg"
+  },
+  {
+   "id": 630,
+   "slug": "prompt-630",
+   "title": "疯狂动物城的大型毛绒角色帽子",
+   "source": {
+    "name": "@kingofdairyque",
+    "url": "https://x.com/kingofdairyque/status/1994745605621780533"
+   },
+   "model": "Nano banana pro",
+   "images": [
+    "images/630.jpeg"
+   ],
+   "prompts": [
+    "A highly realistic, highly detailed, photorealistic 8K mirror selfie taken with an iPhone 15 Pro Max. Zootropolis fandom aesthetic.\nScene: A guy and a girl pose together in front of an oval mirror in a Disney toy store.\nThe guy on the left has a playful expression, matching the reference photo. The girl on the right  winks playfully, holding a bright yellow phone. Metallic nail polish.\nClothing and accessories:\n• Both are wearing large plush Disney Zootropolis character hats.\nThe guy on the left in Photo 1—Nick Wilde's orange hat with large fox ears embroidered with sly eyes.\n Girl in photo 2 on the right—gray Judy Hopps hat with long pink bunny ears, large purple eyes.\n• Photo 1 on the left—clothes and hair match the attached photo.\n• Photo 2 on the right—wearing a hot pink halter top. Long, straight hair.\nA pearl necklace fits snugly around her neck.\nShe has rings on several fingers.\nGirl in photo 2's makeup: Korean K-beauty; glass skin; subtle blush; black eyeliner; colored contacts (blue/gray); pink and rosy ombre lipstick.\nBackground: Disney gift shop interior; frosted shelves filled with toys; holiday mall lighting; decorative ceiling chandelier.\nQuality and detail: 8K, highly realistic plush texture (individual fur fibers), vibrant, saturated colors, soft commercial mall lighting, no noise, perfectly sharp focus on face and hat, mirror selfie in frame.",
+    "一张用 iPhone 15 Pro Max 拍摄的超逼真、超精细、照片级 8K 镜面自拍。充满《疯狂动物城》的粉丝美学风格。\n场景：一男一女在迪士尼玩具店的椭圆形镜子前合影。\n左边那位男士表情顽皮，与参考照片相符。右边那位女士俏皮地眨着眼，手里拿着一部亮黄色的手机。她涂着金属质感的指甲油。\n服装和配饰：\n•两人都戴着迪士尼《疯狂动物城》的大型毛绒角色帽子。\n照片 1 中左边的人——尼克·王尔德的橙色帽子，上面绣着一对大狐狸耳朵和狡黠的眼睛。\n照片 2 右侧的女孩——戴着灰色的朱迪·霍普斯帽子，帽子上有长长的粉色兔子耳朵和大大的紫色眼睛。\n• 左侧照片 1——衣服和发型与附图相符。\n• 右侧照片2——身穿亮粉色露背上衣，留着长长的直发。\n一条珍珠项链紧紧地贴合在她的脖子上。\n她好几个手指上都戴着戒指。\n照片 2 中女孩的妆容：韩式 K-beauty；水光肌；淡淡的腮红；黑色眼线；彩色隐形眼镜（蓝灰色）；粉色和玫瑰色渐变唇膏。\n背景：迪士尼礼品店内部；摆满玩具的磨砂货架；节日商场灯光；装饰性天花板吊灯。\n质量和细节：8K，高度逼真的毛绒质感（单根毛纤维），鲜艳饱和的色彩，柔和的商业商场灯光，无噪点，面部和帽子完美清晰对焦，画面中有镜子自拍。"
+   ],
+   "examples": [],
+   "notes": [],
+   "originFile": "README.md",
+   "description": "",
+   "tags": [
+    "animal",
+    "character",
+    "fashion",
+    "interior",
+    "landscape",
+    "nature",
+    "photography",
+    "toy"
+   ],
+   "coverImage": "images/630.jpeg"
+  }
+ ]
+}
