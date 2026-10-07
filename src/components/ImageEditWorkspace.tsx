@@ -28,6 +28,7 @@ import {
   DEFAULT_EDIT_IMAGE_MODEL,
   DEFAULT_IMAGE_QUALITY,
   imageModelQualities,
+  isGeminiImageModel,
   isImageQualitySupported,
   normalizeImageModel,
   normalizeImageQuality,
@@ -287,6 +288,8 @@ export function ImageEditWorkspace({
   const qualityOptions = useMemo(() => buildQualityOptions(imageModelQualities(imageModel)), [imageModel]);
   const selectImageModel = (nextModel: ImageModelId) => {
     setImageModel(nextModel);
+    // Gemini has no mask editing, so leave the eraser mode when switching to it.
+    if (isGeminiImageModel(nextModel) && mode === "remove") exitMode();
     if (!isImageQualitySupported(nextModel, quality)) setQuality(DEFAULT_IMAGE_QUALITY);
   };
 
@@ -1550,6 +1553,7 @@ export function ImageEditWorkspace({
         onLockedRequest={onLockedRequest}
         onMarkupZoomChange={setMarkupPreviewZoom}
         onRemoveBackground={submitRemoveBackground}
+        maskToolsSupported={!isGeminiImageModel(imageModel)}
         onRemoveSubmit={submitFromEditor}
         onPickSize={(option) => onPickSize(activeImage, option, imageCount, imageModel, quality)}
         onPreviewOriginalSize={showPreviewOriginalSize}

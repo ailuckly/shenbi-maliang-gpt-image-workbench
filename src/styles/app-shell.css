@@ -1284,6 +1284,34 @@
     color 160ms ease;
 }
 
+.user-info-usage {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--app-border, rgba(17, 24, 39, 0.08));
+  padding: 9px 10px 11px;
+  color: var(--app-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.user-info-usage > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.user-info-usage > span {
+  display: grid;
+  min-width: 0;
+}
+
+.user-info-usage strong {
+  color: var(--app-text, #111827);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .user-info-action:hover {
   color: #111827;
   background: #f7f7f5;

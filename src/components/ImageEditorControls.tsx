@@ -147,6 +147,8 @@ type ImageEditorTopbarProps = {
   onMarkupZoomChange: (value: ImageMarkupZoomValue) => void;
   onRemoveBackground: () => void;
   onRemoveSubmit: () => void;
+  /** False for models without mask or transparent-background support (Gemini). */
+  maskToolsSupported?: boolean;
   onPickSize: (option: SizeOption) => void;
   onPreviewOriginalSize?: () => void;
   onPreviewReset?: () => void;
@@ -185,6 +187,7 @@ export function ImageEditorTopbar({
   onMarkupZoomChange,
   onRemoveBackground,
   onRemoveSubmit,
+  maskToolsSupported = true,
   onPickSize,
   onPreviewOriginalSize,
   onPreviewReset,
@@ -307,19 +310,23 @@ export function ImageEditorTopbar({
             <MessageCirclePlus size={20} />
             {t("imageEditor.annotation")}
           </button>
-          <button
-            type="button"
-            className="editor-text-btn"
-            onClick={isSubmitting ? onLockedRequest : onRemoveBackground}
-            aria-disabled={isSubmitting}
-          >
-            <ImageOff size={20} />
-            {t("imageEditor.removeBackground")}
-          </button>
-          <button type="button" className="editor-text-btn" onClick={() => onEnterMode("remove")}>
-            <Eraser size={20} />
-            {t("imageEditor.remove")}
-          </button>
+          {maskToolsSupported ? (
+            <>
+              <button
+                type="button"
+                className="editor-text-btn"
+                onClick={isSubmitting ? onLockedRequest : onRemoveBackground}
+                aria-disabled={isSubmitting}
+              >
+                <ImageOff size={20} />
+                {t("imageEditor.removeBackground")}
+              </button>
+              <button type="button" className="editor-text-btn" onClick={() => onEnterMode("remove")}>
+                <Eraser size={20} />
+                {t("imageEditor.remove")}
+              </button>
+            </>
+          ) : null}
           <EditorSizePicker value={selectedSize} options={sizeOptions} disabled={isSubmitting} onDisabledClick={onLockedRequest} onSelect={onPickSize} />
           <ImageDownloadMenu
             source={{ type: "image", id: activeImage.id, downloadBaseName }}

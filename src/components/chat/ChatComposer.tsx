@@ -27,7 +27,7 @@ import {
 import { useI18n } from "../../i18n";
 import type { QualityOption, SizeOption } from "../../lib/imageOptions";
 import type { ImageBackgroundOption } from "../../lib/imageBackground";
-import type { ImageModelId, ImageQuality } from "../../lib/imageModels";
+import { isGeminiImageModel, type ImageModelId, type ImageQuality } from "../../lib/imageModels";
 import { shouldSubmitComposerOnEnter } from "../../lib/editorInput";
 import type { ComposerPromptTemplateDraft, ComposerPromptTemplatePanelDraft } from "../../store/workbench";
 import type { AssetItem, CaseMaterialItem, ImageEditSuggestion } from "../../types";
@@ -1006,7 +1006,8 @@ export function ChatComposer({
           <ModelPicker models={imageModels} value={imageModel} onChange={onImageModelChange} />
           <QualityPicker value={quality} options={qualityOptions} onChange={(value) => onQualityChange(value as ImageQuality)} />
           <SizePicker value={size} options={sizeOptions} onChange={onSizeChange} />
-          <BackgroundPicker value={background} onChange={onBackgroundChange} />
+          {/* Gemini cannot render transparent backgrounds, so the option is hidden for it. */}
+          {isGeminiImageModel(imageModel) ? null : <BackgroundPicker value={background} onChange={onBackgroundChange} />}
           <ImageCountStepper value={imageCount} onChange={onImageCountChange} />
           <span className="composer-prompt-template-style-tooltip composer-prompt-template-color-control" data-tooltip={t("settings.personalization.colorSchemes.title")}>
             <PromptColorSchemeSelect
