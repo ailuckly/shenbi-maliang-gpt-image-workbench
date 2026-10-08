@@ -34,6 +34,7 @@ import { readImageDimensions } from "./imageDimensions";
 import { ROOT } from "./paths";
 import { providerFetch, providerHeaders, proxyFetch, withProviderRequestTimeout } from "./providerHttp";
 import { cpaAccount, imageGenerationSettings, proxySettings } from "./settingsStore";
+import { IMAGE_SECURITY_INSTRUCTIONS } from "./promptGuard";
 import type {
   CpaRemoteAuthFile,
   ImageAccountRow,
@@ -1168,7 +1169,7 @@ function buildResponsesPayload(
     ],
     tools: [tool],
     tool_choice: { type: "image_generation" },
-    instructions: "",
+    instructions: IMAGE_SECURITY_INSTRUCTIONS,
     stream,
     reasoning: { effort: "medium", summary: "auto" },
     store: false,

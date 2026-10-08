@@ -3,6 +3,8 @@
 // small model about the unclear cases). It must never block a real image request, so anything
 // that mentions visual content, is long, or comes with images counts as an image request.
 
+import { PROMPT_LEAK_REPLY, isPromptLeakAttempt } from "./promptInjection";
+
 export type PromptIntent = "image" | "chat";
 export type PromptIntentRuleResult = PromptIntent | "unsure";
 
@@ -26,6 +28,8 @@ function normalize(text: string) {
 }
 
 export function classifyPromptIntentByRule(text: string, options: { hasImages?: boolean } = {}): PromptIntentRuleResult {
+  // Requests for the hidden instructions get a refusal instead of an image, even with images attached.
+  if (isPromptLeakAttempt(text)) return "chat";
   if (options.hasImages) return "image";
   const value = normalize(text);
   if (!value) return "chat";
@@ -43,6 +47,7 @@ export const PROMPT_INTENT_DEFAULT_REPLY =
 
 /** Canned reply for small talk the rules recognised. */
 export function ruleChatReply(text: string) {
+  if (isPromptLeakAttempt(text)) return PROMPT_LEAK_REPLY;
   const value = normalize(text);
   if (GREETING.test(value)) return `你好！${PROMPT_INTENT_DEFAULT_REPLY}`;
   if (THANKS.test(value)) return "不客气！想再画点什么，直接描述画面就好。";

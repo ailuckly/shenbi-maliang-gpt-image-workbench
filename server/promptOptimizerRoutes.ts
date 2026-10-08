@@ -1,4 +1,5 @@
 import { redactProviderSecrets } from "./secretRedaction";
+import { hardenPromptRequestBody } from "./promptGuard";
 import type { Hono } from "hono";
 import { audit, logModelRequest } from "./auditLog";
 import { configDb, getAll, getOne, run } from "./db";
@@ -89,6 +90,8 @@ export async function fetchPromptOptimizerWithRetry(
   options: { onAttempt?: (attemptNo: number) => void } = {}
 ) {
   const retryCount = normalizePromptOptimizerRetryCount(provider.retry_count);
+  // Every language model call passes through here, so the security policy is added once for all.
+  init = { ...init, body: hardenPromptRequestBody(init.body) };
   let lastError: unknown;
   for (let attempt = 0; attempt <= retryCount; attempt += 1) {
     options.onAttempt?.(attempt + 1);

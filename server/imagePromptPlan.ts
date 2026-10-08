@@ -1,4 +1,5 @@
 import { logModelRequest } from "./auditLog";
+import { revealsProtectedText } from "./promptGuard";
 import { resolveLanguageModelProvider } from "./languageModelAssignments";
 import {
   fetchPromptOptimizerWithRetry,
@@ -371,15 +372,19 @@ export async function resolveImagePromptPlan(
   if (!requestModel && !provider) return fallbackImagePromptPlan(input.imageCount, "没有可用的多图提示词规划模型");
   const execute = requestModel ?? ((messages: PromptModelMessage[]) => requestImagePromptPlanModel(provider!, messages, input));
 
+  const plannerLeak = "规划结果包含内部设定，已忽略";
+  const leaks = (output: string) => revealsProtectedText(output, [plannerSystemPrompt(input.imageCount, input.taskType)]);
   let firstOutput = "";
   try {
     firstOutput = await execute(initialPlannerMessages(input));
+    if (leaks(firstOutput)) return fallbackImagePromptPlan(input.imageCount, plannerLeak);
     return parseImagePromptPlan(firstOutput, input.imageCount);
   } catch (firstError) {
     if (input.signal?.aborted) throw firstError;
     if (!firstOutput) return fallbackImagePromptPlan(input.imageCount, firstError);
     try {
       const repairedOutput = await execute(repairPlannerMessages(input, firstOutput, firstError));
+      if (leaks(repairedOutput)) return fallbackImagePromptPlan(input.imageCount, plannerLeak);
       return parseImagePromptPlan(repairedOutput, input.imageCount);
     } catch (repairError) {
       if (input.signal?.aborted) throw repairError;

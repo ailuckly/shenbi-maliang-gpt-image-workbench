@@ -1,4 +1,5 @@
 import { redactProviderSecrets } from "./secretRedaction";
+import { PROMPT_LEAK_REPLY, isPromptLeakAttempt } from "../src/lib/promptInjection";
 import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
 import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
 import { inferAspectSize } from "./imageAspect";
@@ -2339,6 +2340,7 @@ api.post("/images/generate", async (c) => {
   const branchForkMessageId = String(body.branchForkMessageId ?? "").trim();
   const branchMetadata = requestBranchMetadata(body);
   if (!prompt) return c.json({ error: "请输入图片描述" }, 400);
+  if (isPromptLeakAttempt(prompt)) return c.json({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
   const safetyReview = await reviewConversationPrompt({
     userId: user.id,
     sessionId: String(body.sessionId ?? "").trim(),
@@ -2664,6 +2666,7 @@ api.post("/images/edit", async (c) => {
     && sourceReferenceIds.length === 0
     && sourceInlineImages.length === 0
   ) return c.json({ error: "请选择要编辑的图片或素材" }, 400);
+  if (isPromptLeakAttempt(prompt)) return c.json({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
   const safetyReview = await reviewConversationPrompt({
     userId: user.id,
     sessionId: String(body.sessionId ?? "").trim(),
