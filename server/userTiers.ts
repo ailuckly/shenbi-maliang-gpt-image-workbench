@@ -70,6 +70,14 @@ function validCount(count: number) {
 function todayUsage(userId: string): Usage {
   return getOne<Usage>(appDb, "select images, optimizes, checks from user_usage_daily where user_id = ? and day = ?", userId, localTimestamp().slice(0, 10)) ?? { images: 0, optimizes: 0, checks: 0 };
 }
+/** Exact id (compared as written), or a pattern ending in "*" ("gpt-image-*", "gemini-*") that ignores "vendor/" and "codex-" prefixes. */
+export function modelMatches(allowed: string, model: string) {
+  const pattern = allowed.trim();
+  if (!pattern.endsWith("*")) return pattern !== "" && pattern === model.trim();
+  const prefix = pattern.slice(0, -1).toLowerCase();
+  const base = model.trim().toLowerCase().split("/").at(-1)!.replace(/^codex-/, "");
+  return prefix.length > 0 && base.length > prefix.length && base.startsWith(prefix);
+}
 type Allowed = { ok: true } | { ok: false; code: "model" | "quality" | "daily_limit"; message: string };
 function dailyAllowed(used: number, requested: number, limit: number, label: string): { ok: true } | { ok: false; code: "daily_limit"; message: string } {
   return limit && requested > limit - used ? { ok: false, code: "daily_limit", message: `今日${label}额度不足（${used}/${limit}，本次需要 ${requested}），请明天再试或联系管理员升级等级` } : { ok: true };
@@ -77,8 +85,7 @@ function dailyAllowed(used: number, requested: number, limit: number, label: str
 export function checkGenerationAllowed(userId: string, { model, quality, count }: { model: string; quality: string; count: number }): Allowed {
   validCount(count);
   const tier = tierForUser(userId);
-  const base = model.trim().toLowerCase().split("/").at(-1)!.replace(/^codex-/, "");
-  if (tier.allowedModels.length && !tier.allowedModels.some(allowed => allowed === model || (allowed === "gpt-image-*" && /^gpt-image-[a-z0-9]/.test(base)))) return { ok: false, code: "model", message: `「${tier.name}」等级不支持该模型，请联系管理员升级等级` };
+  if (model.trim() && tier.allowedModels.length && !tier.allowedModels.some(allowed => modelMatches(allowed, model))) return { ok: false, code: "model", message: `「${tier.name}」等级不支持该模型，请联系管理员升级等级` };
   const index = qualities.indexOf((quality === "auto" ? "high" : quality) as Tier["maxQuality"]);
   if (index < 0 || index > qualities.indexOf(tier.maxQuality)) return { ok: false, code: "quality", message: `「${tier.name}」等级最高支持 ${tier.maxQuality} 画质，请降低画质或联系管理员升级等级` };
   return dailyAllowed(todayUsage(userId).images, count, tier.dailyImageLimit, "生图");

@@ -3290,6 +3290,16 @@ api.post("/image-jobs/:id/retry", async (c) => {
   if (!job.session_id) return c.json({ error: "任务缺少对话信息，无法重试" }, 400);
   if (job.status === "running") return c.json({ error: "任务正在处理中" }, 409);
   if (job.status !== "failed") return c.json({ error: "只有失败的任务可以重试" }, 400);
+  // A retry generates the missing images again, so it is subject to the same tier limits.
+  const retryRequest = safeJson<Record<string, unknown>>(job.request_json, {});
+  const requestedCount = Math.max(1, Math.trunc(Number(retryRequest.n ?? 1)) || 1);
+  const missingCount = Math.max(1, requestedCount - storedImageJobImagesById(job.id, user.id).length);
+  const retryTierCheck = checkGenerationAllowed(user.id, {
+    model: String(retryRequest.model ?? ""),
+    quality: String(retryRequest.quality ?? "auto"),
+    count: missingCount
+  });
+  if (!retryTierCheck.ok) return c.json({ error: retryTierCheck.message, code: retryTierCheck.code }, 403);
 
   try {
     const { retrySessionId, runningJob, branchMetadata } = startStoredImageJob(job, "manual");

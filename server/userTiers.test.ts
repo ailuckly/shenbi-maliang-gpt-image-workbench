@@ -21,7 +21,7 @@ async function isolated(program: string) {
       const indexUrl = ${url("./index.ts")};
       import { appDb, configDb, getAll, getOne, run } from ${url("./db.ts")};
       import { initAppDb, initConfigDb } from ${url("./schema.ts")};
-      import { migrateUserTiers, listTiers, getTier, tierForUser, checkGenerationAllowed, checkOptimizeAllowed, recordImageUsage, recordOptimizeUsage, recordCheckUsage, usageSummary } from ${url("./userTiers.ts")};
+      import { migrateUserTiers, listTiers, getTier, tierForUser, checkGenerationAllowed, checkOptimizeAllowed, modelMatches, recordImageUsage, recordOptimizeUsage, recordCheckUsage, usageSummary } from ${url("./userTiers.ts")};
       import { registerUserTierRoutes } from ${url("./userTierRoutes.ts")};
       import { APP_COOKIE, CONFIG_COOKIE } from ${url("./constants.ts")};
       import { localTimestamp } from ${url("./utils.ts")};
@@ -76,6 +76,7 @@ test("generation checks model families, quality order/auto, remaining batch quot
   appDb.query("update user_tiers set allowed_models_json='[\\"exact-model\\"]',max_quality='xhigh' where id='basic'").run();
   appDb.query("update users set tier_id='basic' where id='A'").run();
   assert.equal(check('exact-model','xhigh',0).ok,true); assert.equal(check('vendor/exact-model','low',0).code,'model');
+  assert.equal(modelMatches('gemini-*','vendor/gemini-3.1-flash-image'),true); assert.equal(modelMatches('gemini-*','gemini-'),false); assert.equal(modelMatches('*','gpt-image-2'),false);
 `), 15000);
 
 test("usage counters add independently, reject bad counts, isolate users, cascade and use local calendar history", () => isolated(`
