@@ -3560,12 +3560,18 @@ export function registerPromptTemplateRoutes(api: Hono) {
     if (!access) return exportJsonResponse({ error: "AI 优化链接已过期或已失效，请重新下载网页" }, 401);
     const row = visibleTemplate(templateId, access.userId);
     if (!row) return exportJsonResponse({ error: "表单不存在" }, 404);
+    const owner = getOne<{ disabled: number }>(appDb, "select disabled from users where id = ?", access.userId);
+    if (!owner || owner.disabled) return exportJsonResponse({ error: "AI 优化链接已失效，请联系管理员" }, 403);
     const basePrompt = String(record.basePrompt ?? "").trim();
     if (!basePrompt) return exportJsonResponse({ error: "基础提示词为空，请先填写表单内容" }, 400);
     const provider = resolveLanguageModelProvider("template.optimize");
     if (!provider) return exportJsonResponse({ error: "请先在配置页启用提示词优化模型" }, 400);
     const translationProvider = resolveLanguageModelProvider("template.translate");
     if (!translationProvider) return exportJsonResponse({ error: "请先在配置页启用表单翻译模型" }, 400);
+    // Downloaded pages spend the downloader's optimization quota.
+    const exportQuota = checkOptimizeAllowed(access.userId, 1);
+    if (!exportQuota.ok) return exportJsonResponse({ error: exportQuota.message }, 403);
+    recordOptimizeUsage(access.userId, 1);
     const styleGroups = userPreferences(access.userId).promptOptimizeStyleGroups;
     const template = publicPromptTemplate(row, access.userId, styleGroups);
     const output = template.output as Record<string, unknown>;
@@ -3668,6 +3674,9 @@ export function registerPromptTemplateRoutes(api: Hono) {
     if (!provider) return c.json({ error: "请先在配置页启用提示词优化模型" }, 400);
     const translationProvider = resolveLanguageModelProvider("template.translate");
     if (!translationProvider) return c.json({ error: "请先在配置页启用表单翻译模型" }, 400);
+    const templateQuota = checkOptimizeAllowed(user.id, 1);
+    if (!templateQuota.ok) return c.json({ error: templateQuota.message, code: templateQuota.code }, 403);
+    recordOptimizeUsage(user.id, 1);
     const styleGroups = userPreferences(user.id).promptOptimizeStyleGroups;
     const template = publicPromptTemplate(row, user.id, styleGroups);
     const output = template.output as Record<string, unknown>;
