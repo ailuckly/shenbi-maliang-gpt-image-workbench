@@ -1,5 +1,6 @@
 import { redactProviderSecrets } from "./secretRedaction";
-import { PROMPT_LEAK_REPLY, isPromptLeakAttempt } from "../src/lib/promptInjection";
+import { reviewPromptInjection } from "./promptInjectionReview";
+import { IMAGE_TEXT_LEAK_MESSAGE, screenImagesForLeakedText } from "./imageTextGuard";
 import { imageModelsForProvider, providerHasCredentials } from "./imageModelCatalog";
 import { applyPromptRecommendations, preparePromptGeneration } from "./promptEngine/generation";
 import { inferAspectSize } from "./imageAspect";
@@ -300,7 +301,10 @@ async function ensureImageEditSuggestionsForImages(
   imageIds: string[],
   prepared?: PreparedImageEditSuggestions | null
 ) {
-  // Every completed generation/edit path passes through here; quality checks run in the background.
+  // Every completed generation/edit path passes through here before the job is marked succeeded.
+  // A leak of AI instructions deletes the images and throws, which fails the job.
+  await screenImagesForLeakedText(userId, imageIds);
+  // Quality checks run in the background.
   scheduleImageQualityChecks(userId, imageIds);
   recordNewImageUsage(userId, imageIds);
   const ids = Array.from(new Set(imageIds.map((id) => id.trim()).filter(Boolean)));
@@ -1260,6 +1264,7 @@ function storedImageJobImagesById(jobId: string, userId: string) {
 }
 
 function incompleteImageCountMessage(requestedImageCount: number, images: ImageRow[], detail: string) {
+  if (detail === IMAGE_TEXT_LEAK_MESSAGE) return detail;
   const state = storedImageCompletionState(images, requestedImageCount);
   if (state.remainingRequestedSlotCount === 0) return detail;
   return `图片数量未补全：期望 ${requestedImageCount} 张，已完成 ${state.completedRequestedSlotCount} 个目标槽位（共保存 ${state.totalStoredImageCount} 张），还缺 ${state.remainingRequestedSlotCount} 张；${detail}`;
@@ -2340,7 +2345,8 @@ api.post("/images/generate", async (c) => {
   const branchForkMessageId = String(body.branchForkMessageId ?? "").trim();
   const branchMetadata = requestBranchMetadata(body);
   if (!prompt) return c.json({ error: "请输入图片描述" }, 400);
-  if (isPromptLeakAttempt(prompt)) return c.json({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
+  const injection = await reviewPromptInjection([prompt], { userId: user.id, scene: "image.generate" });
+  if (injection.blocked) return c.json({ error: injection.message, code: "prompt_injection" }, 400);
   const safetyReview = await reviewConversationPrompt({
     userId: user.id,
     sessionId: String(body.sessionId ?? "").trim(),
@@ -2666,7 +2672,8 @@ api.post("/images/edit", async (c) => {
     && sourceReferenceIds.length === 0
     && sourceInlineImages.length === 0
   ) return c.json({ error: "请选择要编辑的图片或素材" }, 400);
-  if (isPromptLeakAttempt(prompt)) return c.json({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
+  const injection = await reviewPromptInjection([prompt], { userId: user.id, scene: "image.edit" });
+  if (injection.blocked) return c.json({ error: injection.message, code: "prompt_injection" }, 400);
   const safetyReview = await reviewConversationPrompt({
     userId: user.id,
     sessionId: String(body.sessionId ?? "").trim(),

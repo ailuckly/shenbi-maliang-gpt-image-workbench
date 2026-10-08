@@ -971,6 +971,18 @@ export function BrandingSettingsPanel() {
           defaultEnabled
         />
         <GlobalSwitchRow
+          type="prompt_injection_review"
+          title="AI 注入攻击检测"
+          desc="规则之外再用小模型识别换说法、角色扮演、编码等索要系统提示词或要求忽略规则的请求；同一句话 24 小时内只判断一次，模型出错时放行。默认开启。"
+          defaultEnabled
+        />
+        <GlobalSwitchRow
+          type="image_text_leak_check"
+          title="出图文字防泄露"
+          desc="请求可能要求出现文字时，交付前用看图模型读出图中文字；若是 AI 系统指令，自动删除图片并让任务失败。检查出错时放行。默认开启。"
+          defaultEnabled
+        />
+        <GlobalSwitchRow
           type="github_entry"
           title="源代码入口"
           desc="控制登录页和工作台的源代码链接，默认开启。"
@@ -1956,6 +1968,8 @@ function modelRequestSourceLabel(source: string) {
   const usageLabels: Record<string, string> = {
     "prompt.optimize": "自由提示词优化",
     "prompt.intent": "对话意图判断",
+    "prompt.guard": "注入攻击检测",
+    "image.text_guard": "出图文字检查",
     "template.optimize": "表单提示词优化",
     "template.translate": "表单提示词翻译",
     "image.prompt_plan": "多图提示词规划",

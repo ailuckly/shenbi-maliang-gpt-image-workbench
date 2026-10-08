@@ -2558,11 +2558,13 @@ const LANGUAGE_MODEL_ASSIGNMENT_GROUPS: Array<{
     items: [
       { usageKey: "prompt.optimize", label: "对话提示词优化", description: "对话输入框里的 AI 提示词优化。", recommendation: "质量优先" },
       { usageKey: "prompt.intent", label: "对话意图判断", description: "智能模式下判断一句话是画图需求还是闲聊（如「你好」），闲聊直接文字回复、不生图；规则能判断的不调用模型。", recommendation: "选最便宜的小模型" },
+      { usageKey: "prompt.guard", label: "注入攻击检测", description: "识别换说法、角色扮演等索要系统提示词或要求忽略规则的请求；规则能判断的不调用模型，结果缓存 24 小时。未单独指定时沿用「对话意图判断」的模型。", recommendation: "选最便宜的小模型" },
       { usageKey: "template.optimize", label: "表单提示词优化", description: "站内表单和导出网页的 AI 优化。", recommendation: "质量优先" },
       { usageKey: "template.translate", label: "表单提示词翻译", description: "站内表单和导出网页的中英翻译。", recommendation: "速度优先" },
       { usageKey: "image.prompt_plan", label: "多图提示词规划", description: "判断多图提示词是否已按图片分组，并整理为独立生图请求。", recommendation: "低延迟优先" },
       { usageKey: "image.edit_suggestions", label: "图片续改建议", description: "图片完成前预生成及按需刷新的续改建议。", recommendation: "低延迟优先" },
-      { usageKey: "image.quality_check", label: "图片质量检查", description: "生成后看图核对文字、主体、比例与瑕疵；必须选择支持图片输入的模型。", recommendation: "支持看图、准确优先" }
+      { usageKey: "image.quality_check", label: "图片质量检查", description: "生成后看图核对文字、主体、比例与瑕疵；必须选择支持图片输入的模型。", recommendation: "支持看图、准确优先" },
+      { usageKey: "image.text_guard", label: "出图文字检查", description: "可能含文字的图片交付前读出图中文字，拦截写出 AI 系统指令的图片；会增加出图等待时间。未单独指定时沿用「图片质量检查」的模型。", recommendation: "支持看图、速度优先" }
     ]
   },
   {

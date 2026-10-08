@@ -8,11 +8,13 @@ import { now } from "./utils";
 export const LANGUAGE_MODEL_USAGE_KEYS = [
   "prompt.optimize",
   "prompt.intent",
+  "prompt.guard",
   "template.optimize",
   "template.translate",
   "image.prompt_plan",
   "image.edit_suggestions",
   "image.quality_check",
+  "image.text_guard",
   "title.chat",
   "title.case",
   "title.asset",
@@ -109,6 +111,15 @@ export function resolveLanguageModelProvider(usageKey: LanguageModelUsageKey) {
   const assignment = assignments.find((row) => row.usage_key === usageKey) ?? null;
   const globalAssignment = assignments.find((row) => row.usage_key === LANGUAGE_MODEL_GLOBAL_DEFAULT_KEY) ?? null;
   return resolveLanguageModelFromRows(providers, assignment, globalAssignment).provider;
+}
+
+/** Uses usageKey when an admin assigned it explicitly, otherwise whatever fallbackKey resolves to. */
+export function resolveLanguageModelProviderPreferring(usageKey: LanguageModelUsageKey, fallbackKey: LanguageModelUsageKey) {
+  const providers = orderedLanguageModelProviders();
+  const assignments = languageModelAssignmentRows();
+  const globalAssignment = assignments.find((row) => row.usage_key === LANGUAGE_MODEL_GLOBAL_DEFAULT_KEY) ?? null;
+  const own = resolveLanguageModelFromRows(providers, assignments.find((row) => row.usage_key === usageKey) ?? null, globalAssignment);
+  return own.status === "configured" ? own.provider : resolveLanguageModelProvider(fallbackKey);
 }
 
 function publicLanguageModelAssignments() {

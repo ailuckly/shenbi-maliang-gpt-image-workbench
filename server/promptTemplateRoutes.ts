@@ -1,5 +1,6 @@
 import { PROMPT_INTENT_DEFAULT_REPLY, classifyPromptIntentByRule, ruleChatReply } from "../src/lib/promptIntent";
-import { PROMPT_LEAK_REPLY, isPromptLeakAttempt } from "../src/lib/promptInjection";
+import { PROMPT_LEAK_REPLY } from "../src/lib/promptInjection";
+import { reviewPromptInjection, trustGeneratedPrompts } from "./promptInjectionReview";
 import { revealsProtectedText } from "./promptGuard";
 import { redactProviderJson, redactProviderSecrets } from "./secretRedaction";
 import { promptOptimizeStyleConfigs, promptOptimizeSubStyleConfigs } from "./promptEngine/legacyStyleConfigs";
@@ -3043,6 +3044,7 @@ async function promptEngineOptimizeResponse(c: Context, record: Record<string, u
     candidates.sort((a, b) => a.index - b.index);
     errors.sort((a, b) => a.index - b.index);
     if (!candidates.length) throw new Error(errors[0]?.error || "模型没有返回可用候选");
+    trustGeneratedPrompts(candidates.map((candidate) => candidate.finalPrompt));
     recordOptimizeUsage(userId, candidates.length);
     return { candidates, errors, templateId: template.id, stylePackSnapshot, imageCategory: categoryInfo, providerName: provider.name, model: provider.model };
   };
@@ -3224,9 +3226,8 @@ export function registerPromptTemplateRoutes(api: Hono) {
     const record = body as Record<string, unknown>;
     const prompt = String(record.prompt ?? record.text ?? "").trim();
     if (!prompt) return c.json({ error: "输入内容为空，请先输入提示词" }, 400);
-    if ([prompt, record.followUp, record.customInstruction, record.optimizeDirection].some((text) => typeof text === "string" && isPromptLeakAttempt(text))) {
-      return c.json({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
-    }
+    const injection = await reviewPromptInjection([prompt, record.followUp, record.customInstruction, record.optimizeDirection], { userId: user.id, scene: "prompt.optimize" });
+    if (injection.blocked) return c.json({ error: injection.message, code: "prompt_injection" }, 400);
     const provider = resolveLanguageModelProvider("prompt.optimize");
     if (!provider) return c.json({ error: "请先在配置页启用提示词优化模型" }, 400);
     const requestedCalls = Math.min(3, Math.max(1, Math.trunc(Number(record.candidates ?? 1)) || 1));
@@ -3269,10 +3270,13 @@ export function registerPromptTemplateRoutes(api: Hono) {
     const record = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {};
     const prompt = String(record.prompt ?? "").trim().slice(0, 2000);
     const ruled = classifyPromptIntentByRule(prompt, { hasImages: Boolean(record.hasImages) });
-    if (ruled === "image") return c.json({ intent: "image", source: "rule" });
     if (ruled === "chat") return c.json({ intent: "chat", reply: ruleChatReply(prompt), source: "rule" });
+    // Runs alongside the intent model; the verdict is cached, so the optimize call that follows reuses it.
+    const injection = reviewPromptInjection([prompt], { userId: user.id, scene: "prompt.intent" });
+    const refused = async () => (await injection).blocked ? c.json({ intent: "chat", reply: PROMPT_LEAK_REPLY, source: "guard" }) : null;
+    if (ruled === "image") return await refused() ?? c.json({ intent: "image", source: "rule" });
     const provider = resolveLanguageModelProvider("prompt.intent");
-    if (!provider) return c.json({ intent: "image", source: "fallback" });
+    if (!provider) return await refused() ?? c.json({ intent: "image", source: "fallback" });
     try {
       const content = await requestPromptModelText({
         provider,
@@ -3286,9 +3290,9 @@ export function registerPromptTemplateRoutes(api: Hono) {
       });
       const parsed = parsePromptIntentContent(content);
       if (parsed.reply && revealsProtectedText(parsed.reply, [PROMPT_INTENT_SYSTEM_PROMPT])) return c.json({ intent: "chat", reply: PROMPT_LEAK_REPLY, source: "guard" });
-      return c.json({ ...parsed, source: "model" });
+      return await refused() ?? c.json({ ...parsed, source: "model" });
     } catch {
-      return c.json({ intent: "image", source: "fallback" });
+      return await refused() ?? c.json({ intent: "image", source: "fallback" });
     }
   });
 
@@ -3577,7 +3581,8 @@ export function registerPromptTemplateRoutes(api: Hono) {
     if (!owner || owner.disabled) return exportJsonResponse({ error: "AI 优化链接已失效，请联系管理员" }, 403);
     const basePrompt = String(record.basePrompt ?? "").trim();
     if (!basePrompt) return exportJsonResponse({ error: "基础提示词为空，请先填写表单内容" }, 400);
-    if (isPromptLeakAttempt(basePrompt)) return exportJsonResponse({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
+    const exportInjection = await reviewPromptInjection([basePrompt], { userId: access.userId, scene: "template.export_optimize" });
+    if (exportInjection.blocked) return exportJsonResponse({ error: exportInjection.message, code: "prompt_injection" }, 400);
     const provider = resolveLanguageModelProvider("template.optimize");
     if (!provider) return exportJsonResponse({ error: "请先在配置页启用提示词优化模型" }, 400);
     const translationProvider = resolveLanguageModelProvider("template.translate");
@@ -3684,7 +3689,8 @@ export function registerPromptTemplateRoutes(api: Hono) {
     const language = "zh";
     const basePrompt = String(record.basePrompt ?? "").trim();
     if (!basePrompt) return c.json({ error: "基础提示词为空，请先填写表单内容" }, 400);
-    if (isPromptLeakAttempt(basePrompt)) return c.json({ error: PROMPT_LEAK_REPLY, code: "prompt_injection" }, 400);
+    const templateInjection = await reviewPromptInjection([basePrompt], { userId: user.id, scene: "template.optimize" });
+    if (templateInjection.blocked) return c.json({ error: templateInjection.message, code: "prompt_injection" }, 400);
     const provider = resolveLanguageModelProvider("template.optimize");
     if (!provider) return c.json({ error: "请先在配置页启用提示词优化模型" }, 400);
     const translationProvider = resolveLanguageModelProvider("template.translate");

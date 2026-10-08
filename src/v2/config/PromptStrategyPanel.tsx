@@ -45,6 +45,18 @@ export function PromptStrategyPanel() {
         defaultEnabled
         invalidateQueryKeys={["config-setup-status"]}
       />
+      <GlobalSwitchRow
+        type="prompt_injection_review"
+        title={t("v2.strategy.injectionReview")}
+        desc={t("v2.strategy.injectionReviewHint")}
+        defaultEnabled
+      />
+      <GlobalSwitchRow
+        type="image_text_leak_check"
+        title={t("v2.strategy.imageTextLeak")}
+        desc={t("v2.strategy.imageTextLeakHint")}
+        defaultEnabled
+      />
       <p className="v2-field-hint">{t("v2.strategy.modelHint")}</p>
     </section>
   );
