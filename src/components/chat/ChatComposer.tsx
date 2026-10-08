@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEventHandler, type CSSProperties, type RefObject } from "react";
-import { ArrowUp, Brush, BrushCleaning, ImageIcon, Lightbulb, LoaderCircle, Maximize2, Minimize2, Plus, RotateCw, Sparkles, Square, Undo2, WandSparkles, X } from "lucide-react";
+import { ArrowUp, Brush, BrushCleaning, CircleAlert, ImageIcon, Lightbulb, LoaderCircle, Maximize2, Minimize2, Plus, RotateCw, Sparkles, Square, Undo2, WandSparkles, X } from "lucide-react";
 import { ImageLightbox, type ImageLightboxState } from "../ImageLightbox";
 import { MaterialPickerDrawer } from "../MaterialPicker";
 import { BackgroundPicker, ImageCountStepper, ModelPicker, QualityPicker, SizePicker } from "../ImageOptionPickers";
@@ -58,6 +58,7 @@ type ChatComposerProps = {
   composerInstanceKey: string;
   draftPrompt: string;
   error: string;
+  onDismissError?: () => void;
   editSuggestions?: ImageEditSuggestion[];
   editSuggestionsLoading?: boolean;
   materialPickerOpen: boolean;
@@ -166,6 +167,7 @@ export function ChatComposer({
   composerInstanceKey,
   draftPrompt,
   error,
+  onDismissError,
   editSuggestions = [],
   editSuggestionsLoading = false,
   materialPickerOpen,
@@ -829,7 +831,17 @@ export function ChatComposer({
 
   return (
     <footer className="composer-wrap">
-      {error ? <div className="form-error">{error}</div> : null}
+      {error ? (
+        <div className="composer-notice" role="alert">
+          <CircleAlert size={16} aria-hidden="true" />
+          <span>{error}</span>
+          {onDismissError ? (
+            <button type="button" className="composer-notice-close" aria-label={t("common.close")} onClick={onDismissError}>
+              <X size={14} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {promptTemplateOpen ? editSuggestionStrip : null}
       {promptTemplateOpen ? (
         <PromptTemplateComposerPanel

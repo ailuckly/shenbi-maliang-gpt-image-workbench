@@ -937,7 +937,7 @@
 .image-editor-shell.is-preview-dragging .image-editor-composer,
 .image-editor-shell.is-preview-dragging .image-editor-composer-wrap .composer-material-drawer,
 .image-editor-shell.is-preview-dragging .image-editor-composer-wrap .material-picker,
-.image-editor-shell.is-preview-dragging .image-editor-composer-wrap .form-error {
+.image-editor-shell.is-preview-dragging .image-editor-composer-wrap .composer-notice {
   pointer-events: none;
 }
 
@@ -1416,7 +1416,7 @@
   pointer-events: auto;
 }
 
-.image-editor-composer-wrap .form-error {
+.image-editor-composer-wrap .composer-notice {
   pointer-events: auto;
 }
 

@@ -4,7 +4,7 @@ import type { InfiniteData } from "@tanstack/react-query";
 import { Share } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
-import { request } from "../api/client";
+import { ApiError, request } from "../api/client";
 import { AddAssetFromImageModal } from "../components/AddAssetFromImageModal";
 import { AiClientInstallDialog } from "../components/AiClientInstallDialog";
 import { CaseMaterialPickerModal } from "../components/CaseMaterialPickerModal";
@@ -610,6 +610,11 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
   const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
   const [starterPromptOptimizeRequest, setStarterPromptOptimizeRequest] = useState<{ id: number; prompt: string } | null>(null);
   const [activeSubmitCancellation, setActiveSubmitCancellation] = useState<ActiveSubmitCancellation | null>(null);
+  // Kept per request so a rejected submit (quota, validation) can put the draft back.
+  const submitSnapshotsRef = useRef(new Map<string, SubmittedDraftSnapshot>());
+  const createdSessionRequestIdsRef = useRef(new Set<string>());
+  // Error to keep showing across the navigation back to a new chat after an empty session is dropped.
+  const carriedErrorRef = useRef("");
   const [cancelPending, setCancelPending] = useState(false);
   const [restoreConflict, setRestoreConflict] = useState<RestoreConflictState | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -950,6 +955,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       ? formatImageAnnotationPrompt(request.imageAnnotations ?? [], request.prompt)
       : request.prompt;
     const result = await api.createSession({ prompt: sessionPrompt, clientRequestId: request.clientRequestId });
+    createdSessionRequestIdsRef.current.add(request.clientRequestId);
     const submittedImageModel = normalizeImageModel(
       request.model,
       request.mode === "edit" ? DEFAULT_EDIT_IMAGE_MODEL : DEFAULT_GENERATION_IMAGE_MODEL
@@ -1087,12 +1093,27 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       }
     },
     onError: (err, request) => {
-      const failedSessionId = submitSessionByRequestRef.current.get(request.clientRequestId);
+      let failedSessionId = submitSessionByRequestRef.current.get(request.clientRequestId);
       submitSessionByRequestRef.current.delete(request.clientRequestId);
       submitAbortControllersRef.current.delete(request.clientRequestId);
       removeSubmittingScopes([request.pendingScope, failedSessionId ?? ""]);
       clearPendingForScopes([request.pendingScope, failedSessionId ?? ""]);
       if (failedSessionId) clearSessionGenerationStatus(failedSessionId);
+      // 4xx means the server refused before saving anything (quota, model, validation).
+      const rejected = err instanceof ApiError && err.status >= 400 && err.status < 500 && err.status !== 408 && err.status !== 409;
+      const createdForRequest = createdSessionRequestIdsRef.current.has(request.clientRequestId);
+      if (rejected && createdForRequest && failedSessionId) {
+        // Drop the empty conversation created for this first message instead of leaving it in the sidebar.
+        const emptySessionId = failedSessionId;
+        failedSessionId = undefined;
+        void api.deleteSession(emptySessionId).catch(() => undefined).finally(() => refreshSessionsNonCancel());
+        // The route may already point at the new session even before this render sees it.
+        if (window.location.pathname === `/chat/${emptySessionId}` || sessionId === emptySessionId) {
+          carriedErrorRef.current = submitErrorMessage(err, t("common.requestFailed"));
+          window.setTimeout(() => { carriedErrorRef.current = ""; }, 1000);
+          navigate("/", { replace: true });
+        }
+      }
       if (failedSessionId) {
         refreshSessionsNonCancel();
         if (request.caseItemId) queryClient.invalidateQueries({ queryKey: ["cases"] });
@@ -1104,13 +1125,23 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
       setActiveSubmitCancellation((current) => current?.clientRequestId === request.clientRequestId ? null : current);
       const currentRouteScope = sessionId ?? NEW_SESSION_PENDING_SCOPE;
       const message = submitErrorMessage(err, t("common.requestFailed"));
-      showToast(message, "error");
-      if (currentRouteScope === request.pendingScope || currentRouteScope === failedSessionId) {
+      const onRequestRoute = currentRouteScope === request.pendingScope || currentRouteScope === failedSessionId
+        || (rejected && createdForRequest);
+      if (onRequestRoute) {
+        // One dismissible notice above the composer; a toast only when the user has moved elsewhere.
         setError(message);
+        const snapshot = submitSnapshotsRef.current.get(request.clientRequestId);
+        if (rejected && snapshot && !textareaRef.current?.value.trim()) {
+          restoreSubmittedDraft(snapshot, createdForRequest ? COMPOSER_NEW_DRAFT_SCOPE_KEY : composerScopeKey);
+        }
+      } else {
+        showToast(message, "error");
       }
     },
     onSettled: (_result, _error, request) => {
       cancelledSubmitIdsRef.current.delete(request.clientRequestId);
+      submitSnapshotsRef.current.delete(request.clientRequestId);
+      createdSessionRequestIdsRef.current.delete(request.clientRequestId);
     }
   });
   const createShareLink = useMutation({
@@ -1206,6 +1237,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     });
   };
   const startTrackedSubmit = (request: SubmitRequest, snapshot: SubmittedDraftSnapshot) => {
+    submitSnapshotsRef.current.set(request.clientRequestId, snapshot);
     setActiveSubmitCancellation({
       clientRequestId: request.clientRequestId,
       pendingScope: request.pendingScope,
@@ -2072,7 +2104,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     previousSessionKeyRef.current = transition.sessionKey;
     if (transition.changed) setActiveBranchId(null);
     setStarterPromptOptimizeRequest(null);
-    setError("");
+    setError(carriedErrorRef.current);
     if (transition.changed) {
       setShareDialogOpen(false);
       setCreatedShareLink(null);
@@ -2126,7 +2158,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
     ));
     setMaterialPickerOpen(false);
     setCasePickerOpen(false);
-    setError("");
+    setError(carriedErrorRef.current);
     if (!sessionId) {
       setPendingScope(null);
       if (imageEditor && !editorImageRequest?.persistAcrossSessionChange) closePagedImageEditor();
@@ -2978,6 +3010,7 @@ export function ChatPage({ user, sessionActions }: { user: User; sessionActions?
         editSuggestions={composerEditSuggestions}
         editSuggestionsLoading={composerEditSuggestionsLoading}
         error={latestVisibleFailedJob ? "" : error}
+        onDismissError={() => setError("")}
         materialPickerOpen={materialPickerOpen && !imageEditor}
         placeholder={composerPlaceholder}
         previews={composerPreviews}

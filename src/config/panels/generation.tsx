@@ -807,6 +807,7 @@ export function ImageAccountPoolPanel() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const didAutoRefreshUsage = useRef(false);
+  const silentUsageRefresh = useRef(false);
   const accounts = useQuery({ queryKey: ["config-image-accounts"], queryFn: configApi.imageAccounts });
   const providers = useQuery({ queryKey: ["config-providers"], queryFn: configApi.providers });
   const [dialog, setDialog] = useState<{ mode: "create" | "edit"; account?: ImageAccount } | null>(null);
@@ -847,15 +848,19 @@ export function ImageAccountPoolPanel() {
   const refreshUsage = useMutation({
     mutationFn: (accountId?: string) => configApi.refreshImageAccountUsage(accountId),
     onSuccess: (result) => {
-      showToast(result.message);
+      // The refresh that runs on opening the page stays quiet; only a click reports the result.
+      if (silentUsageRefresh.current) silentUsageRefresh.current = false;
+      else showToast(result.message);
       queryClient.invalidateQueries({ queryKey: ["config-image-accounts"] });
-    }
+    },
+    onError: () => { silentUsageRefresh.current = false; }
   });
 
   useEffect(() => {
     if (didAutoRefreshUsage.current || !accounts.isSuccess) return;
     didAutoRefreshUsage.current = true;
-    if (!shouldAutoRefreshAccountUsage()) return;
+    if (!shouldAutoRefreshAccountUsage() || !accounts.data?.accounts?.length) return;
+    silentUsageRefresh.current = true;
     refreshUsage.mutate(undefined);
   }, [accounts.isSuccess]);
 

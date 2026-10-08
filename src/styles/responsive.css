@@ -170,10 +170,19 @@
   }
 
   .chat-page-top-actions {
-    top: 4px;
-    right: 10px;
+    top: 12px;
+    right: 12px;
     gap: 8px;
-    max-width: calc(100vw - 20px);
+    max-width: calc(100vw - 24px);
+  }
+
+  /* Same pill as the menu button on the left, so the icons never sit on top of message text. */
+  .chat-page-actions {
+    height: 40px;
+    padding: 0 4px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
   }
 
   .chat-page-top-actions .chat-branch-switch-shell {
@@ -422,6 +431,28 @@
 }
 
 @media (max-width: 640px) {
+  /* One swipeable row of edit suggestions instead of several rows covering the image. */
+  .composer-edit-suggestions {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .composer-edit-suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .composer-edit-suggestion {
+    flex: none;
+  }
+
+  /* Decorative overhangs (shadows, animated strips) must never let the page pan sideways. */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   .conversation-navigator {
     display: none;
   }
@@ -772,13 +803,21 @@
   }
 
   .starter-title {
-    grid-template-columns: 75px minmax(0, 1fr);
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
     column-gap: 10px;
   }
 
   .starter-logo {
-    width: 75px;
-    height: 75px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .starter-title-text,
+  .starter-title-text > span,
+  .starter-title-prompt > span {
+    font-size: 22px;
+    line-height: 1.4;
   }
 
   .starter-case-scroll {

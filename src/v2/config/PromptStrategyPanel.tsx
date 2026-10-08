@@ -24,7 +24,7 @@ export function PromptStrategyPanel() {
     onError: (error) => showToast(error instanceof Error ? error.message : t("v2.strategy.failed"), "error")
   });
   return (
-    <section className="v2-page v2-stack">
+    <section className="v2-page v2-stack v2-narrow">
       <header>
         <h1>{t("v2.strategy.title")}</h1>
         <p>{t("v2.strategy.description")}</p>

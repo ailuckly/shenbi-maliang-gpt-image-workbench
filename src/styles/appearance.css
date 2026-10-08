@@ -1326,6 +1326,13 @@ html:is([data-appearance="dark"], [data-appearance="maliang"], [data-appearance=
   color: #fecdd3;
 }
 
+@media (max-width: 980px) {
+  html:is([data-appearance="dark"], [data-appearance="maliang"], [data-appearance="chunyu"]) .chat-page-actions {
+    border-color: var(--button-default-border);
+    background: var(--button-default-bg);
+  }
+}
+
 html:is([data-appearance="dark"], [data-appearance="maliang"], [data-appearance="chunyu"]) .mobile-menu-btn {
   border-color: var(--button-default-border);
   background: var(--button-default-bg);
