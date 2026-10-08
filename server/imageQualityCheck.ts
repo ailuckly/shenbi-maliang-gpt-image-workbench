@@ -6,6 +6,7 @@ import { globalSwitchEnabled } from "./globalSwitches";
 import { resolveLanguageModelProvider } from "./languageModelAssignments";
 import { imageModelPromptText } from "./promptEngine/schema";
 import { fetchPromptOptimizerWithRetry, promptOptimizerApiKey, promptOptimizerHeaders } from "./promptOptimizerRoutes";
+import { redactProviderSecrets } from "./secretRedaction";
 import { readStoredFile } from "./secureFiles";
 import { recordCheckUsage } from "./userTiers";
 import { normalizePath, now, safeJson } from "./utils";
@@ -200,7 +201,8 @@ async function checkImage(imageId: string, userId: string) {
     recordCheckUsage(userId, 1);
     logModelRequest({ purpose: "image.quality_check", providerId: provider.id, providerName: provider.name, model: provider.model, endpoint, method: "POST", attemptCount, statusCode, durationMs: Date.now() - startedAt, success: true, userId, jobId: image.job_id ?? "", source: "image.quality_check" });
   } catch (error) {
-    finish({ status: "failed", error: error instanceof Error ? error.message.slice(0, 300) : "检查失败", model: provider.model });
+    // Provider error bodies can echo keys or internal URLs; users see this text.
+    finish({ status: "failed", error: error instanceof Error ? redactProviderSecrets(error.message).slice(0, 300) : "检查失败", model: provider.model });
     logModelRequest({ purpose: "image.quality_check", providerId: provider.id, providerName: provider.name, model: provider.model, endpoint, method: "POST", attemptCount, statusCode, durationMs: Date.now() - startedAt, success: false, error, userId, jobId: image.job_id ?? "", source: "image.quality_check" });
   }
 }
