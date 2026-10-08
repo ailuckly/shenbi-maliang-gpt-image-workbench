@@ -62,6 +62,16 @@ else
 fi
 # Build into dist-next and swap only on success, so the running site never serves a half-built dist.
 as_user "cd $APP_DIR && $BUN install --frozen-lockfile && $BUN run check && $BUN x vite build --outDir dist-next --emptyOutDir"
+# A restart fails in-flight image jobs, so give running generations up to 5 minutes to finish
+# before the new frontend and backend go live together.
+if systemctl is-active --quiet shenbi 2>/dev/null && [ -f "$DATA_DIR/app.db" ]; then
+  for _ in $(seq 1 60); do
+    running="$(as_user "cd $APP_DIR && $BUN scripts/deploy/running-jobs.ts $DATA_DIR/app.db" || echo 0)"
+    [ "${running:-0}" -gt 0 ] 2>/dev/null || break
+    echo "Waiting for $running running image job(s) before switching versions…"
+    sleep 5
+  done
+fi
 as_user "cd $APP_DIR && rm -rf dist.old && { [ -d dist ] && mv dist dist.old || true; } && mv dist-next dist"
 
 log "Data"
