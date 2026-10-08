@@ -24,4 +24,11 @@ describe("aspect inference for auto size", () => {
     expect(inferAspectSize("一只橘猫在窗台上晒太阳", sizes)).toBeNull();
     expect(inferAspectSize("横向宽幅山水", PREVIOUS_DEFAULT_IMAGE_SIZES)).toBe("2048x1152");
   });
+
+  test("English keywords only match whole words", () => {
+    expect(inferAspectSize("a natural history museum hall", sizes)).toBeNull();
+    expect(inferAspectSize("an iconic silicon chip macro shot", sizes)).toBeNull();
+    expect(inferAspectSize("instagram story about coffee", sizes)).toBe("1152x2048");
+    expect(inferAspectSize("app icon of a fox", sizes)).toBe("1024x1024");
+  });
 });

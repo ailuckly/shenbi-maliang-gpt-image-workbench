@@ -8,14 +8,14 @@ const KNOWN_RATIOS = new Set(["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "
 // Checked in order; the first matching rule wins. Horizontal words come before portrait
 // defaults so "横版海报" stays landscape while "海报" alone is portrait.
 const KEYWORD_RULES: Array<{ pattern: RegExp; ratio: number }> = [
-  { pattern: /电影宽银幕|宽银幕|带鱼屏|cinemascope|anamorphic/i, ratio: 21 / 9 },
-  { pattern: /横向宽幅|超宽|宽幅|长卷|横卷|手卷|全景|panorama|ultra[\s-]?wide/i, ratio: 2.5 },
+  { pattern: /电影宽银幕|宽银幕|带鱼屏|\b(?:cinemascope|anamorphic)\b/i, ratio: 21 / 9 },
+  { pattern: /横向宽幅|超宽|宽幅|长卷|横卷|手卷|全景|\b(?:panorama|panoramic|ultra[\s-]?wide)\b/i, ratio: 2.5 },
   { pattern: /竖向长卷|竖幅长图|条幅|长图/i, ratio: 1 / 2 },
-  { pattern: /横版|横向|横屏|宽屏|横幅|ppt|幻灯片|演示文稿|网页头图|banner|视频封面|桌面壁纸|landscape/i, ratio: 16 / 9 },
-  { pattern: /竖屏|手机壁纸|抖音|快手|故事封面|story/i, ratio: 9 / 16 },
-  { pattern: /小红书|竖版|竖图|portrait/i, ratio: 3 / 4 },
-  { pattern: /海报|书封|poster/i, ratio: 2 / 3 },
-  { pattern: /正方形|方形|方图|头像|logo|图标|icon|square/i, ratio: 1 }
+  { pattern: /横版|横向|横屏|宽屏|横幅|ppt|幻灯片|演示文稿|网页头图|视频封面|桌面壁纸|\b(?:banner|landscape)\b/i, ratio: 16 / 9 },
+  { pattern: /竖屏|手机壁纸|抖音|快手|故事封面|\b(?:story|stories)\b/i, ratio: 9 / 16 },
+  { pattern: /小红书|竖版|竖图|\bportrait\b/i, ratio: 3 / 4 },
+  { pattern: /海报|书封|\bposter\b/i, ratio: 2 / 3 },
+  { pattern: /正方形|方形|方图|头像|logo|图标|\b(?:icon|square)\b/i, ratio: 1 }
 ];
 
 function sizeEntries(sizes: readonly string[]): SizeEntry[] {
